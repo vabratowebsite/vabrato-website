@@ -1,76 +1,81 @@
-import { redirect } from "next/navigation";
-import type { UserRole } from "@vabrato/db";
-import { STAFF_ROLES, getProfile, signOut } from "@vabrato/lib";
+import Link from "next/link";
 import { Panel, T } from "@vabrato/ui";
+import { AccessDenied } from "@/components/access-denied";
+import { Header } from "@/components/header";
+import { requireSignIn } from "@/lib/auth";
+import { STATUS_LABELS, type PropertyStatus } from "@/lib/property-schema";
 import { supabaseServer } from "@/lib/supabase-server";
+import { AddPropertyForm } from "./add-property-form";
 
 export const dynamic = "force-dynamic";
 
-// Buyers plus staff (staff preview client-facing screens).
-const ALLOWED: UserRole[] = ["buyer", ...STAFF_ROLES];
-
-async function handleSignOut() {
-  "use server";
-  const supabase = await supabaseServer();
-  await signOut(supabase);
-  redirect("/login");
-}
-
-function SignOutButton() {
-  return (
-    <form action={handleSignOut} className="mt-5">
-      <button
-        className="rounded-lg px-4 py-2 text-sm font-medium"
-        style={{ background: T.ink, color: T.gold }}
-      >
-        Sign out
-      </button>
-    </form>
-  );
-}
+const STATUS_COLORS: Record<PropertyStatus, string> = {
+  watching: "#726A5C",
+  toured: "#3E7CA8",
+  offer_made: "#BE8A2C",
+  in_escrow: "#9F7B37",
+  purchased: "#4F7A52",
+  lost: "#B44A3D",
+};
 
 export default async function Home() {
-  const supabase = await supabaseServer();
-  const profile = await getProfile(supabase);
-  if (!profile) redirect("/login");
+  const { profile, allowed } = await requireSignIn();
+  if (!allowed) return <AccessDenied profile={profile} />;
 
-  if (!ALLOWED.includes(profile.role)) {
-    return (
-      <main className="mx-auto max-w-lg p-10">
-        <Panel title="No access">
-          <p className="text-sm" style={{ color: T.muted }}>
-            Signed in as {profile.email} ({profile.role}). The Property Tracker is for Vabrato
-            buyers.
-          </p>
-          <SignOutButton />
-        </Panel>
-      </main>
-    );
-  }
+  // RLS scopes rows to buyer_id = auth.uid().
+  const supabase = await supabaseServer();
+  const { data: properties } = await supabase
+    .from("tracked_properties")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   return (
-    <main className="mx-auto max-w-lg p-10">
-      <div className="mb-6">
-        <div className="font-serif text-2xl tracking-wide" style={{ color: T.goldDeep }}>
-          VABRATO
-        </div>
-        <div className="mt-1 text-[11px] uppercase tracking-widest" style={{ color: T.faint }}>
-          Property Tracker
-        </div>
-      </div>
-      <Panel title="Signed in">
-        <dl className="space-y-1.5 text-sm">
-          <div className="flex justify-between">
-            <dt style={{ color: T.muted }}>Email</dt>
-            <dd>{profile.email}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt style={{ color: T.muted }}>Role</dt>
-            <dd>{profile.role}</dd>
-          </div>
-        </dl>
-        <SignOutButton />
-      </Panel>
-    </main>
+    <div>
+      <Header profile={profile} />
+      <main className="mx-auto max-w-3xl space-y-5 p-6">
+        <Panel title="Track a property">
+          <AddPropertyForm />
+        </Panel>
+
+        {!properties?.length ? (
+          <p className="text-sm" style={{ color: T.muted }}>
+            Nothing tracked yet. Add the first property you're pursuing above.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {properties.map((p) => {
+              const status = (p.status in STATUS_LABELS ? p.status : "watching") as PropertyStatus;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/properties/${p.id}`}
+                    className="flex items-center justify-between gap-4 rounded-2xl p-5 transition-shadow hover:shadow-md"
+                    style={{ background: T.surface, border: `1px solid ${T.line}` }}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-serif">{p.address}</div>
+                      {p.source && (
+                        <div className="mt-0.5 text-xs" style={{ color: T.muted }}>
+                          via {p.source}
+                        </div>
+                      )}
+                    </div>
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
+                      style={{
+                        background: `${STATUS_COLORS[status]}1F`,
+                        color: STATUS_COLORS[status],
+                      }}
+                    >
+                      {STATUS_LABELS[status]}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </main>
+    </div>
   );
 }
