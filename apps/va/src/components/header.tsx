@@ -18,6 +18,14 @@ export function Header({ profile }: { profile: Profile }) {
         </span>
       </Link>
       <div className="flex items-center gap-4">
+        <nav className="flex items-center gap-3 text-sm">
+          <Link href="/" style={{ color: T.muted }}>
+            Transactions
+          </Link>
+          <Link href="/vendors" style={{ color: T.muted }}>
+            Vendors
+          </Link>
+        </nav>
         <span className="text-xs" style={{ color: T.muted }}>
           {profile.email} · {profile.role}
         </span>

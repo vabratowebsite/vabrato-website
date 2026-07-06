@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import type { Task, TaskPhase } from "@vabrato/db";
-import { computeCoe, diffDays } from "@vabrato/lib";
 import { OwnerChip, Panel, T } from "@vabrato/ui";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
+import { DealShell } from "@/components/deal-shell";
 import { removeMemberAction, toggleTaskAction } from "@/lib/actions";
-import { InviteForm } from "./invite-form";
-import { dueState, fmtLong, fmtShort, todayISO } from "@/lib/dates";
+import { dueState, fmtShort } from "@/lib/dates";
+import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
+import { InviteForm } from "./invite-form";
 
 export const dynamic = "force-dynamic";
 
@@ -25,10 +25,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
 
-  const supabase = await supabaseServer();
-  const { data: deal } = await supabase.from("deals").select("*").eq("id", id).maybeSingle();
-  if (!deal) notFound();
+  const result = await getDealWithProgress(id);
+  if (!result) notFound();
+  const { deal, done, total } = result;
 
+  const supabase = await supabaseServer();
   const { data: tasks } = await supabase
     .from("tasks")
     .select("*")
@@ -42,125 +43,70 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     .eq("deal_id", id);
 
   const all = tasks ?? [];
-  const doneCount = all.filter((t) => t.done).length;
-  const pct = all.length ? Math.round((doneCount / all.length) * 100) : 0;
-  const coe = computeCoe(deal.ratification_date, deal.days_to_close);
-  const daysToCoe = Math.max(0, diffDays(todayISO(), coe));
 
   return (
-    <div>
-      <Header profile={profile} />
-
-      <div
-        className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-6 py-4"
-        style={{ background: T.surface, borderBottom: `1px solid ${T.line}` }}
-      >
-        <div>
-          <div className="font-serif text-lg leading-tight">{deal.address}</div>
-          <div className="mt-0.5 text-xs" style={{ color: T.muted }}>
-            {deal.escrow_number ? `Escrow #${deal.escrow_number} · ` : ""}
-            {deal.seller_name ? `Seller ${deal.seller_name}` : ""}
-            {deal.seller_type !== "normal" && (
-              <span className="ml-1" style={{ color: T.goldDeep }}>
-                · {deal.seller_type.replace(/_/g, " ")}
-              </span>
-            )}
-          </div>
+    <DealShell profile={profile} deal={deal} done={done} total={total} active="tasks">
+      {deal.sale_price != null && (
+        <div
+          className="rounded-lg px-4 py-3 text-sm"
+          style={{ background: `${T.red}12`, border: `1px solid ${T.red}55`, color: T.red }}
+        >
+          Sale price {money(deal.sale_price)}. Never act on emailed wiring instructions — always
+          call escrow to verify wiring details.
         </div>
-        <div className="flex items-center gap-6">
-          <HeaderStat label="Ratified" value={fmtShort(deal.ratification_date)} />
-          <HeaderStat label="Close of escrow" value={fmtLong(coe)} accent />
-          <HeaderStat label="Days to COE" value={String(daysToCoe)} />
-          <div className="w-36">
-            <div className="mb-1 flex justify-between text-xs" style={{ color: T.muted }}>
-              <span>Progress</span>
-              <span>
-                {doneCount}/{all.length} · {pct}%
-              </span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full" style={{ background: T.lineSoft }}>
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: T.gold }} />
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
 
-      <main className="mx-auto max-w-4xl space-y-5 p-6">
-        {deal.sale_price != null && (
-          <div
-            className="rounded-lg px-4 py-3 text-sm"
-            style={{ background: `${T.red}12`, border: `1px solid ${T.red}55`, color: T.red }}
-          >
-            Sale price {money(deal.sale_price)}. Never act on emailed wiring instructions — always
-            call escrow to verify wiring details.
-          </div>
-        )}
-
-        <Panel title="Seller access">
-          {members?.length ? (
-            <ul className="mb-3 space-y-1.5">
-              {members.map((m) => (
-                <li key={m.profile_id} className="flex items-center gap-3 text-sm">
-                  <span className="min-w-0 flex-1">
-                    {m.profiles?.full_name || m.profiles?.email}
-                    <span className="ml-2 text-xs" style={{ color: T.faint }}>
-                      {m.member_role}
-                    </span>
+      <Panel title="Seller access">
+        {members?.length ? (
+          <ul className="mb-3 space-y-1.5">
+            {members.map((m) => (
+              <li key={m.profile_id} className="flex items-center gap-3 text-sm">
+                <span className="min-w-0 flex-1">
+                  {m.profiles?.full_name || m.profiles?.email}
+                  <span className="ml-2 text-xs" style={{ color: T.faint }}>
+                    {m.member_role}
                   </span>
-                  <form action={removeMemberAction.bind(null, deal.id, m.profile_id)}>
-                    <button className="text-xs" style={{ color: T.red }}>
-                      Remove
-                    </button>
-                  </form>
-                </li>
+                </span>
+                <form action={removeMemberAction.bind(null, deal.id, m.profile_id)}>
+                  <button className="text-xs" style={{ color: T.red }}>
+                    Remove
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mb-3 text-sm" style={{ color: T.muted }}>
+            No seller has portal access yet. Add their email — no invite email is sent; they
+            simply sign in at the seller portal with this address.
+          </p>
+        )}
+        <InviteForm dealId={deal.id} />
+      </Panel>
+
+      {PHASES.map(({ key, label }) => {
+        const set = all.filter((t) => t.phase === key);
+        if (!set.length) return null;
+        const phaseDone = set.filter((t) => t.done).length;
+        return (
+          <Panel
+            key={key}
+            title={label}
+            right={
+              <span className="text-xs" style={{ color: T.faint }}>
+                {phaseDone}/{set.length}
+              </span>
+            }
+          >
+            <ul className="space-y-1.5">
+              {set.map((task) => (
+                <TaskRow key={task.id} task={task} dealId={deal.id} />
               ))}
             </ul>
-          ) : (
-            <p className="mb-3 text-sm" style={{ color: T.muted }}>
-              No seller has portal access yet. Add their email — no invite email is sent; they
-              simply sign in at the seller portal with this address.
-            </p>
-          )}
-          <InviteForm dealId={deal.id} />
-        </Panel>
-
-        {PHASES.map(({ key, label }) => {
-          const set = all.filter((t) => t.phase === key);
-          if (!set.length) return null;
-          const phaseDone = set.filter((t) => t.done).length;
-          return (
-            <Panel
-              key={key}
-              title={label}
-              right={
-                <span className="text-xs" style={{ color: T.faint }}>
-                  {phaseDone}/{set.length}
-                </span>
-              }
-            >
-              <ul className="space-y-1.5">
-                {set.map((task) => (
-                  <TaskRow key={task.id} task={task} dealId={deal.id} />
-                ))}
-              </ul>
-            </Panel>
-          );
-        })}
-      </main>
-    </div>
-  );
-}
-
-function HeaderStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wider" style={{ color: T.faint }}>
-        {label}
-      </div>
-      <div className="text-sm font-medium" style={{ color: accent ? T.goldDeep : T.text }}>
-        {value}
-      </div>
-    </div>
+          </Panel>
+        );
+      })}
+    </DealShell>
   );
 }
 

@@ -12,6 +12,7 @@ import {
   signOut,
 } from "@vabrato/lib";
 import { parseDealForm } from "@/lib/deal-schema";
+import { parseReceiptForm } from "@/lib/receipt-schema";
 import { supabaseServer } from "@/lib/supabase-server";
 
 export async function signOutAction() {
@@ -173,4 +174,70 @@ export async function toggleTaskAction(taskId: string, dealId: string, done: boo
     .eq("id", taskId);
   if (error) console.error("[toggleTask]", error.message);
   revalidatePath(`/deals/${dealId}`);
+}
+
+export async function addReceiptAction(
+  dealId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const parsed = parseReceiptForm(form);
+  if (parsed.error !== null) return { error: parsed.error };
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("receipts").insert({
+    deal_id: dealId,
+    vendor: parsed.data.vendor,
+    amount: parsed.data.amount,
+    category: parsed.data.category,
+    receipt_date: parsed.data.receipt_date,
+    source: "manual",
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/deals/${dealId}/receipts`);
+  return { error: null };
+}
+
+export async function deleteReceiptAction(receiptId: string, dealId: string) {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("receipts").delete().eq("id", receiptId);
+  if (error) console.error("[deleteReceipt]", error.message);
+  revalidatePath(`/deals/${dealId}/receipts`);
+}
+
+export async function addVendorAction(_prev: FormState, form: FormData): Promise<FormState> {
+  const name = String(form.get("name") ?? "").trim();
+  const role = String(form.get("role") ?? "").trim();
+  if (!name || !role) return { error: "Name and role are required" };
+  const phone = String(form.get("phone") ?? "").trim() || null;
+  const email = String(form.get("email") ?? "").trim() || null;
+  if (email && !z.string().email().safeParse(email).success) {
+    return { error: "Enter a valid email address" };
+  }
+
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("vendors").insert({
+    name,
+    role,
+    phone,
+    email,
+    preferred: form.get("preferred") === "on",
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/vendors");
+  return { error: null };
+}
+
+export async function toggleVendorPreferredAction(vendorId: string, preferred: boolean) {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("vendors").update({ preferred }).eq("id", vendorId);
+  if (error) console.error("[toggleVendorPreferred]", error.message);
+  revalidatePath("/vendors");
+}
+
+export async function deleteVendorAction(vendorId: string) {
+  const supabase = await supabaseServer();
+  const { error } = await supabase.from("vendors").delete().eq("id", vendorId);
+  if (error) console.error("[deleteVendor]", error.message);
+  revalidatePath("/vendors");
 }
