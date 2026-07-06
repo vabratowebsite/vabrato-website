@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+coverage/
+*.tsbuildinfo
+
+# env — secrets never committed (see CLAUDE.md)
+.env
+.env.local
+.env.*.local
+
+# supabase local dev
+packages/db/supabase/.branches
+packages/db/supabase/.temp
+
+.DS_Store
+Thumbs.db
