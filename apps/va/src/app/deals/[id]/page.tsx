@@ -4,7 +4,8 @@ import { computeCoe, diffDays } from "@vabrato/lib";
 import { OwnerChip, Panel, T } from "@vabrato/ui";
 import { AccessDenied } from "@/components/access-denied";
 import { Header } from "@/components/header";
-import { toggleTaskAction } from "@/lib/actions";
+import { removeMemberAction, toggleTaskAction } from "@/lib/actions";
+import { InviteForm } from "./invite-form";
 import { dueState, fmtLong, fmtShort, todayISO } from "@/lib/dates";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -34,6 +35,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
     .eq("deal_id", id)
     .order("due_date")
     .order("offset_days");
+
+  const { data: members } = await supabase
+    .from("deal_members")
+    .select("profile_id, member_role, profiles(email, full_name)")
+    .eq("deal_id", id);
 
   const all = tasks ?? [];
   const doneCount = all.filter((t) => t.done).length;
@@ -89,6 +95,34 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
             call escrow to verify wiring details.
           </div>
         )}
+
+        <Panel title="Seller access">
+          {members?.length ? (
+            <ul className="mb-3 space-y-1.5">
+              {members.map((m) => (
+                <li key={m.profile_id} className="flex items-center gap-3 text-sm">
+                  <span className="min-w-0 flex-1">
+                    {m.profiles?.full_name || m.profiles?.email}
+                    <span className="ml-2 text-xs" style={{ color: T.faint }}>
+                      {m.member_role}
+                    </span>
+                  </span>
+                  <form action={removeMemberAction.bind(null, deal.id, m.profile_id)}>
+                    <button className="text-xs" style={{ color: T.red }}>
+                      Remove
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mb-3 text-sm" style={{ color: T.muted }}>
+              No seller has portal access yet. Add their email — no invite email is sent; they
+              simply sign in at the seller portal with this address.
+            </p>
+          )}
+          <InviteForm dealId={deal.id} />
+        </Panel>
 
         {PHASES.map(({ key, label }) => {
           const set = all.filter((t) => t.phase === key);

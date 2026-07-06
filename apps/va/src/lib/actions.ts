@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { DEFAULT_CONTINGENCIES, generateSchedule, signOut } from "@vabrato/lib";
+import { z } from "zod";
+import {
+  DEFAULT_CONTINGENCIES,
+  STAFF_ROLES,
+  createServiceSupabase,
+  generateSchedule,
+  getProfile,
+  signOut,
+} from "@vabrato/lib";
 import { parseDealForm } from "@/lib/deal-schema";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -85,6 +93,76 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
   }
 
   redirect(`/deals/${deal.id}`);
+}
+
+/**
+ * Gives a seller access to a deal without sending any email (works around the
+ * built-in mailer rate limit): the auth user is created directly via the
+ * service role with the email pre-confirmed, the profile is promoted to
+ * 'seller' (never downgrading staff), and a deal_members row links them.
+ * The seller signs in later with a normal magic link to the same address.
+ */
+export async function inviteSellerAction(
+  dealId: string,
+  _prev: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const email = z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email()
+    .safeParse(form.get("email"));
+  if (!email.success) return { error: "Enter a valid email address" };
+
+  const supabase = await supabaseServer();
+  const me = await getProfile(supabase);
+  if (!me || !STAFF_ROLES.includes(me.role)) return { error: "Staff only" };
+
+  const service = createServiceSupabase();
+
+  let sellerId: string;
+  const { data: existing } = await service
+    .from("profiles")
+    .select("id, role")
+    .eq("email", email.data)
+    .maybeSingle();
+
+  if (existing) {
+    sellerId = existing.id;
+    if (existing.role === "buyer") {
+      await service.from("profiles").update({ role: "seller" }).eq("id", existing.id);
+    }
+  } else {
+    const { data: created, error: createError } = await service.auth.admin.createUser({
+      email: email.data,
+      email_confirm: true,
+    });
+    if (createError || !created.user) {
+      return { error: `Could not create user: ${createError?.message ?? "unknown error"}` };
+    }
+    sellerId = created.user.id;
+    await service.from("profiles").update({ role: "seller" }).eq("id", sellerId);
+  }
+
+  const { error: memberError } = await supabase
+    .from("deal_members")
+    .upsert({ deal_id: dealId, profile_id: sellerId, member_role: "seller" });
+  if (memberError) return { error: memberError.message };
+
+  revalidatePath(`/deals/${dealId}`);
+  return { error: null };
+}
+
+export async function removeMemberAction(dealId: string, profileId: string) {
+  const supabase = await supabaseServer();
+  const { error } = await supabase
+    .from("deal_members")
+    .delete()
+    .eq("deal_id", dealId)
+    .eq("profile_id", profileId);
+  if (error) console.error("[removeMember]", error.message);
+  revalidatePath(`/deals/${dealId}`);
 }
 
 export async function toggleTaskAction(taskId: string, dealId: string, done: boolean) {

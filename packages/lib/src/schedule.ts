@@ -150,7 +150,7 @@ const CONTINGENCY_TITLES: Record<string, string> = {
   property_condition: "Property-condition contingency removal",
 };
 
-function contingencyTitle(kind: string): string {
+export function contingencyTitle(kind: string): string {
   return CONTINGENCY_TITLES[kind] ?? `${kind.replace(/_/g, " ")} contingency removal`;
 }
 
