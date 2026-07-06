@@ -6,10 +6,13 @@ import { z } from "zod";
 import {
   DEFAULT_CONTINGENCIES,
   STAFF_ROLES,
+  buildSellerNotificationRows,
   createServiceSupabase,
+  fmtLong,
   generateSchedule,
   getProfile,
   signOut,
+  todayISO,
 } from "@vabrato/lib";
 import { parseDealForm } from "@/lib/deal-schema";
 import { parseReceiptForm } from "@/lib/receipt-schema";
@@ -150,6 +153,39 @@ export async function inviteSellerAction(
     .from("deal_members")
     .upsert({ deal_id: dealId, profile_id: sellerId, member_role: "seller" });
   if (memberError) return { error: memberError.message };
+
+  // Queue the seller's scheduled emails (future sends only). Re-inviting
+  // replaces any still-scheduled rows rather than duplicating them.
+  const { data: deal } = await supabase.from("deals").select("*").eq("id", dealId).maybeSingle();
+  if (deal) {
+    const schedule = generateSchedule({
+      ratificationDate: deal.ratification_date,
+      daysToClose: deal.days_to_close,
+      sellerType: deal.seller_type,
+      rentBackDays: deal.rent_back_days,
+    });
+    const merge = {
+      address: deal.address,
+      sellerName: deal.seller_name ?? "",
+      coe: fmtLong(schedule.timeline.coe),
+      ...(schedule.timeline.rentBackEnd
+        ? { rentBackEnd: fmtLong(schedule.timeline.rentBackEnd) }
+        : {}),
+    };
+    const rows = buildSellerNotificationRows(schedule, merge, todayISO());
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("deal_id", dealId)
+      .eq("recipient_profile_id", sellerId)
+      .eq("status", "scheduled");
+    if (rows.length) {
+      const { error: notifyError } = await supabase
+        .from("notifications")
+        .insert(rows.map((r) => ({ ...r, deal_id: dealId, recipient_profile_id: sellerId })));
+      if (notifyError) console.error("[inviteSeller] notifications insert:", notifyError.message);
+    }
+  }
 
   revalidatePath(`/deals/${dealId}`);
   return { error: null };
