@@ -1,5 +1,7 @@
 \# Vabrato Apps — Project Guide
 
+Product spec: docs/SPEC.md. Read it before planning any task.
+
 
 
 \## Structure
