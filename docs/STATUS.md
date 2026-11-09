@@ -1,6 +1,6 @@
 # Project Status
 
-> Last updated: 2026-11-09 (S1; AI policy change). Update this file when a phase completes or a blocker changes.
+> Last updated: 2026-11-09 (S2 design system). Update this file when a phase completes or a blocker changes.
 
 ## What this is
 
@@ -25,8 +25,8 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | # | Segment | State |
 |---|---|---|
 | S1 | Repo prep & plan | Done 2026-11-09 |
-| S2 | Design system | Next |
-| S3 | MLS package (mock first) | Not started; live credentials pending MLSListings |
+| S2 | Design system | Done 2026-11-09 |
+| S3 | MLS package (mock first) | Next; live credentials pending MLSListings |
 | S4 | Public website | Not started |
 | S5 | Membership portal | Not started |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
@@ -53,6 +53,38 @@ prototypes are being folded into web `/my` (S5). Product spec in
   get real traffic: wrap `auth.uid()` as `(select auth.uid())` in policies,
   index the 6 unindexed foreign keys, merge duplicate SELECT policies.
 - CLAUDE.md updated for the new apps and rules.
+
+### S2 (done)
+
+- `packages/ui` web design system. Entry points: `@vabrato/ui` (legacy VA
+  `T`/`Panel`/`OwnerChip`, unchanged, plus web tokens), `@vabrato/ui/web`
+  (components), `@vabrato/ui/tokens.css`, `@vabrato/ui/tailwind-preset`.
+- Tokens: colors, type scale, 4px spacing, uppercase tracking, shadows, as TS
+  (`tokens.ts`) and CSS variables (`tokens.css`); a test keeps them in sync.
+  Fonts via `next/font` in `apps/web/src/app/fonts.ts` (Bodoni Moda, Libre
+  Baskerville, Roboto) exposed as `--font-display/--font-subhead/--font-body`.
+- Components: site chrome (SiteHeader, SocialRail, BreadcrumbBar,
+  SectionTitle, Button, Footer with MLS disclaimer slot + Equal Housing),
+  listings (ListingCard with badges + IDX attribution slot, SoldTile,
+  StatStrip), home sections (Hero tabs, WelcomeBlock, VideoFeature,
+  BeforeAfterSlider, TestimonialCarousel, VideoGrid, NewsList, PortalPitch,
+  NeighborhoodTiles, FAQAccordion with FAQPage JSON-LD, ConnectNewsletter),
+  agent profile (AgentHero, AgentStatRow, SkillList, ContactForm, ReviewCard),
+  portal (PortalShell, Panel, Pill, KpiTile, StatusLadder, Timeline, TodoItem,
+  WiringBanner, AIDraftLabel/AIConceptBadge — visual only, no AI calls).
+- `/styleguide` in apps/web (noindex, fictional data, grey placeholders).
+  axe-core: 0 violations at 1440px and 390px. Screenshots in
+  `docs/screenshots/s2/`.
+- **Contrast decisions (WCAG 2.2 AA):** gold-ink darkened from #B8862B
+  (3.24:1, failed) to **#8F6A1F** (4.94:1 on white). gold-50 tint set to
+  #FEF6E0 so gold-ink labels on it pass (4.58:1). Never used for text or
+  controls: gold on white/soft, muted on navy (use white/80), `line` as a
+  field border (fields use `muted`). Enforced by `tokens.test.ts`.
+- Follow-ups: real logo SVG (the `Logo` component renders a text wordmark until
+  `src` is passed); official MLSListings IDX icon and disclaimer text (S3/S4,
+  via ListingCard `idxIcon` and Footer `mlsDisclaimer`); apps/va adopts the
+  web preset in S6. SoldTile / sold badges / StatStrip stay behind
+  `public_sold` / `public_stats` on real pages (MLS-10).
 
 ### Plan: retire apps/buyer and apps/seller (do in S5)
 
@@ -109,7 +141,7 @@ no data migration). Test count must not drop: tests move with the code.
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 87 across packages/lib, packages/ui, packages/mls and the four apps (`pnpm test`).
+Tests: 165 across packages/lib, packages/ui, packages/mls and the four apps (`pnpm test`).
 
 ### Blocked / waiting
 
