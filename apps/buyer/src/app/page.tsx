@@ -39,7 +39,7 @@ export default async function Home() {
 
         {!properties?.length ? (
           <p className="text-sm" style={{ color: T.muted }}>
-            Nothing tracked yet. Add the first property you're pursuing above.
+            Nothing tracked yet. Add the first property you&rsquo;re pursuing above.
           </p>
         ) : (
           <ul className="space-y-3">

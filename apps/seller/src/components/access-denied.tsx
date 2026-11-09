@@ -8,7 +8,7 @@ export function AccessDenied({ profile }: { profile: Profile }) {
       <Panel title="No access">
         <p className="text-sm" style={{ color: T.muted }}>
           Signed in as {profile.email} ({profile.role}). This portal is for sellers working with
-          Vabrato — if that's you, ask your agent to add this email to your deal.
+          Vabrato — if that&rsquo;s you, ask your agent to add this email to your deal.
         </p>
         <form action={signOutAction} className="mt-5">
           <button
