@@ -1,0 +1,36 @@
+/* Vabrato web tokens. Keep in sync with tokens.ts (enforced by tokens.test.ts). */
+:root {
+  --color-navy: #151b5c;
+  --color-navy-deep: #0e1347;
+  --color-gold: #e8a90c;
+  --color-gold-ink: #8f6a1f;
+  --color-ink: #1d1d1f;
+  --color-muted: #6e6e73;
+  --color-line: #e4e4e8;
+  --color-soft: #f6f6f8;
+  --color-charcoal: #222222;
+  --color-white: #ffffff;
+  --color-red: #b42318;
+  --color-red-50: #fdecea;
+  --color-green: #1e7a3c;
+  --color-green-50: #e7f4ec;
+  --color-gold-50: #fef6e0;
+  --color-navy-50: #e8e9f3;
+
+  --tracking-display: 0.02em;
+  --tracking-label: 0.12em;
+  --tracking-wide: 0.2em;
+
+  --shadow-card: 0 1px 2px rgba(14, 19, 71, 0.06), 0 4px 16px rgba(14, 19, 71, 0.06);
+  --shadow-pop: 0 8px 30px rgba(14, 19, 71, 0.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
