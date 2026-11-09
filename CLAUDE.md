@@ -29,12 +29,12 @@ Render. DNS/CDN: Cloudflare.
 
 ## Hard rules
 
-- NO runtime AI in client-facing code: apps/web public pages, /my, the
-  homes.sancarloslife.com section, apps/mobile, apps/seller, apps/buyer, and
-  any message sent to clients automatically. Buyer email parsing is
-  deterministic per-source; notification bodies are static templates.
-  Staff-only AI (apps/va) follows SPEC rules AI-1 to AI-9, behind a flag;
-  apps/va may use AI OCR for receipts, behind a flag.
+- AI features must follow <ai_rules> in docs/SPEC.md. Each AI feature sits
+  behind its own feature flag. All model calls go through server-side
+  packages/ai.
+- Buyer email parsing stays deterministic per source, and notifications sent
+  to clients automatically use static templates (AI never sends on a
+  member's behalf).
 - MLS data follows SPEC rules MLS-1 to MLS-10 and ACC-1/ACC-2: data levels
   (IDX / VOW / FULL), attribution, sold data gated to VOW members, public
   sold/stats behind `public_sold` / `public_stats` flags (off).

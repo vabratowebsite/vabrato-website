@@ -1,6 +1,6 @@
 # Project Status
 
-> Last updated: 2026-11-09 (S1). Update this file when a phase completes or a blocker changes.
+> Last updated: 2026-11-09 (S1; AI policy change). Update this file when a phase completes or a blocker changes.
 
 ## What this is
 
@@ -29,6 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Not started; live credentials pending MLSListings |
 | S4 | Public website | Not started |
 | S5 | Membership portal | Not started |
+| S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
@@ -66,6 +67,16 @@ prototypes are being folded into web `/my` (S5). Product spec in
 
 Then delete apps/buyer and apps/seller (test-only prototypes, no real users,
 no data migration). Test count must not drop: tests move with the code.
+
+## Decisions
+
+- **2026-11-09 — AI policy change (owners):** AI is now allowed in `/my`,
+  apps/mobile and the agent console under SPEC `<ai_rules>`; not on signed-out
+  public pages at launch. Each AI feature sits behind its own feature flag;
+  all model calls go through server-side `packages/ai`. Replaces the old
+  no-runtime-AI rule (CLAUDE.md hard rule, SPEC AI-1 to AI-9). Buyer email
+  parsing stays deterministic and automatic client notifications stay static
+  templates. New segment S5b (Member AI assistant, Ask Vabrato).
 
 ## Where things stand
 
