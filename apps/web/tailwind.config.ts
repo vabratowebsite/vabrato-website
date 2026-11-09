@@ -1,16 +1,9 @@
 import type { Config } from "tailwindcss";
+import vabrato from "@vabrato/ui/tailwind-preset";
 
-// Brand tokens (navy, gold, Bodoni Moda / Libre Baskerville / Roboto) arrive in S2
-// via packages/ui. Until then only the two brand colors are defined here.
+// Brand tokens come from packages/ui (S2).
 export default {
+  presets: [vabrato],
   content: ["./src/**/*.{ts,tsx}", "../../packages/ui/src/**/*.{ts,tsx}"],
-  theme: {
-    extend: {
-      colors: {
-        navy: "#151B5C",
-        gold: "#E8A90C",
-      },
-    },
-  },
   plugins: [],
 } satisfies Config;
