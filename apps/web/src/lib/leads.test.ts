@@ -19,6 +19,11 @@ describe("lead forms", () => {
     expect(leadRow(r.lead, null)).toMatchObject({ listing_key: "FX-001", consent_contact: true, ip_hash: null, site: "vabrato" });
   });
 
+  it("keeps the agent and topic on contact requests", () => {
+    const r = parseLeadForm(form({ kind: "contact", email: "a@example.test", agent: "viv-kelvin", topic: "selling", tourDate: "ignored" }));
+    expect(r.ok && r.lead.payload).toEqual({ topic: "selling", agent: "viv-kelvin" });
+  });
+
   it("reports field errors", () => {
     const r = parseLeadForm(form({ kind: "contact", email: "nope", phone: "call me" }));
     expect(r).toEqual({ ok: false, fieldErrors: { email: "Enter a valid email address.", phone: "Enter a valid phone number." } });

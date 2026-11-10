@@ -38,7 +38,7 @@ export type LeadInput = z.infer<typeof LeadSchema>;
 
 /** Field names in the form that go into `payload`, per kind. */
 const PAYLOAD_FIELDS: Record<LeadKind, string[]> = {
-  contact: ["topic"],
+  contact: ["topic", "agent"],
   valuation: ["address", "timeline"],
   tour: ["tourDate", "tourMode"],
   transform: ["address", "projectType", "budget"],

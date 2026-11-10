@@ -22,3 +22,9 @@ export const ORG_ADDRESS_LINE = `${ORG.address.street}, ${ORG.address.city}, ${O
 
 /** Broker disclosure required in every vabrato.com footer (review item 2). */
 export const BROKER_DISCLOSURE = `${ORG.name} · DRE #${ORG.corporateDre} · ${ORG.designatedBroker.name}, Designated Broker, DRE #${ORG.designatedBroker.dre}`;
+
+/**
+ * CSLB contractor license for the "Transform your home" service (review
+ * item 3). PLACEHOLDER until Vabrato confirms whose license applies.
+ */
+export const CSLB_LICENSE = { number: "PLACEHOLDER", placeholder: true } as const;

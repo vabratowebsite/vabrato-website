@@ -13,8 +13,9 @@ export interface AgentHeroProps {
   title: string;
   /** ["CA DRE Lic. # 01372898", "GC Lic. # 1088685"] */
   licenses: string[];
-  phone: string;
-  email: string;
+  /** Omitted until the agent's business phone/email is entered. */
+  phone?: string;
+  email?: string;
   social?: SocialLink[];
   bookHref: string;
   contactHref: string;
@@ -54,24 +55,30 @@ export function AgentHero({
               <IdCardIcon size={16} className="mt-0.5 flex-none text-gold" />
               <span>{licenses.join("  |  ")}</span>
             </li>
-            <li className="flex flex-wrap gap-x-8 gap-y-3">
-              <a
-                href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-                className={cx("flex items-center gap-3 hover:underline", focusDark)}
-              >
-                <PhoneIcon size={16} className="text-gold" />
-                <span className="sr-only">Phone: </span>
-                {phone}
-              </a>
-              <a
-                href={`mailto:${email}`}
-                className={cx("flex items-center gap-3 hover:underline", focusDark)}
-              >
-                <MailIcon size={16} className="text-gold" />
-                <span className="sr-only">Email: </span>
-                {email}
-              </a>
-            </li>
+            {(phone || email) && (
+              <li className="flex flex-wrap gap-x-8 gap-y-3">
+                {phone && (
+                  <a
+                    href={`tel:${phone.replace(/[^\d+]/g, "")}`}
+                    className={cx("flex items-center gap-3 hover:underline", focusDark)}
+                  >
+                    <PhoneIcon size={16} className="text-gold" />
+                    <span className="sr-only">Phone: </span>
+                    {phone}
+                  </a>
+                )}
+                {email && (
+                  <a
+                    href={`mailto:${email}`}
+                    className={cx("flex items-center gap-3 hover:underline", focusDark)}
+                  >
+                    <MailIcon size={16} className="text-gold" />
+                    <span className="sr-only">Email: </span>
+                    {email}
+                  </a>
+                )}
+              </li>
+            )}
           </ul>
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             {social && social.length > 0 ? (
