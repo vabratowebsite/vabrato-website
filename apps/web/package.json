@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.0",
+    "@tanstack/react-query": "^5.62.0",
     "@vabrato/db": "workspace:*",
     "@vabrato/lib": "workspace:*",
     "@vabrato/mls": "workspace:*",

@@ -11,10 +11,10 @@ const fmt = (n: number) => (n >= 1_000_000 ? `$${n / 1_000_000}M` : `$${n / 1_00
 const box = "min-h-[44px] border border-muted bg-white px-3 font-body text-body-sm text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy";
 const summary = `${box} flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden`;
 
-export function SearchFilterBar({ filters, cities }: { filters: SearchFilters; cities: City[] }) {
+export function SearchFilterBar({ filters, cities, action = "/search", label = "Search homes" }: { filters: SearchFilters; cities: City[]; action?: string; label?: string }) {
   const chosen = cities.filter((c) => filters.city.includes(c.slug));
   return (
-    <form action="/search" method="get" role="search" aria-label="Search homes" className="flex flex-wrap items-end gap-2">
+    <form action={action} method="get" role="search" aria-label={label} className="flex flex-wrap items-end gap-2">
       {filters.tab !== "for-sale" && <input type="hidden" name="tab" value={filters.tab} />}
       <details className="relative">
         <summary className={summary}>

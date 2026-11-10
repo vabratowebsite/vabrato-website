@@ -155,9 +155,12 @@ describe("redirect safety", () => {
 describe("portal nav", () => {
   it("shows sections by role (Both sees both)", () => {
     const hrefs = (r: Parameters<typeof portalNav>[0]) => portalNav(r).flatMap((g) => g.items.map((i) => i.href));
-    expect(hrefs("buyer")).toEqual(["/my/buyer", "/search", "/my/account"]);
+    const BUY = ["/my/buyer", "/my/saved", "/my/searches", "/my/compare"];
+    expect(hrefs("buyer")).toEqual([...BUY, "/search", "/my/account"]);
     expect(hrefs("seller")).toEqual(["/my/seller", "/search", "/my/account"]);
-    expect(hrefs("both")).toEqual(["/my/buyer", "/my/seller", "/search", "/my/account"]);
+    expect(hrefs("both")).toEqual([...BUY, "/my/seller", "/search", "/my/account"]);
+    expect(portalNav("buyer", { vow: true }).flatMap((g) => g.items.map((i) => i.href))).toContain("/my/sold");
+    expect(portalNav("seller", { vow: true }).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/my/sold");
     expect(portalNav("both").map((g) => g.label)).toEqual(["Buying", "Selling", "Explore", "Account"]);
   });
 

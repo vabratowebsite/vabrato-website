@@ -1,8 +1,10 @@
 import { ListingCard } from "@vabrato/ui/web";
 import { toCardProps } from "@/lib/listing-view";
 import type { SearchRow } from "@/lib/public/listings";
+import { SavableListingCard } from "@/member/components/SaveIslands";
 
-export function ResultsGrid({ rows, headingLevel = "h3" }: { rows: SearchRow[]; headingLevel?: "h2" | "h3" }) {
+/** Listing cards with save hearts (vabrato.com). `savable={false}` on homes.sancarloslife.com, which has no accounts. */
+export function ResultsGrid({ rows, headingLevel = "h3", savable = true }: { rows: SearchRow[]; headingLevel?: "h2" | "h3"; savable?: boolean }) {
   if (rows.length === 0) {
     return <p className="border border-line p-6 font-body text-body text-ink">No homes match these filters. Try a wider price range or more cities.</p>;
   }
@@ -10,7 +12,11 @@ export function ResultsGrid({ rows, headingLevel = "h3" }: { rows: SearchRow[]; 
     <ul className="grid gap-4 sm:grid-cols-2">
       {rows.map((r) => (
         <li key={r.listing_key}>
-          <ListingCard {...toCardProps(r)} headingLevel={headingLevel} />
+          {savable ? (
+            <SavableListingCard {...toCardProps(r)} listingKey={r.listing_key} headingLevel={headingLevel} />
+          ) : (
+            <ListingCard {...toCardProps(r)} headingLevel={headingLevel} />
+          )}
         </li>
       ))}
     </ul>

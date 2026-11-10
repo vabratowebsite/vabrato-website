@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cx, focusDark } from "../cx";
 import { HeartIcon } from "../icons";
 import { IdxIcon } from "./IdxIcon";
@@ -77,6 +77,8 @@ export function ListingCard({
   headingLevel: H = "h3",
 }: ListingCardProps) {
   const [isSaved, setSaved] = useState(Boolean(saved));
+  // Follow the parent's saved state (e.g. once the member's saves load) without remounting.
+  useEffect(() => setSaved(Boolean(saved)), [saved]);
   const showHeart = saved !== undefined || onToggleSave !== undefined;
   const showIdx = attribution?.idx === true;
 

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Footer } from "@vabrato/ui/web";
 import { JsonLd } from "@/components/JsonLd";
 import { MemberAwareHeader } from "@/member/components/MemberAwareHeader";
+import { MemberQueryProvider } from "@/member/components/MemberQueryProvider";
 import { FOOTER_NAV, MAIN_NAV } from "@/lib/nav";
 import { BROKER_DISCLOSURE, ORG, ORG_ADDRESS_LINE } from "@/lib/org";
 import { organizationJsonLd } from "@/lib/seo";
@@ -13,10 +14,10 @@ import { organizationJsonLd } from "@/lib/seo";
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   return (
-    <>
+    <MemberQueryProvider>
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:text-navy"
+        className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:bg-white focus-visible:px-4 focus-visible:py-2 focus-visible:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy"
       >
         Skip to content
       </a>
@@ -29,6 +30,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
         nav={FOOTER_NAV}
       />
       <JsonLd data={organizationJsonLd()} />
-    </>
+    </MemberQueryProvider>
   );
 }

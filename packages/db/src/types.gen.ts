@@ -1185,6 +1185,57 @@ export type Database = {
           },
         ]
       }
+      saved_homes: {
+        Row: {
+          created_at: string
+          listing_key: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_key: string
+          profile_id?: string
+        }
+        Update: {
+          created_at?: string
+          listing_key?: string
+          profile_id?: string
+        }
+        Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          criteria: Json
+          frequency: Database["public"]["Enums"]["alert_frequency"]
+          id: string
+          last_run_at: string | null
+          name: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria: Json
+          frequency?: Database["public"]["Enums"]["alert_frequency"]
+          id?: string
+          last_run_at?: string | null
+          name: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          frequency?: Database["public"]["Enums"]["alert_frequency"]
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           author_display: string
@@ -1337,6 +1388,52 @@ export type Database = {
       has_vow_access: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      listing_cards: {
+        Args: { p_keys: string[] }
+        Returns: {
+          address_display: boolean
+          bathrooms_total: number
+          bedrooms_total: number
+          city: string
+          is_own_listing: boolean
+          latitude: number
+          list_office_name: string
+          list_price: number
+          listing_id: string
+          listing_key: string
+          living_area: number
+          longitude: number
+          modification_ts: string
+          next_open_house_end: string
+          next_open_house_start: string
+          on_market_date: string
+          photo_storage_path: string
+          photo_url: string
+          postal_code: string
+          property_sub_type: string
+          property_type: string
+          standard_status: string
+          street: string
+          total_count: number
+        }[]
+      }
+      listing_price_history: {
+        Args: { p_key: string }
+        Returns: {
+          list_price: number
+          observed_at: string
+          standard_status: string
+        }[]
+      }
+      listing_sold_detail: {
+        Args: { p_key: string }
+        Returns: {
+          close_date: string
+          close_price: number
+          cumulative_days_on_market: number
+          original_list_price: number
+        }[]
+      }
       mls_last_updated: { Args: never; Returns: string }
       mls_sync_health: {
         Args: never
@@ -1405,6 +1502,40 @@ export type Database = {
         }[]
       }
       request_account_deletion: { Args: never; Returns: string }
+      search_sold_listings: {
+        Args: {
+          p_bbox?: number[]
+          p_cities?: string[]
+          p_closed_within_days?: number
+          p_limit?: number
+          p_max_price?: number
+          p_min_baths?: number
+          p_min_beds?: number
+          p_min_price?: number
+          p_offset?: number
+          p_sub_types?: string[]
+        }
+        Returns: {
+          address_display: boolean
+          bathrooms_total: number
+          bedrooms_total: number
+          city: string
+          close_date: string
+          close_price: number
+          is_own_listing: boolean
+          list_office_name: string
+          listing_id: string
+          listing_key: string
+          living_area: number
+          photo_storage_path: string
+          photo_url: string
+          postal_code: string
+          property_sub_type: string
+          property_type: string
+          street: string
+          total_count: number
+        }[]
+      }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_member_role: {
         Args: { p_role: Database["public"]["Enums"]["user_role"] }
@@ -1417,6 +1548,7 @@ export type Database = {
       }
     }
     Enums: {
+      alert_frequency: "instant" | "daily" | "off"
       city_kind: "city" | "unincorporated"
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
@@ -2008,6 +2140,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_frequency: ["instant", "daily", "off"],
       city_kind: ["city", "unincorporated"],
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
