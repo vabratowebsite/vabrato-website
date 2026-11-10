@@ -8,6 +8,8 @@ import { monthlyHoa } from "@/lib/payment";
 import { resolveListingPhoto } from "@/lib/photos";
 import type { Listing } from "@/lib/public/listings";
 import { breadcrumbJsonLd, listingJsonLd, openHouseJsonLd } from "@/lib/seo";
+import { PriceHistory } from "@/member/components/PriceHistory";
+import { SaveHomeButton } from "@/member/components/SaveIslands";
 import { FactsRow, LockedHistory, ListingGallery, ListingQa, PropertyDetails, StatusPills } from "./detail";
 import { PaymentEstimate } from "./PaymentEstimate";
 import { TourRequest } from "./TourRequest";
@@ -67,9 +69,13 @@ export function ListingDetail({
                 </a>
               </p>
               <div className="mt-4 flex justify-end gap-3">
-                <Button href={`${linkBase}/join`} size="sm" underline={false}>
-                  Save
-                </Button>
+                {site === "vabrato" ? (
+                  <SaveHomeButton listingKey={listing.listing_key} address={title} />
+                ) : (
+                  <Button href={`${linkBase}/join`} size="sm" underline={false}>
+                    Save
+                  </Button>
+                )}
               </div>
             </div>
           </header>
@@ -117,7 +123,7 @@ export function ListingDetail({
             <PropertyDetails listing={listing} typeLabel={propertyTypeLabel(listing.property_sub_type)} />
           </section>
 
-          <LockedHistory joinHref={`${linkBase}/join`} />
+          {site === "vabrato" ? <PriceHistory listingKey={listing.listing_key} /> : <LockedHistory joinHref={`${linkBase}/join`} />}
           <ListingQa items={qa} />
         </div>
 

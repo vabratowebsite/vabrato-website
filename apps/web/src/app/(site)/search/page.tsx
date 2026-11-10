@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Button } from "@vabrato/ui/web";
 import { MlsAttribution } from "@/components/MlsAttribution";
 import { SearchFilterBar } from "@/components/search/SearchFilterBar";
 import { SearchMap } from "@/components/search/SearchMap";
@@ -10,6 +9,7 @@ import { mapPins } from "@/lib/map-pins";
 import { listCities, mlsLastUpdated, searchListings } from "@/lib/public/listings";
 import { PAGE_SIZE, parseSearchParams, toQueryString, type SearchFilters, type Tab } from "@/lib/search-params";
 import { pageMetadata } from "@/lib/seo";
+import { SaveSearchButton } from "@/member/components/SaveIslands";
 
 // Map + list search (mockup 02). IDX for-sale listings only; the Sold tab is
 // for members (MLS-6) and fetches nothing sold.
@@ -66,9 +66,7 @@ export default async function SearchPage({ searchParams }: Props) {
             </nav>
             <SearchFilterBar filters={filters} cities={cities} />
           </div>
-          <Button href="/join" variant="navy" underline={false}>
-            Save search
-          </Button>
+          <SaveSearchButton />
         </div>
       </div>
 

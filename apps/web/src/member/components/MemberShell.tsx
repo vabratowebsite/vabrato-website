@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { Avatar, EqualHousingIcon, PortalShell } from "@vabrato/ui/web";
 import { BROKER_DISCLOSURE, ORG } from "@/lib/org";
+import { flagEnabled } from "@/lib/public/listings";
+import { MemberQueryProvider } from "./MemberQueryProvider";
 import { portalNav, initials, type PortalPage } from "../nav";
 import type { MemberRole } from "../roles";
 import { assignedAgent, type Member } from "../session";
@@ -26,8 +28,8 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const agent = await assignedAgent(member.supabase, member.profile.agent_id);
-  const nav = portalNav(role).map((g) => ({
+  const [agent, vow] = await Promise.all([assignedAgent(member.supabase, member.profile.agent_id), flagEnabled("vow_enabled")]);
+  const nav = portalNav(role, { vow }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current })),
   }));
@@ -51,7 +53,7 @@ export async function MemberShell({
         sidebarFooter={<AgentCard agent={agent} />}
       >
         <div id="main" tabIndex={-1} className="space-y-6 outline-none">
-          {children}
+          <MemberQueryProvider>{children}</MemberQueryProvider>
         </div>
         <footer className="mt-12 flex flex-wrap items-center gap-3 border-t border-line pt-6 font-body text-caption text-muted">
           <EqualHousingIcon size={20} />

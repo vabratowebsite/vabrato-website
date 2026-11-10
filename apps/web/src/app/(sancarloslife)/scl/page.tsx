@@ -33,13 +33,13 @@ export default async function SclHome({ searchParams }: Props) {
     <>
       <div className="mx-auto max-w-site space-y-12 px-4 py-10 md:px-6">
         <SectionTitle as="h1" title="San Carlos homes for sale" eyebrow="Presented with San Carlos Life" />
-        <ResultsGrid rows={forSale.rows} headingLevel="h2" />
+        <ResultsGrid savable={false} rows={forSale.rows} headingLevel="h2" />
         {openHouses.rows.length > 0 && (
           <section aria-labelledby="oh">
             <h2 id="oh" className="mb-4 font-subhead text-subhead-lg text-ink">
               Upcoming open houses
             </h2>
-            <ResultsGrid rows={openHouses.rows} />
+            <ResultsGrid savable={false} rows={openHouses.rows} />
           </section>
         )}
         <MlsAttribution lastUpdated={lastUpdated} />

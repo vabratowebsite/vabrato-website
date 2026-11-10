@@ -156,3 +156,53 @@ describe("member and account guards", () => {
     }
   });
 });
+
+// S5 PR 2: saved homes, saved searches, VOW member pages.
+describe("member listing guards", () => {
+  const read = (p: string) => readFileSync(join(SRC, p), "utf8");
+
+  it("renders MLS attribution on every /my page that shows listing data (MLS-1, review item 4)", () => {
+    const missing: string[] = [];
+    for (const f of files(join(SRC, "app/my"))) {
+      if (!f.endsWith("page.tsx")) continue;
+      const text = readFileSync(f, "utf8");
+      const readsListings = /\b(savedListings|soldSearch|memberListing|cards\(|search_listings|listing_cards)\b/.test(text);
+      if (readsListings && !/<MlsAttribution\b/.test(text)) missing.push(relative(SRC, f));
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it("serves the VOW pages only while vow_enabled is on (review item 1)", () => {
+    for (const f of ["app/my/sold/page.tsx", "app/my/listing/[key]/page.tsx"]) {
+      expect(read(f), f).toMatch(/if \(!\(await flagEnabled\("vow_enabled"\)\)\) notFound\(\);/);
+    }
+    expect(read("app/api/my/listings/[key]/history/route.ts")).toMatch(/!\(await flagEnabled\("vow_enabled"\)\)\) return json\(\{ error: "unavailable" \}, 404\)/);
+  });
+
+  it("keeps VOW/FULL reads out of the islands that public pages import (MLS-6)", () => {
+    const hits: string[] = [];
+    for (const f of files(join(SRC, "member/components"))) {
+      const text = readFileSync(f, "utf8");
+      for (const re of FORBIDDEN) if (re.test(text)) hits.push(`${relative(SRC, f)}: ${re}`);
+      if (/listing_price_history|listing_sold_detail|search_sold_listings/.test(text)) hits.push(`${relative(SRC, f)}: VOW RPC`);
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("puts no real history in the signed-out teaser (review item 2)", () => {
+    const text = read("member/components/PriceHistory.tsx");
+    expect(text).toMatch(/const DUMMY = \[/);
+    expect(text).toMatch(/aria-hidden="true"/);
+  });
+
+  it("sends private, no-store responses and checks Origin on every member API write (review item 7)", () => {
+    for (const f of files(join(SRC, "app/api/my"))) {
+      const text = readFileSync(f, "utf8");
+      expect(text, relative(SRC, f)).toMatch(/from "@\/member\/api"/);
+      expect(text, relative(SRC, f)).not.toMatch(/NextResponse\.json/);
+      for (const m of text.matchAll(/export async function (POST|PUT|PATCH|DELETE)\b[\s\S]*?\n\}/g)) {
+        expect(m[0], `${relative(SRC, f)} ${m[1]}`).toMatch(/if \(!sameOrigin\(req\)\) return forbiddenOrigin\(\);/);
+      }
+    }
+  });
+});
