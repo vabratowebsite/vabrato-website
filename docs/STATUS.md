@@ -1,6 +1,6 @@
 # Project Status
 
-> Last updated: 2026-11-09 (S2 design system). Update this file when a phase completes or a blocker changes.
+> Last updated: 2026-11-10 (S3 MLS package, mock). Update this file when a phase completes or a blocker changes.
 
 ## What this is
 
@@ -18,7 +18,8 @@ prototypes are being folded into web `/my` (S5). Product spec in
   is paused and no longer used.
 - Vercel (Hobby): `vabrato-website` → apps/web; `vabrato-console` → apps/va
 - Cloudflare: vabrato.com DNS/CDN (DNS access confirmed Nov 2026)
-- Render: MLS sync jobs (set up in S3)
+- Render: MLS sync jobs. Documented in S3 (`packages/mls/RENDER.md`), not deployed until
+  MLSListings credentials arrive
 
 ## Segments (SPEC `<segments>`)
 
@@ -26,8 +27,8 @@ prototypes are being folded into web `/my` (S5). Product spec in
 |---|---|---|
 | S1 | Repo prep & plan | Done 2026-11-09 |
 | S2 | Design system | Done 2026-11-09 |
-| S3 | MLS package (mock first) | Next; live credentials pending MLSListings |
-| S4 | Public website | Not started |
+| S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
+| S4 | Public website | Next |
 | S5 | Membership portal | Not started |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
@@ -86,6 +87,63 @@ prototypes are being folded into web `/my` (S5). Product spec in
   web preset in S6. SoldTile / sold badges / StatStrip stay behind
   `public_sold` / `public_stats` on real pages (MLS-10).
 
+### S3 (mock complete; blocked on credentials for the live criterion)
+
+- `packages/mls` (see its README): RESO client (OAuth2 client credentials,
+  rate limit, retries/backoff honouring Retry-After, nextLink + $skip paging,
+  token sent only to the API origin), configured by `MLS_MODE` / `MLS_OFFICE_ID`
+  plus `MLS_TOKEN_URL`, `MLS_RATE_LIMIT_PER_SEC`, `MLS_PHOTO_MODE`,
+  `MLS_SOLD_HISTORY_YEARS`.
+- Mock RESO API (in-process fetch + `pnpm --filter @vabrato/mls mock`) with 24
+  fictional Property fixtures (active, under contract, pending, sold in/out of
+  window, withdrawn/expired/canceled/hold/coming soon, opt-out, address hidden,
+  AVM/comments off, other offices, out of area, other MLS) plus Media,
+  OpenHouse, Member, Office. Fault injection for 401/429/5xx.
+- Migrations `0011_feature_flags` (`feature_flags` with `public_sold` /
+  `public_stats` OFF, `profiles.vow_accepted_at`), `0012_mls` (one table per
+  data level, RLS, `has_vow_access()`, `has_full_mls_access()`,
+  `mls_sync_health()`), `0013_mls_storage` (public `mls-photos` bucket, no
+  object policies). **Applied to the hosted project** via the Supabase MCP;
+  `types.gen.ts` regenerated. Tables are empty (no data loaded).
+- Sync: incremental by `ModificationTimestamp` (5-min overlap; failed runs
+  never move the high-water mark), nightly reconcile (deletes vanished /
+  ineligible listings, drift re-fetch, office roster, ACC-1 re-check), purge
+  for MLS-9. One run at a time; abandoned runs marked failed. Every run logged
+  in `mls_sync_runs` with counts. Photos: `hotlink` (default) or `copy` into
+  `mls-photos`, behind `MLS_PHOTO_MODE`.
+- ACC-1 database side: `mls_agent_access` + `verifyAgentAccess()` (S6 calls it
+  at console sign-in) + nightly re-check. FULL access needs a verification
+  within 36 h, an Active member of our office, and a staff role, so it locks
+  itself if the nightly job stops. Sign-in hook is S6.
+- MLS-7: FULL projections only in `@vabrato/mls/full`; ESLint
+  `no-restricted-imports` outside apps/va; guard test scans the other apps.
+- RLS test harness: `@vabrato/db/testing` runs every migration in PGlite with
+  a Supabase shim (anon/authenticated/service_role, auth.uid(), storage stub).
+  `packages/db/test/mls-rls.test.ts` covers every MLS table (IDX/VOW/FULL,
+  public_sold, ACC-1 lockouts, SEC-2 isolation, write denial).
+- Render jobs documented in `packages/mls/RENDER.md` and
+  `render.example.yaml` (not deployed): `*/15` incremental, nightly reconcile
+  10:17 UTC, dedicated `mls_sync` DB role.
+- Decisions made in S3: no PostGIS column yet (lat/lng numerics; S4 adds
+  `geography` + GIST for map search). `is_own_listing` is set at sync time from
+  `MLS_OFFICE_ID`. `ComingSoon` and `IDXParticipationYN=false` are treated as not
+  displayable until MLSListings confirms. Broker open houses are not stored. The
+  reconcile filters by status server-side and checks county locally.
+- Advisor notes, accepted: `has_full_mls_access` / `has_vow_access` are
+  executable by `authenticated` (same as `is_admin`: RLS needs it; they answer
+  only about the caller). `mls_listings` has two SELECT policies on purpose
+  (public for-sale vs VOW sold). New MLS indexes show as unused until data
+  arrives.
+
+**Blocked on MLSListings (S3 live criterion: 7 days of clean live sync):**
+credentials (base URL, token URL, client id/secret); whether `OfficeMlsId` is
+`VABRA` or `VABRA-1`; whether Media and OpenHouse are separate resources; whether
+photos may be copied (`MLS_PHOTO_MODE=copy`); sold history depth (3 or 5 years);
+the IDX/VOW field rules, to confirm the provisional allowlists in
+`packages/mls/src/levels/fields.ts`; ComingSoon display; the official IDX icon and
+disclaimer text (S4); whether an MLSListings sign-in service exists (ACC-2).
+Then: create the Render jobs and the `mls_sync` role per RENDER.md.
+
 ### Plan: retire apps/buyer and apps/seller (do in S5)
 
 | What | Moves to |
@@ -114,7 +172,7 @@ no data migration). Test count must not drop: tests move with the code.
 
 ### Done and validated live (against the hosted Supabase project)
 
-- **Foundation** — pnpm monorepo; 9 migrations (12 tables, RLS, storage buckets)
+- **Foundation** — pnpm monorepo; 13 migrations (23 tables, RLS, storage buckets)
   applied to the hosted project; types generated from the live schema
   (`pnpm --filter @vabrato/db gen:types` after any migration).
 - **Auth** — magic-link + Google helpers via @supabase/ssr; per-app role guards.
@@ -141,7 +199,8 @@ no data migration). Test count must not drop: tests move with the code.
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 165 across packages/lib, packages/ui, packages/mls and the four apps (`pnpm test`).
+Tests: 337 across packages/db (PGlite RLS), packages/lib, packages/ui, packages/mls and the
+four apps (`pnpm test`).
 
 ### Blocked / waiting
 
@@ -167,7 +226,7 @@ Tests: 165 across packages/lib, packages/ui, packages/mls and the four apps (`pn
 Each app has a gitignored `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`,
 `NEXT_PUBLIC_SUPABASE_ANON_KEY`; apps/va additionally has
 `SUPABASE_SERVICE_ROLE_KEY` (invite flow + notification processor).
-See `.env.example` (now includes the MLS_* variables). Point local
+See `.env.example` (MLS_* variables; `DATABASE_URL` is for the Render sync job only). Point local
 `.env.local` files at the **Vabrato Website** project; the old prototype
 project is paused. Re-link the Supabase CLI from `packages/db`
 (`pnpm exec supabase link --project-ref cdfztmmhvtkurcyigtzk`).
@@ -176,9 +235,14 @@ project is paused. Re-link the Supabase CLI from `packages/db`
 
 - Migrations on the Vabrato Website project were applied through the Supabase
   MCP connector, so the remote migration history uses timestamp versions, not
-  0001–0010. Before using `supabase db push` from the CLI, run
-  `supabase migration repair` to mark 0001–0010 as applied, or keep applying
+  0001–0013. Before using `supabase db push` from the CLI, run
+  `supabase migration repair` to mark 0001–0013 as applied, or keep applying
   new migrations through the connector.
+- `types.gen.ts` covers `public` and `storage`. The MCP type generator returns
+  `public` only, so splice its output into the public section rather than
+  replacing the file (or use the CLI `gen:types`, which includes both).
+- RLS tests run in PGlite (no PostGIS, stub storage). Keep new migrations
+  PGlite-compatible, or extend the shim in `packages/db/test/harness.ts`.
 
 - Magic links are single-use and must be opened in the SAME browser that
   requested them (PKCE) — Gmail opening links in another browser breaks it.
