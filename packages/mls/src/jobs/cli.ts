@@ -110,7 +110,27 @@ export async function main(argv: string[], env: Record<string, string | undefine
   for (const r of results) {
     console.log(JSON.stringify({ kind: r.kind, status: r.status, highWaterMark: r.highWaterMark, counts: r.counts, error: r.error }));
   }
+  if (results.some((r) => r.status === "succeeded") && !useLocal) await revalidateSite(env);
   return results.some((r) => r.status === "failed") ? 1 : 0;
+}
+
+/**
+ * Tells the website to drop cached MLS pages after a successful run (review
+ * item 6). Optional: MLS_REVALIDATE_URL (e.g. https://vabrato.com/api/revalidate)
+ * and MLS_REVALIDATE_SECRET. A failure here never fails the sync.
+ */
+export async function revalidateSite(env: Record<string, string | undefined>, doFetch: typeof fetch = fetch): Promise<boolean> {
+  const url = env.MLS_REVALIDATE_URL;
+  const secret = env.MLS_REVALIDATE_SECRET;
+  if (!url || !secret) return false;
+  try {
+    const res = await doFetch(`${url}?tag=mls`, { method: "POST", headers: { "x-revalidate-secret": secret } });
+    if (!res.ok) console.error(`site revalidation failed (status ${res.status})`);
+    return res.ok;
+  } catch {
+    console.error("site revalidation failed (network error)");
+    return false;
+  }
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {

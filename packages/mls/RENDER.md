@@ -30,6 +30,7 @@ There is no purge job. Run `pnpm --filter @vabrato/mls sync purge --confirm` by 
 | `MLS_SOLD_HISTORY_YEARS` | `3` or `5`, per MLSListings |
 | `DATABASE_URL` | Supabase Postgres connection string (Session pooler, port 5432), using a dedicated role (see below) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | only for `MLS_PHOTO_MODE=copy` |
+| `MLS_REVALIDATE_URL`, `MLS_REVALIDATE_SECRET` | optional: the website's `/api/revalidate` URL and its `REVALIDATE_SECRET`, so changed or removed listings leave the page cache right after each run |
 | `NODE_VERSION` | `22` |
 
 ### Database role
