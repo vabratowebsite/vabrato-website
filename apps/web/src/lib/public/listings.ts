@@ -155,7 +155,7 @@ export async function mlsLastUpdated(): Promise<string | null> {
   return z.string().nullable().parse(data ?? null);
 }
 
-export async function flagEnabled(key: "public_sold" | "public_stats" | "site_scl_enabled"): Promise<boolean> {
+export async function flagEnabled(key: "public_sold" | "public_stats" | "site_scl_enabled" | "vow_enabled"): Promise<boolean> {
   const { data, error } = await publicSupabase().from("feature_flags").select("enabled").eq("key", key).maybeSingle();
   if (error) throw new Error(`feature flag read failed: ${error.message}`);
   return z.object({ enabled: z.boolean() }).nullable().parse(data)?.enabled ?? false;

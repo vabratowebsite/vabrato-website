@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Footer, SiteHeader } from "@vabrato/ui/web";
+import { Footer } from "@vabrato/ui/web";
 import { JsonLd } from "@/components/JsonLd";
+import { MemberAwareHeader } from "@/member/components/MemberAwareHeader";
 import { FOOTER_NAV, MAIN_NAV } from "@/lib/nav";
 import { BROKER_DISCLOSURE, ORG, ORG_ADDRESS_LINE } from "@/lib/org";
 import { organizationJsonLd } from "@/lib/seo";
@@ -19,7 +20,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       >
         Skip to content
       </a>
-      <SiteHeader nav={MAIN_NAV} signInHref="/join" joinHref="/join" searchHref="/search" />
+      <MemberAwareHeader nav={MAIN_NAV} signInHref="/sign-in" joinHref="/join" searchHref="/search" />
       <main id="main" className="flex-1">{children}</main>
       <Footer
         phones={ORG.phones.map((p) => ({ label: p.label, number: p.number }))}

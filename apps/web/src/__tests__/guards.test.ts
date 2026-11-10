@@ -103,3 +103,56 @@ describe("public site guards", () => {
     expect(footer).toMatch(/\{dre\}/);
   });
 });
+
+// S5: member portal and account pages.
+describe("member and account guards", () => {
+  const read = (p: string) => readFileSync(join(SRC, p), "utf8");
+
+  it("keeps /my out of search engines and caches", () => {
+    const layout = read("app/my/layout.tsx");
+    expect(layout).toMatch(/export const dynamic = "force-dynamic"/);
+    expect(layout).toMatch(/robots: \{ index: false, follow: false \}/);
+    expect(read("app/(account)/layout.tsx")).toMatch(/robots: \{ index: false, follow: false \}/);
+  });
+
+  it("never reads FULL data anywhere in the web app (MLS-7)", () => {
+    const FULL = [/\bmls_listing_full\b/, /\bmls_members\b/, /\bmls_agent_access\b/, /@vabrato\/mls\/full/, /\bprojectFull\b/, /has_full_mls_access/];
+    const hits: string[] = [];
+    for (const dir of ["app", "member", "lib", "components"]) {
+      for (const f of files(join(SRC, dir))) {
+        const text = readFileSync(f, "utf8");
+        for (const re of FULL) if (re.test(text)) hits.push(`${relative(SRC, f)}: ${re}`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("links the privacy notice wherever account details are collected", () => {
+    for (const f of ["member/components/AuthForms.tsx", "app/(account)/sign-in/page.tsx", "app/my/welcome/page.tsx"]) {
+      expect(read(f), f).toMatch(/href="\/privacy"/);
+    }
+  });
+
+  it("puts the broker disclosure and Equal Housing logo on every portal page", () => {
+    const shell = read("member/components/MemberShell.tsx");
+    expect(shell).toMatch(/BROKER_DISCLOSURE/);
+    expect(shell).toMatch(/<EqualHousingIcon/);
+    for (const f of files(join(SRC, "app/my"))) {
+      if (!f.endsWith("page.tsx")) continue;
+      const text = readFileSync(f, "utf8");
+      // Pages either render inside MemberShell or are full-page notices/redirects without listing data.
+      expect(/<MemberShell/.test(text) || /^\s*<main id="main"/m.test(text) || /redirect\(/.test(text), relative(SRC, f)).toBe(true);
+    }
+  });
+
+  it("never offers the VOW checkbox unless the flag is on", () => {
+    expect(read("app/my/account/page.tsx")).toMatch(/\{vowEnabled && \([\s\S]*?<VowForm/);
+    for (const f of ["member/components/AuthForms.tsx", "member/components/AccountForms.tsx"]) {
+      const text = read(f);
+      for (const m of text.matchAll(/name="vow"/g)) {
+        const before = text.slice(Math.max(0, m.index! - 400), m.index);
+        expect(/vowEnabled &&|VowForm\(/.test(before), `${f}: vow checkbox not gated`).toBe(true);
+      }
+    }
+  });
+});
