@@ -57,3 +57,7 @@ export type Testimonial = Tables["testimonials"]["Row"];
 export type Video = Tables["videos"]["Row"];
 export type Post = Tables["posts"]["Row"];
 export type Lead = Tables["leads"]["Row"];
+
+export type DeletionRequestStatus = Enums["deletion_request_status"];
+export type AppSettings = Tables["app_settings"]["Row"];
+export type AccountDeletionRequest = Tables["account_deletion_requests"]["Row"];

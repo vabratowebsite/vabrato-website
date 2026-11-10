@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestDb, createUser, type Query, type TestDb } from "./harness";
 
 // SEC-2: for each member table, one member cannot read (or change) another
-// member's rows. Covers the tables from 0002-0009 plus storage objects.
+// member's rows. Covers the tables from 0002-0009 plus storage objects
+// (0016 narrows profile visibility; member-accounts.test.ts covers 0016).
 // Policies under test are the migrations themselves; nothing here changes RLS.
 // All people, addresses and amounts are fictional.
 
@@ -49,6 +50,7 @@ describe("member isolation (SEC-2)", () => {
     await createUser(t, U.buyerB);
 
     await t.exec(`
+      update profiles set agent_id = '${U.agentA}' where id = '${U.buyerA}';
       insert into deals (id, address, ratification_date, agent_id, created_by) values
         ('${DEAL_A}', '100 Example Way, San Carlos', '2026-10-01', '${U.agentA}', '${U.agentA}'),
         ('${DEAL_B}', '200 Sample Ct, Belmont', '2026-10-02', '${U.agentB}', '${U.agentB}');
@@ -97,10 +99,16 @@ describe("member isolation (SEC-2)", () => {
       expect(await see(who, `select id as k from profiles`)).toEqual(expected);
     });
 
-    it("lets staff read every profile (0002: 'staff reads all', flagged for review)", async () => {
-      // Current behavior by design: any staff role (agent, va, tc, admin) reads
-      // all profiles, including clients on other agents' deals.
-      expect(await see("agentB", `select id as k from profiles`)).toHaveLength(Object.keys(U).length);
+    // 0016 narrowed "staff reads all": admin sees everyone; other staff see
+    // staff, members assigned to them, and clients on deals they can access.
+    const staff = [U.agentA, U.agentB, U.va, U.admin];
+    it.each<[Who, string[]]>([
+      ["agentA", [...staff, U.sellerA, U.buyerA]], // deal A seller + assigned buyer
+      ["agentB", [...staff, U.sellerB]],
+      ["va", [...staff, U.sellerA]], // works deal A
+      ["admin", Object.values(U)],
+    ])("%s reads staff, plus only the members they work with", async (who, expected) => {
+      expect(await see(who, `select id as k from profiles`)).toEqual([...expected].sort());
     });
 
     it("does not let a member change someone else's profile, or their own role", async () => {

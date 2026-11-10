@@ -109,7 +109,7 @@ describe("MLS RLS", () => {
 
     it("reads offices and feature flags", async () => {
       expect(await t.as("anon", null, (q) => keys(q, "mls_offices", "office_key"))).toEqual(["O-VABRA"]);
-      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["public_sold", "public_stats", "site_scl_enabled"]);
+      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
     });
 
     it.each(["mls_listing_vow", "mls_price_events", "mls_listing_full", "mls_members", "mls_agent_access", "mls_sync_runs"])(
@@ -158,8 +158,20 @@ describe("MLS RLS", () => {
   });
 
   describe("VOW member (MLS-6)", () => {
-    it("reads sold listings, sold detail and price history, but no FULL data", async () => {
+    it("sees no VOW data while vow_enabled is off, even after accepting the terms (review item 1)", async () => {
       await t.as("authenticated", U.vow, async (q) => {
+        expect(await keys(q, "mls_listings", "listing_key")).toEqual(["L-ACTIVE", "L-PENDING"]);
+        expect(await keys(q, "mls_listing_vow", "listing_key")).toEqual([]);
+        expect(await q(`select list_price from mls_price_events`)).toEqual([]);
+        expect(await q(`select public.has_vow_access() as v`)).toEqual([{ v: false }]);
+      });
+    });
+
+    it("reads sold listings, sold detail and price history once vow_enabled is on, but no FULL data", async () => {
+      await t.as("authenticated", U.vow, async (q) => {
+        await q(`set local role postgres`);
+        await q(`update feature_flags set enabled = true where key = 'vow_enabled'`);
+        await q(`set local role authenticated`);
         expect(await keys(q, "mls_listings", "listing_key")).toEqual(["L-ACTIVE", "L-OTHER-SOLD", "L-OWN-SOLD", "L-PENDING"]);
         expect(await keys(q, "mls_listing_vow", "listing_key")).toEqual(["L-ACTIVE", "L-OTHER-SOLD", "L-OWN-SOLD"]);
         expect(await q(`select list_price from mls_price_events order by observed_at`)).toHaveLength(2);
@@ -259,6 +271,7 @@ describe("MLS RLS", () => {
         { key: "public_sold", enabled: false },
         { key: "public_stats", enabled: false },
         { key: "site_scl_enabled", enabled: false },
+        { key: "vow_enabled", enabled: false },
       ]);
     });
 
