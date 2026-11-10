@@ -144,6 +144,24 @@ the IDX/VOW field rules, to confirm the provisional allowlists in
 disclaimer text (S4); whether an MLSListings sign-in service exists (ACC-2).
 Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 
+### SEC-2 member-isolation tests (2026-11-10, before S4)
+
+- `packages/db/test/member-isolation.test.ts` (PGlite, 61 tests): profiles,
+  deals, deal_members, deal_contingencies, tasks, receipts, notifications,
+  vendors, deal_vendors, tracked_properties, property_events, inbound_emails,
+  and storage objects in `deal-docs` / `receipts`. Each checks cross-member
+  reads and writes, staff/admin scope, and anon. A mutation check (loosened
+  policies) makes 24 of them fail, as it should.
+- Hosted storage policies checked with `packages/db/test/hosted-storage-check.sql`
+  (rolls itself back): same results as PGlite; `mls-photos` is not listable
+  or writable by API roles.
+- **Open question (owners):** `profiles` lets every staff role (agent, VA, TC,
+  admin) read every profile, including clients on other agents' deals (0002,
+  "staff reads all"). Tests pin today's behavior. Options: keep it, or limit
+  agents/VA/TC to profiles on deals they can access (admin keeps all).
+- No staff policy on the buyer tracker: agents can't see buyers' tracked
+  properties yet (S5 decides).
+
 ### Plan: retire apps/buyer and apps/seller (do in S5)
 
 | What | Moves to |
@@ -199,7 +217,7 @@ no data migration). Test count must not drop: tests move with the code.
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 337 across packages/db (PGlite RLS), packages/lib, packages/ui, packages/mls and the
+Tests: 398 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls and the
 four apps (`pnpm test`).
 
 ### Blocked / waiting
