@@ -38,6 +38,7 @@ describe("ListingCard", () => {
 
   it("uses the expected labels", () => {
     expect(BADGE_LABELS).toEqual({
+      ours: "Vabrato",
       new: "New",
       contingent: "Contingent",
       sold: "Sold",

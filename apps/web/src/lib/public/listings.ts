@@ -38,10 +38,14 @@ export const SearchRowSchema = z.object({
 });
 export type SearchRow = z.infer<typeof SearchRowSchema>;
 
-export async function searchListings(filters: SearchFilters, pageSize?: number): Promise<{ rows: SearchRow[]; total: number }> {
+export async function searchListings(
+  filters: SearchFilters,
+  opts: { pageSize?: number; ownOnly?: boolean } = {},
+): Promise<{ rows: SearchRow[]; total: number }> {
   // Sold search is VOW (S5): the public sold tab shows the members banner instead.
   if (filters.tab === "sold") return { rows: [], total: 0 };
-  const { data, error } = await publicSupabase().rpc("search_listings", toSearchArgs(filters, pageSize));
+  const args = { ...toSearchArgs(filters, opts.pageSize), p_own_only: opts.ownOnly ?? false };
+  const { data, error } = await publicSupabase().rpc("search_listings", args);
   if (error) throw new Error(`search_listings failed: ${error.message}`);
   const rows = z.array(SearchRowSchema).parse(data ?? []);
   return { rows, total: rows[0]?.total_count ?? 0 };
