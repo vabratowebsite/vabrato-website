@@ -29,3 +29,19 @@ export type Notification = Tables["notifications"]["Row"];
 export type InboundEmail = Tables["inbound_emails"]["Row"];
 export type TrackedProperty = Tables["tracked_properties"]["Row"];
 export type PropertyEvent = Tables["property_events"]["Row"];
+
+export type MlsDataLevel = Enums["mls_data_level"];
+export type MlsSyncKind = Enums["mls_sync_kind"];
+export type MlsSyncStatus = Enums["mls_sync_status"];
+
+export type FeatureFlag = Tables["feature_flags"]["Row"];
+export type MlsListing = Tables["mls_listings"]["Row"];
+export type MlsListingVow = Tables["mls_listing_vow"]["Row"];
+export type MlsListingFull = Tables["mls_listing_full"]["Row"];
+export type MlsPriceEvent = Tables["mls_price_events"]["Row"];
+export type MlsMedia = Tables["mls_media"]["Row"];
+export type MlsOpenHouse = Tables["mls_open_houses"]["Row"];
+export type MlsOffice = Tables["mls_offices"]["Row"];
+export type MlsMember = Tables["mls_members"]["Row"];
+export type MlsAgentAccess = Tables["mls_agent_access"]["Row"];
+export type MlsSyncRun = Tables["mls_sync_runs"]["Row"];

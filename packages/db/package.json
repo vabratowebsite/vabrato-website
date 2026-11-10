@@ -7,12 +7,20 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc",
+    "test": "vitest run",
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "gen:types": "supabase gen types typescript --linked"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^22.10.7",
     "supabase": "^2.0.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.9"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./test/harness.ts"
   }
 }

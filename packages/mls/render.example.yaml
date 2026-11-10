@@ -1,0 +1,50 @@
+# Example Render Blueprint for the MLS sync jobs. NOT DEPLOYED: rename to
+# render.yaml at the repo root (or paste into a new Blueprint) once MLSListings
+# credentials arrive. See RENDER.md. Secrets are `sync: false` and are set in the
+# Render dashboard only.
+services:
+  - type: cron
+    name: mls-incremental
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "*/15 * * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @vabrato/mls sync incremental
+    envVars: &mlsEnv
+      - key: NODE_VERSION
+        value: "22"
+      - key: MLS_MODE
+        value: live
+      - key: MLS_OFFICE_ID
+        sync: false
+      - key: MLS_API_BASE_URL
+        sync: false
+      - key: MLS_TOKEN_URL
+        sync: false
+      - key: MLS_CLIENT_ID
+        sync: false
+      - key: MLS_CLIENT_SECRET
+        sync: false
+      - key: MLS_RATE_LIMIT_PER_SEC
+        value: "2"
+      - key: MLS_PHOTO_MODE
+        value: hotlink
+      - key: MLS_SOLD_HISTORY_YEARS
+        value: "3"
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: cron
+    name: mls-reconcile
+    runtime: node
+    region: oregon
+    plan: starter
+    schedule: "17 10 * * *"
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: pnpm --filter @vabrato/mls sync reconcile
+    envVars: *mlsEnv

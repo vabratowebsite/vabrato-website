@@ -187,6 +187,27 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          description: string
+          enabled: boolean
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          description?: string
+          enabled?: boolean
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string
+          enabled?: boolean
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inbound_emails: {
         Row: {
           id: string
@@ -208,6 +229,411 @@ export type Database = {
           raw?: Json
           received_at?: string
           source?: string
+        }
+        Relationships: []
+      }
+      mls_agent_access: {
+        Row: {
+          active: boolean
+          member_key: string
+          profile_id: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          member_key: string
+          profile_id: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          member_key?: string
+          profile_id?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_agent_access_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mls_listing_full: {
+        Row: {
+          data: Json
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          listing_key: string
+          synced_at: string
+        }
+        Insert: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          listing_key: string
+          synced_at?: string
+        }
+        Update: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          listing_key?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_listing_full_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: true
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
+          },
+        ]
+      }
+      mls_listing_vow: {
+        Row: {
+          data: Json
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          listing_key: string
+          synced_at: string
+        }
+        Insert: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          listing_key: string
+          synced_at?: string
+        }
+        Update: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          listing_key?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_listing_vow_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: true
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
+          },
+        ]
+      }
+      mls_listings: {
+        Row: {
+          address_display: boolean
+          avm_display: boolean
+          bathrooms_total: number | null
+          bedrooms_total: number | null
+          city: string | null
+          comments_display: boolean
+          county: string | null
+          data: Json
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          is_own_listing: boolean
+          latitude: number | null
+          list_agent_full_name: string | null
+          list_office_mls_id: string | null
+          list_office_name: string | null
+          list_price: number | null
+          listing_id: string | null
+          listing_key: string
+          living_area: number | null
+          longitude: number | null
+          modification_ts: string
+          postal_code: string | null
+          property_sub_type: string | null
+          property_type: string | null
+          source: string
+          standard_status: string
+          synced_at: string
+        }
+        Insert: {
+          address_display?: boolean
+          avm_display?: boolean
+          bathrooms_total?: number | null
+          bedrooms_total?: number | null
+          city?: string | null
+          comments_display?: boolean
+          county?: string | null
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          is_own_listing?: boolean
+          latitude?: number | null
+          list_agent_full_name?: string | null
+          list_office_mls_id?: string | null
+          list_office_name?: string | null
+          list_price?: number | null
+          listing_id?: string | null
+          listing_key: string
+          living_area?: number | null
+          longitude?: number | null
+          modification_ts: string
+          postal_code?: string | null
+          property_sub_type?: string | null
+          property_type?: string | null
+          source?: string
+          standard_status: string
+          synced_at?: string
+        }
+        Update: {
+          address_display?: boolean
+          avm_display?: boolean
+          bathrooms_total?: number | null
+          bedrooms_total?: number | null
+          city?: string | null
+          comments_display?: boolean
+          county?: string | null
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          is_own_listing?: boolean
+          latitude?: number | null
+          list_agent_full_name?: string | null
+          list_office_mls_id?: string | null
+          list_office_name?: string | null
+          list_price?: number | null
+          listing_id?: string | null
+          listing_key?: string
+          living_area?: number | null
+          longitude?: number | null
+          modification_ts?: string
+          postal_code?: string | null
+          property_sub_type?: string | null
+          property_type?: string | null
+          source?: string
+          standard_status?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      mls_media: {
+        Row: {
+          category: string | null
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          height: number | null
+          listing_key: string
+          media_key: string
+          modification_ts: string | null
+          short_description: string | null
+          sort_order: number
+          storage_path: string | null
+          url: string | null
+          width: number | null
+        }
+        Insert: {
+          category?: string | null
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          height?: number | null
+          listing_key: string
+          media_key: string
+          modification_ts?: string | null
+          short_description?: string | null
+          sort_order?: number
+          storage_path?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Update: {
+          category?: string | null
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          height?: number | null
+          listing_key?: string
+          media_key?: string
+          modification_ts?: string | null
+          short_description?: string | null
+          sort_order?: number
+          storage_path?: string | null
+          url?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_media_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: false
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
+          },
+        ]
+      }
+      mls_members: {
+        Row: {
+          data: Json
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          email: string | null
+          full_name: string | null
+          member_key: string
+          member_mls_id: string | null
+          member_status: string | null
+          modification_ts: string | null
+          office_mls_id: string | null
+        }
+        Insert: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          email?: string | null
+          full_name?: string | null
+          member_key: string
+          member_mls_id?: string | null
+          member_status?: string | null
+          modification_ts?: string | null
+          office_mls_id?: string | null
+        }
+        Update: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          email?: string | null
+          full_name?: string | null
+          member_key?: string
+          member_mls_id?: string | null
+          member_status?: string | null
+          modification_ts?: string | null
+          office_mls_id?: string | null
+        }
+        Relationships: []
+      }
+      mls_offices: {
+        Row: {
+          data: Json
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          modification_ts: string | null
+          name: string | null
+          office_key: string
+          office_mls_id: string | null
+          phone: string | null
+        }
+        Insert: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          modification_ts?: string | null
+          name?: string | null
+          office_key: string
+          office_mls_id?: string | null
+          phone?: string | null
+        }
+        Update: {
+          data?: Json
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          modification_ts?: string | null
+          name?: string | null
+          office_key?: string
+          office_mls_id?: string | null
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      mls_open_houses: {
+        Row: {
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          end_time: string | null
+          listing_key: string
+          modification_ts: string | null
+          open_house_date: string | null
+          open_house_key: string
+          open_house_type: string | null
+          remarks: string | null
+          start_time: string | null
+        }
+        Insert: {
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          end_time?: string | null
+          listing_key: string
+          modification_ts?: string | null
+          open_house_date?: string | null
+          open_house_key: string
+          open_house_type?: string | null
+          remarks?: string | null
+          start_time?: string | null
+        }
+        Update: {
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          end_time?: string | null
+          listing_key?: string
+          modification_ts?: string | null
+          open_house_date?: string | null
+          open_house_key?: string
+          open_house_type?: string | null
+          remarks?: string | null
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_open_houses_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: false
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
+          },
+        ]
+      }
+      mls_price_events: {
+        Row: {
+          data_level: Database["public"]["Enums"]["mls_data_level"]
+          id: number
+          list_price: number | null
+          listing_key: string
+          observed_at: string
+          standard_status: string | null
+        }
+        Insert: {
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          id?: never
+          list_price?: number | null
+          listing_key: string
+          observed_at: string
+          standard_status?: string | null
+        }
+        Update: {
+          data_level?: Database["public"]["Enums"]["mls_data_level"]
+          id?: never
+          list_price?: number | null
+          listing_key?: string
+          observed_at?: string
+          standard_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mls_price_events_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: false
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
+          },
+        ]
+      }
+      mls_sync_runs: {
+        Row: {
+          counts: Json
+          error: string | null
+          finished_at: string | null
+          high_water_mark: string | null
+          id: string
+          kind: Database["public"]["Enums"]["mls_sync_kind"]
+          started_at: string
+          status: Database["public"]["Enums"]["mls_sync_status"]
+        }
+        Insert: {
+          counts?: Json
+          error?: string | null
+          finished_at?: string | null
+          high_water_mark?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["mls_sync_kind"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["mls_sync_status"]
+        }
+        Update: {
+          counts?: Json
+          error?: string | null
+          finished_at?: string | null
+          high_water_mark?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["mls_sync_kind"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["mls_sync_status"]
         }
         Relationships: []
       }
@@ -273,6 +699,7 @@ export type Database = {
           id: string
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
+          vow_accepted_at: string | null
         }
         Insert: {
           created_at?: string
@@ -281,6 +708,7 @@ export type Database = {
           id: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
+          vow_accepted_at?: string | null
         }
         Update: {
           created_at?: string
@@ -289,6 +717,7 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
+          vow_accepted_at?: string | null
         }
         Relationships: []
       }
@@ -505,14 +934,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      flag_enabled: { Args: { p_key: string }; Returns: boolean }
       has_deal_access: { Args: { p_deal_id: string }; Returns: boolean }
+      has_full_mls_access: { Args: never; Returns: boolean }
+      has_vow_access: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mls_sync_health: {
+        Args: never
+        Returns: {
+          last_failure_at: string
+          last_status: Database["public"]["Enums"]["mls_sync_status"]
+          last_success_at: string
+          stale: boolean
+        }[]
+      }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
     }
     Enums: {
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
+      mls_data_level: "IDX" | "VOW" | "FULL"
+      mls_sync_kind: "incremental" | "reconcile" | "purge"
+      mls_sync_status: "running" | "succeeded" | "failed"
       notification_status: "scheduled" | "sent" | "cancelled" | "failed"
       receipt_source: "drive" | "dropbox" | "manual"
       seller_type: "normal" | "trust" | "successor_trustee" | "probate"
@@ -1097,6 +1541,9 @@ export const Constants = {
     Enums: {
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
+      mls_data_level: ["IDX", "VOW", "FULL"],
+      mls_sync_kind: ["incremental", "reconcile", "purge"],
+      mls_sync_status: ["running", "succeeded", "failed"],
       notification_status: ["scheduled", "sent", "cancelled", "failed"],
       receipt_source: ["drive", "dropbox", "manual"],
       seller_type: ["normal", "trust", "successor_trustee", "probate"],
