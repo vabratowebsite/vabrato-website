@@ -16,3 +16,20 @@ export function siteForHost(host: string | null | undefined): Site {
   }
   return "vabrato";
 }
+
+/** Internal path prefix of the homes.sancarloslife.com pages (app/(sancarloslife)/scl). */
+export const SCL_PREFIX = "/scl";
+
+/**
+ * Where a request should go:
+ *   - "next": serve as is
+ *   - "not-found": 404
+ *   - { rewrite }: serve another internal path
+ * The SCL host only ever reaches the /scl pages; vabrato.com never does.
+ */
+export function routeForSite(site: Site, pathname: string): "next" | "not-found" | { rewrite: string } {
+  const isScl = pathname === SCL_PREFIX || pathname.startsWith(`${SCL_PREFIX}/`);
+  if (site === "vabrato") return isScl ? "not-found" : "next";
+  if (isScl) return "not-found";
+  return { rewrite: pathname === "/" ? SCL_PREFIX : `${SCL_PREFIX}${pathname}` };
+}

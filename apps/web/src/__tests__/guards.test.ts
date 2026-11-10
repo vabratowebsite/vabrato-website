@@ -53,11 +53,24 @@ describe("public site guards", () => {
       for (const f of files(dir)) {
         if (!/(page|layout)\.tsx$/.test(f)) continue;
         const text = readFileSync(f, "utf8");
-        const readsListings = /@\/lib\/public\/listings/.test(text) && /\b(searchListings|getListing|ownSoldListings)\b/.test(text);
-        if (readsListings && !/<MlsAttribution\b/.test(text)) missing.push(relative(SRC, f));
+        const readsListings = /\b(searchListings|getListing|ownSoldListings|loadListing)\b/.test(text);
+        // <ListingDetail> renders the attribution itself (checked below).
+        // Redirect-only routes render nothing, so they show no MLS data.
+        const renders = /<[A-Za-z]/.test(text);
+        if (readsListings && renders && !/<(MlsAttribution|ListingDetail)\b/.test(text)) missing.push(relative(SRC, f));
       }
     }
     expect(missing).toEqual([]);
+    expect(readFileSync(join(SRC, "components/listings/ListingDetail.tsx"), "utf8")).toMatch(/<MlsAttribution\b/);
+  });
+
+  it("serves homes.sancarloslife.com only while site_scl_enabled is on, with the broker disclosure (review item 1)", () => {
+    const layout = readFileSync(join(SRC, "app/(sancarloslife)/scl/layout.tsx"), "utf8");
+    expect(layout).toMatch(/flagEnabled\("site_scl_enabled"\)\)\) notFound\(\)/);
+    expect(layout).toMatch(/BROKER_DISCLOSURE/);
+    expect(layout).toMatch(/<EqualHousingIcon/);
+    const listing = readFileSync(join(SRC, "app/(sancarloslife)/scl/listing/[key]/[slug]/page.tsx"), "utf8");
+    expect(listing).toMatch(/canonical: `\$\{SITE_URL\}\$\{listingPath\(parts\)\}`/);
   });
 
   it("puts the broker disclosure and Equal Housing logo in the vabrato.com footer", () => {
