@@ -81,3 +81,13 @@ After applying a migration to the local database, run `notify pgrst, 'reload sch
 - unsubscribe from the confirm page and by one-click POST, and that a GET never unsubscribes.
 
 The full sync-to-email path, from mock feed to email, is the PGlite test `packages/mls/src/sync/alerts.e2e.test.ts`.
+
+`s5-buyer-flow.mjs` covers homes I'm pursuing, a signed-in tour request, and messages with the agent console. It also checks tour confirmation, the buyer agreement, and the documents page.
+
+It needs apps/va running on :3000, built with the same Supabase env. For the local stack:
+
+- add `http://localhost:3000/**` to `GOTRUE_URI_ALLOW_LIST`, so the console can sign in;
+- make the local proxy add CORS headers (Supabase's API gateway does this on the hosted project; the console's login calls Auth from the browser);
+- set `GOTRUE_SMTP_MAX_FREQUENCY=1s`, so repeated runs can email the same staff address.
+
+Uploads aren't covered locally, because the stack doesn't run Supabase Storage. Check them on the preview: upload a PDF and a photo, then download and delete them.

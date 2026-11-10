@@ -224,3 +224,53 @@ describe("alert guards", () => {
     expect(feed).not.toMatch(/old_price|previous|close_price/);
   });
 });
+
+// S5 PR 4: documents, messages, tours.
+describe("member records guards", () => {
+  const read = (p: string) => readFileSync(join(SRC, p), "utf8");
+
+  it("shows the wiring banner on documents and messages (CLAUDE.md, review item 8)", () => {
+    for (const f of ["app/my/documents/page.tsx", "app/my/messages/page.tsx"]) expect(read(f), f).toMatch(/<WiringBanner\b/);
+  });
+
+  it("downloads only through short-lived signed URLs that force a download (review item 8)", () => {
+    for (const f of ["app/api/my/documents/[id]/route.ts", "app/api/my/deal-docs/route.ts"]) {
+      const text = read(f);
+      expect(text, f).toMatch(/createSignedUrl\([^,]+, 60, \{ download: /);
+    }
+  });
+
+  it("checks every upload's bytes before listing it (review item 8)", () => {
+    const text = read("app/api/my/documents/complete/route.ts");
+    expect(text).toMatch(/sniffDocumentType\(bytes\)/);
+    expect(text).toMatch(/bucket\.remove\(\[path\]\)/);
+  });
+
+  it("renders messages as plain text (review item 9)", () => {
+    for (const f of ["app/my/messages/page.tsx", "../../va/src/app/messages/[memberId]/page.tsx"]) {
+      const text = read(f);
+      expect(text, f).not.toMatch(/dangerouslySetInnerHTML|<Markdown\b/);
+      expect(text, f).toMatch(/whitespace-pre-wrap/);
+    }
+  });
+
+  it("never confirms a tour from the website (review item 16)", () => {
+    for (const f of files(SRC)) {
+      const text = readFileSync(f, "utf8");
+      expect(/tour_status|set_tour_status/.test(text) && !/my\/tours\/page\.tsx$|__tests__/.test(f), relative(SRC, f)).toBe(false);
+    }
+  });
+});
+
+describe("form submit guards", () => {
+  it("never relies on a submit button's name/value (not reliably sent with server actions)", () => {
+    const hits: string[] = [];
+    for (const dir of [SRC, join(SRC, "../../va/src")]) {
+      for (const f of files(dir)) {
+        const text = readFileSync(f, "utf8");
+        for (const m of text.matchAll(/<(button|SubmitButton)\b[^>]*>/gs)) if (/\bname=/.test(m[0]) && /\bvalue=/.test(m[0])) hits.push(`${relative(SRC, f)}: ${m[0].slice(0, 80)}`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+});

@@ -29,7 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
-| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (0018, not yet on hosted) |
+| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (merged, 0018 on hosted 2026-11-10; sending waits for Render + Resend); PR 4 tracker, tours, documents, messages (0019, not yet on hosted) |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
@@ -197,6 +197,10 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
   - Report and screenshots in `docs/screenshots/s4/`.
   - Run against a local production build on Postgres 16 + PostgREST with the same migrations and preview seed. This session can't reach the hosted project or `*.vercel.app`. How to rerun it against the preview: `scripts/qa/README.md`.
 - **Still to do by hand:** paste a preview listing, city and post URL into validator.schema.org (blocked from this session). Send one test lead on the preview and delete it afterwards.
+
+**Must ship before launch (S5 review item 17):** S6 notifications for new
+member messages (email and in-console) and for tour requests. Until then a
+member's message waits in the agent console's Messages page.
 
 **Outstanding for launch (S9), not blocking S5.** Full list in [s4-content-checklist.md](s4-content-checklist.md):
 - MLSListings' official IDX icon and disclaimer (one file, `apps/web/src/lib/mls-legal.ts`);

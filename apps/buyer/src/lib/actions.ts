@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signOut } from "@vabrato/lib";
-import { parsePropertyForm, PROPERTY_STATUSES, type PropertyStatus } from "@/lib/property-schema";
+import { parsePropertyForm, PROPERTY_STATUSES, type PropertyStatus } from "@vabrato/lib";
 import { supabaseServer } from "@/lib/supabase-server";
 
 export async function signOutAction() {

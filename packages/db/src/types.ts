@@ -68,3 +68,7 @@ export type SavedSearch = Tables["saved_searches"]["Row"];
 
 export type AlertKind = Enums["alert_kind"];
 export type AlertDelivery = Tables["alert_deliveries"]["Row"];
+
+export type TourStatus = Enums["tour_status"];
+export type MemberDocument = Tables["member_documents"]["Row"];
+export type Message = Tables["messages"]["Row"];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isMemberPath } from "@/lib/site";
-import { hasAuthCookie } from "./components/MemberAwareHeader";
+import { hasAuthCookie } from "./cookie";
 import {
   VOW_TERMS_VERSION,
   applyPendingJoin,
@@ -155,13 +155,15 @@ describe("redirect safety", () => {
 describe("portal nav", () => {
   it("shows sections by role (Both sees both)", () => {
     const hrefs = (r: Parameters<typeof portalNav>[0]) => portalNav(r).flatMap((g) => g.items.map((i) => i.href));
-    const BUY = ["/my/buyer", "/my/saved", "/my/searches", "/my/compare"];
-    expect(hrefs("buyer")).toEqual([...BUY, "/search", "/my/account"]);
-    expect(hrefs("seller")).toEqual(["/my/seller", "/search", "/my/account"]);
-    expect(hrefs("both")).toEqual([...BUY, "/my/seller", "/search", "/my/account"]);
+    const BUY = ["/my/buyer", "/my/saved", "/my/searches", "/my/compare", "/my/tours"];
+    const TEAM = ["/my/documents", "/my/messages"];
+    expect(hrefs("buyer")).toEqual([...BUY, ...TEAM, "/search", "/my/account"]);
+    expect(hrefs("seller")).toEqual(["/my/seller", ...TEAM, "/search", "/my/account"]);
+    expect(hrefs("both")).toEqual([...BUY, "/my/seller", ...TEAM, "/search", "/my/account"]);
+    expect(portalNav("buyer", { unreadMessages: 2 }).flatMap((g) => g.items).find((i) => i.href === "/my/messages")?.count).toBe(2);
     expect(portalNav("buyer", { vow: true }).flatMap((g) => g.items.map((i) => i.href))).toContain("/my/sold");
     expect(portalNav("seller", { vow: true }).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/my/sold");
-    expect(portalNav("both").map((g) => g.label)).toEqual(["Buying", "Selling", "Explore", "Account"]);
+    expect(portalNav("both").map((g) => g.label)).toEqual(["Buying", "Selling", "Your team", "Explore", "Account"]);
   });
 
   it("makes initials", () => {

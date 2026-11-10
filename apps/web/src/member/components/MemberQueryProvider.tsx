@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { hasAuthCookie } from "./MemberAwareHeader";
+import { hasAuthCookie } from "../cookie";
 
 // null until mounted; then whether a Supabase auth cookie exists. Read once
 // per page here, so a grid of cards doesn't each check (and re-render).

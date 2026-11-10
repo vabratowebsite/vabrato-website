@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { hasAuthCookie } from "./components/MemberAwareHeader";
+import { hasAuthCookie } from "./cookie";
 import { useSignedInContext } from "./components/MemberQueryProvider";
 
 // Client state for member islands. Signed-out visitors make no requests:
