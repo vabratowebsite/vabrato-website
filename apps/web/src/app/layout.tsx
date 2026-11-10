@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={fontVariables}>
-      <body className="min-h-screen bg-white font-body text-ink antialiased">{children}</body>
+      <body className="flex min-h-screen flex-col bg-white font-body text-ink antialiased">{children}</body>
     </html>
   );
 }

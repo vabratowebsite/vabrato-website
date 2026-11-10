@@ -27,7 +27,7 @@ export default async function PropertiesPage() {
     <div className="mx-auto max-w-site space-y-12 px-4 py-10 md:px-6">
       <section aria-label="For sale">
         <SectionTitle as="h1" title="Our listings" eyebrow="Vabrato Real Estate Services" action={{ label: "Search all homes", href: "/search" }} />
-        <ResultsGrid rows={forSale.rows} />
+        <ResultsGrid rows={forSale.rows} headingLevel="h2" />
       </section>
       {sold.length > 0 && (
         <section aria-label="Sold">

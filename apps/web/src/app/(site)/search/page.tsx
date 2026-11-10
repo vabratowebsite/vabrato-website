@@ -93,7 +93,7 @@ export default async function SearchPage({ searchParams }: Props) {
             </div>
           </header>
 
-          {filters.tab === "sold" ? <SoldMembersBanner /> : <ResultsGrid rows={results.rows} />}
+          {filters.tab === "sold" ? <SoldMembersBanner /> : <ResultsGrid rows={results.rows} headingLevel="h2" />}
           {filters.tab !== "sold" && <SoldMembersBanner />}
 
           <Pagination page={filters.page} total={results.total} pageSize={PAGE_SIZE} hrefFor={(p) => href({ page: p })} />

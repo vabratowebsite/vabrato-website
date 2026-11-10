@@ -44,7 +44,7 @@ export default async function SclLayout({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main id="main">{children}</main>
+      <main id="main" className="flex-1">{children}</main>
       <footer className="bg-navy-deep text-white">
         <div className="mx-auto max-w-site space-y-4 px-4 py-10 text-center font-body text-body-sm md:px-6">
           <section aria-label="Broker disclosure" className="space-y-1">

@@ -92,8 +92,12 @@ describe("public site guards", () => {
   });
 
   it("puts the broker disclosure and Equal Housing logo in the vabrato.com footer", () => {
-    const layout = readFileSync(join(SRC, "app/(site)/layout.tsx"), "utf8");
-    expect(layout).toMatch(/dre=\{BROKER_DISCLOSURE\}/);
+    // The (site) layout and the root not-found page both render <SiteChrome>.
+    for (const file of ["app/(site)/layout.tsx", "app/not-found.tsx"]) {
+      expect(readFileSync(join(SRC, file), "utf8")).toMatch(/<SiteChrome>/);
+    }
+    const chrome = readFileSync(join(SRC, "components/SiteChrome.tsx"), "utf8");
+    expect(chrome).toMatch(/dre=\{BROKER_DISCLOSURE\}/);
     const footer = readFileSync(fileURLToPath(new URL("../../../../packages/ui/src/web/site/Footer.tsx", import.meta.url)), "utf8");
     expect(footer).toMatch(/<EqualHousingIcon/);
     expect(footer).toMatch(/\{dre\}/);
