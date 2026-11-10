@@ -3,6 +3,7 @@
 //   pnpm --filter @vabrato/mls sync incremental     every 15 minutes
 //   pnpm --filter @vabrato/mls sync reconcile       nightly
 //   pnpm --filter @vabrato/mls sync purge --confirm MLS-9 only
+//   pnpm --filter @vabrato/mls sync purge --mock --confirm   fictional preview rows only
 //
 // Add --pglite (MLS_MODE=mock only) for a local dry run against an in-memory
 // database with every migration applied; nothing touches Supabase.
@@ -36,7 +37,7 @@ export async function main(argv: string[], env: Record<string, string | undefine
   const command = argv[0] as Command | undefined;
   const flags = new Set(argv.slice(1));
   if (!command || !["incremental", "reconcile", "purge"].includes(command)) {
-    console.error("usage: mls-sync <incremental|reconcile|purge> [--confirm] [--pglite]");
+    console.error("usage: mls-sync <incremental|reconcile|purge> [--confirm] [--mock] [--pglite]");
     return 2;
   }
 
@@ -91,10 +92,10 @@ export async function main(argv: string[], env: Record<string, string | undefine
   try {
     if (command === "purge") {
       if (!flags.has("--confirm")) {
-        console.error("purge deletes ALL MLS data (MLS-9). Re-run with --confirm.");
+        console.error(flags.has("--mock") ? "purge --mock deletes the fictional preview rows. Re-run with --confirm." : "purge deletes ALL MLS data (MLS-9). Re-run with --confirm.");
         return 2;
       }
-      results.push(await runPurge(deps, { confirm: true }));
+      results.push(await runPurge(deps, { confirm: true, mockOnly: flags.has("--mock") }));
     } else if (command === "reconcile") {
       results.push(await runReconcile(deps));
     } else {

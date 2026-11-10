@@ -6,8 +6,12 @@ import type { Media, Member, Office, OpenHouse, Property } from "../resources";
 // Feed record -> database rows, one per data level (MLS-4). Only projected
 // (allowlisted) fields reach `data`.
 
+/** 'mock' marks fictional preview data so it can be purged on its own (MLS-8). */
+export type DataSource = "MLSListings" | "mock";
+
 export interface ListingIdxRow {
   listing_key: string;
+  source: DataSource;
   listing_id: string | null;
   standard_status: string;
   property_type: string | null;
@@ -42,12 +46,13 @@ const n = (v: unknown): number | null => (typeof v === "number" && Number.isFini
 const s = (v: unknown): string | null => (typeof v === "string" && v !== "" ? v : null);
 const int = (v: unknown): number | null => (n(v) === null ? null : Math.round(v as number));
 
-export function listingRows(p: Property, officeId: string): ListingRows {
+export function listingRows(p: Property, officeId: string, source: DataSource = "MLSListings"): ListingRows {
   const idx = projectIdx(p);
   const flags = displayFlags(p);
   return {
     idx: {
       listing_key: p.ListingKey,
+      source,
       listing_id: s(p.ListingId),
       standard_status: p.StandardStatus,
       property_type: s(p.PropertyType),
@@ -133,6 +138,7 @@ export function openHouseRow(o: OpenHouse): OpenHouseRow {
 
 export interface MemberRow {
   member_key: string;
+  source: DataSource;
   member_mls_id: string | null;
   full_name: string | null;
   email: string | null;
@@ -142,9 +148,10 @@ export interface MemberRow {
   modification_ts: string | null;
 }
 
-export function memberRow(m: Member): MemberRow {
+export function memberRow(m: Member, source: DataSource = "MLSListings"): MemberRow {
   return {
     member_key: m.MemberKey,
+    source,
     member_mls_id: s(m.MemberMlsId),
     full_name: s(m.MemberFullName),
     email: s(m.MemberEmail),
@@ -157,6 +164,7 @@ export function memberRow(m: Member): MemberRow {
 
 export interface OfficeRow {
   office_key: string;
+  source: DataSource;
   office_mls_id: string | null;
   name: string | null;
   phone: string | null;
@@ -164,9 +172,10 @@ export interface OfficeRow {
   modification_ts: string | null;
 }
 
-export function officeRow(o: Office): OfficeRow {
+export function officeRow(o: Office, source: DataSource = "MLSListings"): OfficeRow {
   return {
     office_key: o.OfficeKey,
+    source,
     office_mls_id: s(o.OfficeMlsId),
     name: s(o.OfficeName),
     phone: s(o.OfficePhone),

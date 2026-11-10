@@ -49,6 +49,8 @@ The allowlists in `src/levels/fields.ts` are **provisional** until MLSListings c
 - **Incremental** (every 15 min): `ModificationTimestamp gt <high-water mark − 5 min>`. Eligible records are upserted at each level; ineligible ones are deleted with their media, open houses, history and copied photos (MLS-5). Media/OpenHouse changes refresh their listing. A failed run never moves the high-water mark.
 - **Reconcile** (nightly): scans every displayable listing in the feed, deletes what's no longer there or eligible, re-fetches drifted records, refreshes photos and open houses, replaces the office roster (Member filtered by `MLS_OFFICE_ID`), and re-checks FULL access (ACC-1).
 - **Purge** (MLS-9): `mls-sync purge --confirm` deletes all MLS data and photos; sync runs are kept as the audit log.
+- **Mock marker:** mock-mode runs write `source = 'mock'`. `mls-sync purge --mock --confirm` deletes only those rows, and a live sync refuses to run while any are stored (MLS-8).
+- **Preview seed:** `tsx src/jobs/seed-preview.ts [--publish-placeholders] > seed.sql` prints SQL that loads the fictional fixtures, with dates rebased to today, for a preview database.
 - Only one run at a time (unique index on running runs). Runs stuck in `running` for over an hour are marked failed.
 
 ## Photos (`MLS_PHOTO_MODE`)

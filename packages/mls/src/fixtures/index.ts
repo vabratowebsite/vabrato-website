@@ -379,15 +379,43 @@ function member(id: AgentId, status: string): Member {
   };
 }
 
-/** A fresh, deep-copied fixture set (tests may mutate it). */
-export function buildFixtures(): FixtureSet {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+/** Moves every date and timestamp in a record by `ms` (keeps the fixtures' relative timing). */
+function shiftDates<T extends Record<string, unknown>>(rec: T, ms: number): T {
+  const out: Record<string, unknown> = { ...rec };
+  for (const [k, v] of Object.entries(out)) {
+    if (typeof v !== "string") continue;
+    if (ISO_TIME.test(v)) out[k] = new Date(Date.parse(v) + ms).toISOString();
+    else if (ISO_DATE.test(v)) out[k] = new Date(Date.parse(`${v}T00:00:00Z`) + ms).toISOString().slice(0, 10);
+  }
+  return out as T;
+}
+
+/**
+ * A fresh, deep-copied fixture set (tests may mutate it). Pass `now` to rebase
+ * every date so the set looks current (preview data); by default the dates sit
+ * around FIXTURE_NOW, which tests rely on.
+ */
+export function buildFixtures(opts: { now?: Date } = {}): FixtureSet {
   const keys = Object.keys(SPECS) as FixtureKey[];
   const properties = keys.map((k, i) => property(k, i + 1));
-  return structuredClone({
+  const set: FixtureSet = structuredClone({
     properties,
     media: properties.flatMap((p, i) => media(p, i + 1)),
     openHouses: openHouses(),
     members: MEMBERS,
     offices: OFFICES,
   });
+  if (!opts.now) return set;
+  // Whole days, so dates and weekdays stay aligned with the timestamps.
+  const ms = Math.round((opts.now.getTime() - FIXTURE_NOW.getTime()) / 86_400_000) * 86_400_000;
+  return {
+    properties: set.properties.map((r) => shiftDates(r, ms)),
+    media: set.media.map((r) => shiftDates(r, ms)),
+    openHouses: set.openHouses.map((r) => shiftDates(r, ms)),
+    members: set.members.map((r) => shiftDates(r, ms)),
+    offices: set.offices.map((r) => shiftDates(r, ms)),
+  };
 }
