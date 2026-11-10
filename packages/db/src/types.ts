@@ -65,3 +65,6 @@ export type AccountDeletionRequest = Tables["account_deletion_requests"]["Row"];
 export type AlertFrequency = Enums["alert_frequency"];
 export type SavedHome = Tables["saved_homes"]["Row"];
 export type SavedSearch = Tables["saved_searches"]["Row"];
+
+export type AlertKind = Enums["alert_kind"];
+export type AlertDelivery = Tables["alert_deliveries"]["Row"];
