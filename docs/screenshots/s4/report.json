@@ -1,0 +1,1174 @@
+{
+  "base": "http://localhost:3003",
+  "date": "2026-11-10T14:32:17.419Z",
+  "axe": [
+    {
+      "page": "home",
+      "path": "/",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 34,
+      "jsonLd": {
+        "types": [
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "search",
+      "path": "/search",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "search-sold-tab",
+      "path": "/search?tab=sold",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-own",
+      "path": "/listing/FX-001/107-sample-ct-san-carlos",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-other-broker",
+      "path": "/listing/FX-002/114-placeholder-ave-redwood-city",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-hidden-address",
+      "path": "/listing/FX-012/los-gatos",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "open-houses",
+      "path": "/open-houses",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Event",
+          "Place",
+          "PostalAddress",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "properties",
+      "path": "/properties",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "buy",
+      "path": "/buy",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "neighborhoods",
+      "path": "/neighborhoods",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "city-with-guide",
+      "path": "/neighborhoods/san-carlos",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Place",
+          "AdministrativeArea",
+          "BreadcrumbList",
+          "ListItem",
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "city-no-guide",
+      "path": "/neighborhoods/belmont",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Place",
+          "AdministrativeArea",
+          "BreadcrumbList",
+          "ListItem",
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "about",
+      "path": "/about",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "agent",
+      "path": "/team/mark-martinho",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "Person",
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "testimonials",
+      "path": "/testimonials",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "contact",
+      "path": "/contact",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "sell",
+      "path": "/sell",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "transform",
+      "path": "/transform",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "insights",
+      "path": "/insights",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "insight-post",
+      "path": "/insights/placeholder-news",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Article",
+          "Organization",
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "join",
+      "path": "/join",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "privacy",
+      "path": "/privacy",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "terms",
+      "path": "/terms",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "accessibility",
+      "path": "/accessibility",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "not-found",
+      "path": "/this-page-does-not-exist",
+      "viewport": "1440",
+      "status": 404,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-not-found",
+      "path": "/listing/FX-404/nowhere",
+      "viewport": "1440",
+      "status": 404,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-home",
+      "path": "/",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-listing",
+      "path": "/listing/FX-001/107-sample-ct-san-carlos",
+      "viewport": "1440",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "Event",
+          "Place"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-not-found",
+      "path": "/about",
+      "viewport": "1440",
+      "status": 404,
+      "violations": [],
+      "passes": 19,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-listing-outside-san-carlos",
+      "path": "/listing/FX-002/114-placeholder-ave-redwood-city",
+      "viewport": "1440",
+      "status": 404,
+      "violations": [],
+      "passes": 24,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    },
+    {
+      "page": "home",
+      "path": "/",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 34,
+      "jsonLd": {
+        "types": [
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "search",
+      "path": "/search",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "search-sold-tab",
+      "path": "/search?tab=sold",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-own",
+      "path": "/listing/FX-001/107-sample-ct-san-carlos",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-other-broker",
+      "path": "/listing/FX-002/114-placeholder-ave-redwood-city",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-hidden-address",
+      "path": "/listing/FX-012/los-gatos",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "QuantitativeValue",
+          "BreadcrumbList",
+          "ListItem",
+          "Event",
+          "Place",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "open-houses",
+      "path": "/open-houses",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Event",
+          "Place",
+          "PostalAddress",
+          "RealEstateAgent",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "properties",
+      "path": "/properties",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "buy",
+      "path": "/buy",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "neighborhoods",
+      "path": "/neighborhoods",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "city-with-guide",
+      "path": "/neighborhoods/san-carlos",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Place",
+          "AdministrativeArea",
+          "BreadcrumbList",
+          "ListItem",
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "city-no-guide",
+      "path": "/neighborhoods/belmont",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Place",
+          "AdministrativeArea",
+          "BreadcrumbList",
+          "ListItem",
+          "FAQPage",
+          "Question",
+          "Answer",
+          "RealEstateAgent",
+          "PostalAddress"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "about",
+      "path": "/about",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "agent",
+      "path": "/team/mark-martinho",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "Person",
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "testimonials",
+      "path": "/testimonials",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "contact",
+      "path": "/contact",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "sell",
+      "path": "/sell",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 31,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "transform",
+      "path": "/transform",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "insights",
+      "path": "/insights",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "insight-post",
+      "path": "/insights/placeholder-news",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "Article",
+          "Organization",
+          "BreadcrumbList",
+          "ListItem",
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "join",
+      "path": "/join",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "privacy",
+      "path": "/privacy",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "terms",
+      "path": "/terms",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "accessibility",
+      "path": "/accessibility",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "not-found",
+      "path": "/this-page-does-not-exist",
+      "viewport": "390",
+      "status": 404,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "listing-not-found",
+      "path": "/listing/FX-404/nowhere",
+      "viewport": "390",
+      "status": 404,
+      "violations": [],
+      "passes": 26,
+      "jsonLd": {
+        "types": [
+          "RealEstateAgent",
+          "PostalAddress",
+          "AdministrativeArea"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-home",
+      "path": "/",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 30,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-listing",
+      "path": "/listing/FX-001/107-sample-ct-san-carlos",
+      "viewport": "390",
+      "status": 200,
+      "violations": [],
+      "passes": 32,
+      "jsonLd": {
+        "types": [
+          "RealEstateListing",
+          "Offer",
+          "Residence",
+          "PostalAddress",
+          "GeoCoordinates",
+          "QuantitativeValue",
+          "Event",
+          "Place"
+        ],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-not-found",
+      "path": "/about",
+      "viewport": "390",
+      "status": 404,
+      "violations": [],
+      "passes": 19,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    },
+    {
+      "page": "scl-listing-outside-san-carlos",
+      "path": "/listing/FX-002/114-placeholder-ave-redwood-city",
+      "viewport": "390",
+      "status": 404,
+      "violations": [],
+      "passes": 24,
+      "jsonLd": {
+        "types": [],
+        "problems": []
+      }
+    }
+  ],
+  "lighthouse": [
+    {
+      "page": "home",
+      "path": "/",
+      "scores": {
+        "performance": 95,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.8 s",
+        "total-blocking-time": "80 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "search",
+      "path": "/search",
+      "scores": {
+        "performance": 94,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.2 s",
+        "largest-contentful-paint": "2.6 s",
+        "total-blocking-time": "190 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "listing-own",
+      "path": "/listing/FX-001/107-sample-ct-san-carlos",
+      "scores": {
+        "performance": 95,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.9 s",
+        "total-blocking-time": "100 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "listing-hidden-address",
+      "path": "/listing/FX-012/los-gatos",
+      "scores": {
+        "performance": 96,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.6 s",
+        "total-blocking-time": "110 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "city-with-guide",
+      "path": "/neighborhoods/san-carlos",
+      "scores": {
+        "performance": 94,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.8 s",
+        "total-blocking-time": "150 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "agent",
+      "path": "/team/mark-martinho",
+      "scores": {
+        "performance": 94,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.9 s",
+        "total-blocking-time": "130 ms",
+        "cumulative-layout-shift": "0"
+      }
+    },
+    {
+      "page": "contact",
+      "path": "/contact",
+      "scores": {
+        "performance": 96,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 66
+      },
+      "metrics": {
+        "first-contentful-paint": "1.1 s",
+        "largest-contentful-paint": "2.7 s",
+        "total-blocking-time": "80 ms",
+        "cumulative-layout-shift": "0"
+      }
+    }
+  ]
+}
