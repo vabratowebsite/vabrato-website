@@ -6,9 +6,10 @@ import { HeartIcon } from "../icons";
 import { IdxIcon } from "./IdxIcon";
 import { ListingPhoto, type PlaceholderTint } from "./ListingPhotoPlaceholder";
 
-export type ListingBadge = "new" | "contingent" | "sold" | "list-sold" | "price-drop" | "open";
+export type ListingBadge = "ours" | "new" | "contingent" | "sold" | "list-sold" | "price-drop" | "open";
 
 export const BADGE_LABELS: Record<ListingBadge, string> = {
+  ours: "Vabrato",
   new: "New",
   contingent: "Contingent",
   sold: "Sold",
@@ -18,6 +19,7 @@ export const BADGE_LABELS: Record<ListingBadge, string> = {
 };
 
 const BADGE_STYLES: Record<ListingBadge, string> = {
+  ours: "bg-gold text-ink",
   new: "bg-gold text-ink",
   contingent: "bg-white text-ink",
   sold: "bg-red text-white",

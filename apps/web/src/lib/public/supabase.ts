@@ -27,3 +27,19 @@ export function publicSupabase(): SupabaseClient {
   });
   return client;
 }
+
+let writeClient: SupabaseClient | null = null;
+
+/**
+ * Signed-out client for public form submissions (leads). Never cached. Leads
+ * are insert-only for the public: callers must not chain .select().
+ */
+export function publicWriteSupabase(): SupabaseClient {
+  if (writeClient) return writeClient;
+  const env = publicEnv();
+  writeClient = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }) },
+  });
+  return writeClient;
+}
