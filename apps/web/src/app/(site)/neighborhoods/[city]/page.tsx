@@ -78,11 +78,8 @@ export default async function CityPage({ params }: Props) {
           </div>
         </header>
 
-        <section aria-labelledby="for-sale">
+        <section aria-label={`Homes for sale in ${city.name}`}>
           <SectionTitle title={`Homes for sale in ${city.name}`} action={{ label: "See all", href: `/search?city=${city.slug}` }} />
-          <h2 id="for-sale" className="sr-only">
-            Homes for sale in {city.name}
-          </h2>
           <ResultsGrid rows={listings.rows} />
         </section>
 

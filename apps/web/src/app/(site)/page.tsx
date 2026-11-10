@@ -144,11 +144,8 @@ export default async function HomePage() {
           <p>{MEET.body}</p>
         </WelcomeBlock>
 
-        <section aria-labelledby="featured-heading">
+        <section aria-label="Featured listings">
           <SectionTitle title="Featured listings" action={{ label: "View all for sale", href: "/search" }} />
-          <h2 id="featured-heading" className="sr-only">
-            Featured listings
-          </h2>
           <ul className="grid gap-4 md:grid-cols-3">
             {featured.map((r) => (
               <li key={r.listing_key}>
@@ -162,11 +159,8 @@ export default async function HomePage() {
       {trackRecord && <StatStrip eyebrow="Live from MLSListings" title="Our track record" stats={trackRecord} />}
 
       <div className="mx-auto max-w-site space-y-20 px-4 py-16 md:px-6">
-        <section aria-labelledby="transform-heading">
+        <section aria-label="We can transform your home">
           <SectionTitle title="We can transform your home" action={{ label: "View all projects", href: "/transform" }} />
-          <h2 id="transform-heading" className="sr-only">
-            We can transform your home
-          </h2>
           <p className="mb-6 max-w-prose font-body text-body text-ink">{TRANSFORM.body}</p>
           <BeforeAfterSlider before={placeholderPhoto("Before photo (placeholder)", "mauve")} after={placeholderPhoto("After photo (placeholder)", "steel")} />
           <div className="mt-6 flex flex-wrap gap-4">
@@ -193,11 +187,8 @@ export default async function HomePage() {
         />
 
         {videos.length > 0 && (
-          <section aria-labelledby="videos-heading">
+          <section aria-label="Latest videos">
             <SectionTitle title="Latest videos" />
-            <h2 id="videos-heading" className="sr-only">
-              Latest videos
-            </h2>
             <VideoGrid
               items={videos.map((v) => ({
                 title: v.title,
@@ -217,11 +208,8 @@ export default async function HomePage() {
         )}
 
         {sold.length > 0 && (
-          <section aria-labelledby="sold-heading">
+          <section aria-label="Sold properties">
             <SectionTitle title="Sold properties" action={{ label: "View more sold properties", href: "/properties#sold" }} />
-            <h2 id="sold-heading" className="sr-only">
-              Sold properties
-            </h2>
             <ul className="grid gap-4 md:grid-cols-2">
               {sold.map((s) => (
                 <li key={s.listing_key}>
@@ -232,11 +220,8 @@ export default async function HomePage() {
           </section>
         )}
 
-        <section aria-labelledby="hoods-heading">
+        <section aria-label="Neighborhoods">
           <SectionTitle title="Neighborhoods" action={{ label: "All areas", href: "/neighborhoods" }} />
-          <h2 id="hoods-heading" className="sr-only">
-            Neighborhoods
-          </h2>
           <NeighborhoodTiles items={tiles} />
         </section>
 
