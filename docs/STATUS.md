@@ -253,8 +253,8 @@ project is paused. Re-link the Supabase CLI from `packages/db`
 
 - Migrations on the Vabrato Website project were applied through the Supabase
   MCP connector, so the remote migration history uses timestamp versions, not
-  0001–0013. Before using `supabase db push` from the CLI, run
-  `supabase migration repair` to mark 0001–0013 as applied, or keep applying
+  0001–0014. Before using `supabase db push` from the CLI, run
+  `supabase migration repair` to mark 0001–0014 as applied, or keep applying
   new migrations through the connector.
 - `types.gen.ts` covers `public` and `storage`. The MCP type generator returns
   `public` only, so splice its output into the public section rather than

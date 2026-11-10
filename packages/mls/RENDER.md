@@ -52,6 +52,7 @@ grant usage on all sequences in schema public to mls_sync;
 
 ## Before going live
 
+0. Remove the fictional preview rows: `pnpm --filter @vabrato/mls sync purge --mock --confirm` (in mock mode against the same database). A live sync refuses to run while they exist.
 1. Credentials from MLSListings, entered in Render only.
 2. Confirm the `OfficeMlsId` value, the Media/OpenHouse resource names, photo-copy permission and sold-history depth, and update the env vars.
 3. Check `src/levels/fields.ts` against MLSListings' IDX/VOW field rules.

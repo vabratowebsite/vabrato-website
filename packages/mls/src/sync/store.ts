@@ -17,7 +17,7 @@ export interface AgentAccessRow {
 }
 
 const LISTING_COLUMNS = `
-  listing_key text, listing_id text, standard_status text, property_type text, property_sub_type text,
+  listing_key text, source text, listing_id text, standard_status text, property_type text, property_sub_type text,
   list_price numeric, city text, county text, postal_code text, bedrooms_total integer,
   bathrooms_total integer, living_area numeric, latitude double precision, longitude double precision,
   list_office_mls_id text, list_office_name text, list_agent_full_name text, is_own_listing boolean,
@@ -213,11 +213,11 @@ export class PgSyncStore {
       ]);
       if (rows.length) {
         await tx.query(
-          `insert into mls_members (member_key, member_mls_id, full_name, email, member_status, office_mls_id, data, modification_ts)
-           select x.member_key, x.member_mls_id, x.full_name, x.email, x.member_status, x.office_mls_id, x.data, x.modification_ts
-           from jsonb_to_recordset($1::jsonb) as x(member_key text, member_mls_id text, full_name text, email text,
+          `insert into mls_members (member_key, source, member_mls_id, full_name, email, member_status, office_mls_id, data, modification_ts)
+           select x.member_key, x.source, x.member_mls_id, x.full_name, x.email, x.member_status, x.office_mls_id, x.data, x.modification_ts
+           from jsonb_to_recordset($1::jsonb) as x(member_key text, source text, member_mls_id text, full_name text, email text,
              member_status text, office_mls_id text, data jsonb, modification_ts timestamptz)
-           on conflict (member_key) do update set member_mls_id = excluded.member_mls_id, full_name = excluded.full_name,
+           on conflict (member_key) do update set source = excluded.source, member_mls_id = excluded.member_mls_id, full_name = excluded.full_name,
              email = excluded.email, member_status = excluded.member_status, office_mls_id = excluded.office_mls_id,
              data = excluded.data, modification_ts = excluded.modification_ts`,
           [JSON.stringify(rows)],
@@ -230,10 +230,10 @@ export class PgSyncStore {
   async upsertOffices(rows: OfficeRow[]): Promise<void> {
     if (rows.length === 0) return;
     await this.sql.query(
-      `insert into mls_offices (office_key, office_mls_id, name, phone, data, modification_ts)
-       select x.office_key, x.office_mls_id, x.name, x.phone, x.data, x.modification_ts
-       from jsonb_to_recordset($1::jsonb) as x(office_key text, office_mls_id text, name text, phone text, data jsonb, modification_ts timestamptz)
-       on conflict (office_key) do update set office_mls_id = excluded.office_mls_id, name = excluded.name,
+      `insert into mls_offices (office_key, source, office_mls_id, name, phone, data, modification_ts)
+       select x.office_key, x.source, x.office_mls_id, x.name, x.phone, x.data, x.modification_ts
+       from jsonb_to_recordset($1::jsonb) as x(office_key text, source text, office_mls_id text, name text, phone text, data jsonb, modification_ts timestamptz)
+       on conflict (office_key) do update set source = excluded.source, office_mls_id = excluded.office_mls_id, name = excluded.name,
          phone = excluded.phone, data = excluded.data, modification_ts = excluded.modification_ts`,
       [JSON.stringify(rows)],
     );
@@ -274,6 +274,33 @@ export class PgSyncStore {
   }
 
   // --- MLS-9 -----------------------------------------------------------------------
+
+  /** True if any fictional preview rows ('mock') are stored. */
+  async hasMockData(): Promise<boolean> {
+    const rows = await this.sql.query(
+      `select 1 from mls_listings where source = 'mock'
+       union all select 1 from mls_members where source = 'mock'
+       union all select 1 from mls_offices where source = 'mock' limit 1`,
+    );
+    return rows.length > 0;
+  }
+
+  /** Deletes only the fictional preview rows (source = 'mock'), e.g. before the live feed starts. */
+  async purgeMock(): Promise<{ storagePaths: string[]; listings: number; members: number }> {
+    return this.sql.transaction(async (tx) => {
+      const paths = await tx.query<{ storage_path: string }>(
+        `select m.storage_path from mls_media m join mls_listings l using (listing_key)
+         where l.source = 'mock' and m.storage_path is not null`,
+      );
+      await tx.query(
+        `update mls_agent_access set active = false where member_key in (select member_key from mls_members where source = 'mock')`,
+      );
+      const listings = await tx.query(`delete from mls_listings where source = 'mock' returning listing_key`);
+      const members = await tx.query(`delete from mls_members where source = 'mock' returning member_key`);
+      await tx.query(`delete from mls_offices where source = 'mock'`);
+      return { storagePaths: paths.map((p) => p.storage_path), listings: listings.length, members: members.length };
+    });
+  }
 
   /** Deletes every stored MLS record (license termination). Sync runs are kept as the audit trail. */
   async purgeAll(): Promise<{ storagePaths: string[]; listings: number; members: number }> {

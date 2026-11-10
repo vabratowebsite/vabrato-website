@@ -173,12 +173,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.108.0
+        version: 2.110.0
       '@vabrato/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@vabrato/lib':
         specifier: workspace:*
         version: link:../../packages/lib
+      '@vabrato/mls':
+        specifier: workspace:*
+        version: link:../../packages/mls
       '@vabrato/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -191,6 +197,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.2.7(react@19.2.7)
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.10.7
@@ -207,6 +216,9 @@ importers:
       postcss:
         specifier: ^8.5.1
         version: 8.5.16
+      schema-dts:
+        specifier: ^1.1.5
+        version: 1.1.5
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.23.15)
@@ -2694,6 +2706,9 @@ packages:
 
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
+
+  schema-dts@1.1.5:
+    resolution: {integrity: sha512-RJr9EaCmsLzBX2NDiO5Z3ux2BVosNZN5jo0gWgsyKvxKIUL5R3swNvoorulAeL9kLB0iTSX7V6aokhla2m7xbg==}
 
   semver@6.3.2:
     resolution: {integrity: sha512-GYrCADwpu6yV5OAvchkQ27Z5wwMxWAEMg5NNWjyHh/5DboFFqbdbvYNIvZouQpxXyeMPoTOh0vdPYKlf0ZswdQ==}
@@ -5418,6 +5433,8 @@ snapshots:
       xmlchars: 2.2.0
 
   scheduler@0.27.0: {}
+
+  schema-dts@1.1.5: {}
 
   semver@6.3.2: {}
 

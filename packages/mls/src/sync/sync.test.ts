@@ -2,7 +2,7 @@ import { createTestDb, createUser, type TestDb } from "@vabrato/db/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import type { MlsConfig } from "../config";
 import { createClientFromConfig } from "../factory";
-import { ELIGIBLE_KEYS, FIXTURE_NOW } from "../fixtures";
+import { buildFixtures, ELIGIBLE_KEYS, FIXTURE_NOW } from "../fixtures";
 import { createMockHandler, type MockOptions } from "../mock/handler";
 import { verifyAgentAccess } from "./access";
 import { clientEventCounter, runIncremental, runPurge, runReconcile, sanitizeError, type SyncDeps } from "./engine";
@@ -283,6 +283,45 @@ describe("purge (MLS-9)", () => {
     expect(await deps.store.lastHighWaterMark()).toBeNull();
     await runIncremental(deps);
     expect(await keys("mls_listings")).toHaveLength(ELIGIBLE_KEYS.length);
+  });
+});
+
+describe("mock marker (preview data)", () => {
+  it("stores mock-mode rows as source 'mock'", async () => {
+    const { t, deps } = await setup();
+    await runReconcile(deps);
+    for (const table of ["mls_listings", "mls_members", "mls_offices"]) {
+      expect(await t.query(`select distinct source from ${table}`)).toEqual([{ source: "mock" }]);
+    }
+  });
+
+  it("purge --mock removes only the fictional rows", async () => {
+    const { t, deps, keys } = await setup();
+    await runReconcile(deps);
+    await t.query(
+      `insert into mls_listings (listing_key, standard_status, modification_ts, source) values ('REAL-1', 'Active', now(), 'MLSListings')`,
+    );
+    const r = await runPurge(deps, { confirm: true, mockOnly: true });
+    expect(r.counts).toMatchObject({ listings: ELIGIBLE_KEYS.length, members: 3 });
+    expect(await keys("mls_listings")).toEqual(["REAL-1"]);
+    expect(await t.query(`select 1 from mls_members`)).toEqual([]);
+  });
+
+  it("refuses a live sync while mock rows are stored (MLS-8)", async () => {
+    const { deps } = await setup();
+    await runReconcile(deps);
+    const live = await runIncremental({ ...deps, config: { ...deps.config, mode: "live" } });
+    expect(live).toMatchObject({ status: "failed", error: expect.stringMatching(/purge --mock/) });
+  });
+
+  it("rebases fixture dates for previews, keeping relative timing", () => {
+    const now = new Date("2027-03-15T08:00:00Z");
+    const a = buildFixtures();
+    const b = buildFixtures({ now });
+    const shift = Date.parse(b.properties[0]!.ModificationTimestamp) - Date.parse(a.properties[0]!.ModificationTimestamp);
+    expect(shift % 86_400_000).toBe(0);
+    expect(Date.parse(b.openHouses[0]!.OpenHouseStartTime!)).toBeGreaterThan(now.getTime());
+    expect(b.properties[4]!.CloseDate).not.toBe(a.properties[4]!.CloseDate);
   });
 });
 

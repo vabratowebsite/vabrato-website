@@ -5,7 +5,7 @@ import { DISPLAYABLE_STATUSES, eligibility, isPublicOpenHouse, soldCutoff } from
 import type { Property } from "../resources";
 import { recheckAgentAccess } from "./access";
 import { planPhotos, type PhotoBucket } from "./photos";
-import { listingRows, memberRow, officeRow, openHouseRow } from "./rows";
+import { listingRows, memberRow, officeRow, openHouseRow, type DataSource } from "./rows";
 import type { Counts, PgSyncStore, RunKind } from "./store";
 
 // Incremental sync (every 15 min, keyed on ModificationTimestamp), nightly
@@ -14,7 +14,7 @@ import type { Counts, PgSyncStore, RunKind } from "./store";
 export interface SyncDeps {
   client: ResoClient;
   store: PgSyncStore;
-  config: Pick<MlsConfig, "officeId" | "photoMode" | "soldHistoryYears">;
+  config: Pick<MlsConfig, "mode" | "officeId" | "photoMode" | "soldHistoryYears">;
   /** Required for MLS_PHOTO_MODE=copy and for purge of copied photos. */
   bucket?: PhotoBucket | null;
   now?: () => Date;
@@ -85,9 +85,17 @@ function chunk<T>(list: T[], size: number): T[][] {
   return out;
 }
 
+/** Mock mode writes fictional preview data, marked so it can be purged on its own. */
+export function dataSource(config: Pick<MlsConfig, "mode">): DataSource {
+  return config.mode === "mock" ? "mock" : "MLSListings";
+}
+
 class Run {
   counts: Counts = {};
   constructor(readonly deps: SyncDeps) {}
+  get source() {
+    return dataSource(this.deps.config);
+  }
   add(key: string, n = 1) {
     this.counts[key] = (this.counts[key] ?? 0) + n;
   }
@@ -119,7 +127,7 @@ class Run {
       }
     }
     this.add("fetched", props.length);
-    const { priceEvents } = await store.upsertListings(keep.map((p) => listingRows(p, config.officeId)));
+    const { priceEvents } = await store.upsertListings(keep.map((p) => listingRows(p, config.officeId, this.source)));
     this.add("upserted", keep.length);
     this.add("priceEvents", priceEvents);
     const { removed, storagePaths } = await store.removeListings(drop);
@@ -159,6 +167,12 @@ async function withRun(deps: SyncDeps, kind: RunKind, body: (run: Run) => Promis
   const runId = await store.startRun(kind);
   if (!runId) return { kind, runId: null, status: "skipped", counts: {}, highWaterMark: null };
   const run = new Run(deps);
+  if (deps.config.mode === "live" && kind !== "purge" && (await store.hasMockData())) {
+    // MLS-8: never mix fictional preview rows with the live feed.
+    const error = "Mock preview data is still stored: run `mls-sync purge --mock --confirm` before the first live sync";
+    await store.finishRun(runId, { status: "failed", counts: {}, highWaterMark: null, error });
+    return { kind, runId, status: "failed", counts: {}, highWaterMark: null, error };
+  }
   const before = deps.clientEvents ? { ...deps.clientEvents.counts } : null;
   const withEvents = () => {
     if (!before || !deps.clientEvents) return run.counts;
@@ -269,11 +283,11 @@ export function runReconcile(deps: SyncDeps): Promise<RunResult> {
     await run.refreshChildren(await store.existingListingKeys([...feed.keys()]));
 
     const members = await client.all("Member", { filter: eq("OfficeMlsId", config.officeId) });
-    const { removed: membersRemoved } = await store.replaceMembers(members.map(memberRow));
+    const { removed: membersRemoved } = await store.replaceMembers(members.map((m) => memberRow(m, run.source)));
     run.add("members", members.length);
     run.add("membersRemoved", membersRemoved);
     const offices = await client.all("Office", { filter: eq("OfficeMlsId", config.officeId) });
-    await store.upsertOffices(offices.map(officeRow));
+    await store.upsertOffices(offices.map((o) => officeRow(o, run.source)));
     run.add("offices", offices.length);
 
     const access = await recheckAgentAccess(store, { officeId: config.officeId, now });
@@ -283,15 +297,18 @@ export function runReconcile(deps: SyncDeps): Promise<RunResult> {
   });
 }
 
-/** MLS-9: delete all MLS data (license terminated). Requires explicit confirmation. */
-export function runPurge(deps: SyncDeps, opts: { confirm: boolean }): Promise<RunResult> {
-  if (!opts.confirm) return Promise.reject(new Error("Purge deletes all MLS data: pass confirm"));
+/**
+ * MLS-9: delete all MLS data (license terminated), or with `mockOnly` just the
+ * fictional preview rows (before the live feed starts). Requires confirmation.
+ */
+export function runPurge(deps: SyncDeps, opts: { confirm: boolean; mockOnly?: boolean }): Promise<RunResult> {
+  if (!opts.confirm) return Promise.reject(new Error("Purge deletes MLS data: pass confirm"));
   return withRun(deps, "purge", async (run) => {
-    const res = await deps.store.purgeAll();
+    const res = opts.mockOnly ? await deps.store.purgeMock() : await deps.store.purgeAll();
     run.add("listings", res.listings);
     run.add("members", res.members);
     await run.removePhotos(res.storagePaths);
-    if (deps.bucket) run.add("bucketObjectsRemoved", await deps.bucket.removeAll());
+    if (deps.bucket && !opts.mockOnly) run.add("bucketObjectsRemoved", await deps.bucket.removeAll());
     return null;
   });
 }

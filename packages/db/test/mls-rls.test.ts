@@ -109,7 +109,7 @@ describe("MLS RLS", () => {
 
     it("reads offices and feature flags", async () => {
       expect(await t.as("anon", null, (q) => keys(q, "mls_offices", "office_key"))).toEqual(["O-VABRA"]);
-      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["public_sold", "public_stats"]);
+      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["public_sold", "public_stats", "site_scl_enabled"]);
     });
 
     it.each(["mls_listing_vow", "mls_price_events", "mls_listing_full", "mls_members", "mls_agent_access", "mls_sync_runs"])(
@@ -258,6 +258,7 @@ describe("MLS RLS", () => {
       expect(await t.query(`select key, enabled from feature_flags order by key`)).toEqual([
         { key: "public_sold", enabled: false },
         { key: "public_stats", enabled: false },
+        { key: "site_scl_enabled", enabled: false },
       ]);
     });
 
