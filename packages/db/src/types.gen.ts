@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_requests: {
+        Row: {
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          note: string | null
+          profile_id: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["deletion_request_status"]
+        }
+        Insert: {
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          note?: string | null
+          profile_id?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["deletion_request_status"]
+        }
+        Update: {
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          note?: string | null
+          profile_id?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["deletion_request_status"]
+        }
+        Relationships: []
+      }
       agent_profiles: {
         Row: {
           bio: string
@@ -93,6 +123,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      app_settings: {
+        Row: {
+          default_agent_id: string | null
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          default_agent_id?: string | null
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          default_agent_id?: string | null
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       cities: {
         Row: {
@@ -948,31 +996,49 @@ export type Database = {
       }
       profiles: {
         Row: {
+          agent_id: string | null
+          alerts_email_opt_in: boolean
+          alerts_opt_in_at: string | null
           created_at: string
           email: string
           full_name: string
           id: string
+          onboarded_at: string | null
+          phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
           vow_accepted_at: string | null
+          vow_terms_version: string | null
         }
         Insert: {
+          agent_id?: string | null
+          alerts_email_opt_in?: boolean
+          alerts_opt_in_at?: string | null
           created_at?: string
           email: string
           full_name?: string
           id: string
+          onboarded_at?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           vow_accepted_at?: string | null
+          vow_terms_version?: string | null
         }
         Update: {
+          agent_id?: string | null
+          alerts_email_opt_in?: boolean
+          alerts_opt_in_at?: string | null
           created_at?: string
           email?: string
           full_name?: string
           id?: string
+          onboarded_at?: string | null
+          phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           vow_accepted_at?: string | null
+          vow_terms_version?: string | null
         }
         Relationships: []
       }
@@ -1255,6 +1321,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_vow_terms: { Args: { p_version: string }; Returns: string }
+      can_see_member: { Args: { p_profile: string }; Returns: boolean }
+      complete_onboarding: { Args: never; Returns: undefined }
       content_launch_blockers: {
         Args: never
         Returns: {
@@ -1335,12 +1404,23 @@ export type Database = {
           total_count: number
         }[]
       }
+      request_account_deletion: { Args: never; Returns: string }
+      set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
+      set_member_role: {
+        Args: { p_role: Database["public"]["Enums"]["user_role"] }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
+      update_my_profile: {
+        Args: { p_full_name: string; p_phone: string | null }
+        Returns: undefined
+      }
     }
     Enums: {
       city_kind: "city" | "unincorporated"
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
+      deletion_request_status: "pending" | "completed" | "cancelled"
       lead_kind: "contact" | "valuation" | "tour" | "transform" | "newsletter"
       mls_data_level: "IDX" | "VOW" | "FULL"
       mls_sync_kind: "incremental" | "reconcile" | "purge"
@@ -1350,7 +1430,7 @@ export type Database = {
       receipt_source: "drive" | "dropbox" | "manual"
       seller_type: "normal" | "trust" | "successor_trustee" | "probate"
       task_phase: "after_ratification" | "closing_week" | "after_coe"
-      user_role: "admin" | "agent" | "va" | "tc" | "seller" | "buyer"
+      user_role: "admin" | "agent" | "va" | "tc" | "seller" | "buyer" | "both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1931,6 +2011,7 @@ export const Constants = {
       city_kind: ["city", "unincorporated"],
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
+      deletion_request_status: ["pending", "completed", "cancelled"],
       lead_kind: ["contact", "valuation", "tour", "transform", "newsletter"],
       mls_data_level: ["IDX", "VOW", "FULL"],
       mls_sync_kind: ["incremental", "reconcile", "purge"],
@@ -1940,7 +2021,7 @@ export const Constants = {
       receipt_source: ["drive", "dropbox", "manual"],
       seller_type: ["normal", "trust", "successor_trustee", "probate"],
       task_phase: ["after_ratification", "closing_week", "after_coe"],
-      user_role: ["admin", "agent", "va", "tc", "seller", "buyer"],
+      user_role: ["admin", "agent", "va", "tc", "seller", "buyer", "both"],
     },
   },
   storage: {

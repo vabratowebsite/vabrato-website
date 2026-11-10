@@ -33,3 +33,10 @@ export function routeForSite(site: Site, pathname: string): "next" | "not-found"
   if (isScl) return "not-found";
   return { rewrite: pathname === "/" ? SCL_PREFIX : `${SCL_PREFIX}${pathname}` };
 }
+
+/** Paths that need the member session (refreshed by middleware). */
+export const MEMBER_PATH_PREFIXES = ["/my", "/auth", "/api/my"] as const;
+
+export function isMemberPath(pathname: string): boolean {
+  return MEMBER_PATH_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}

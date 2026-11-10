@@ -19,6 +19,9 @@ export interface SiteHeaderProps {
   joinHref?: string;
   searchHref?: string;
   logoSrc?: string;
+  /** Signed in: "Sign in" / "Join free" become a single "My portal" link. */
+  signedIn?: boolean;
+  portalHref?: string;
 }
 
 /** Centered logo, dot-separated nav, Sign in / Join, MENU + search (mockups 01, 03, 09). */
@@ -30,6 +33,8 @@ export function SiteHeader({
   joinHref = "/join",
   searchHref = "/search",
   logoSrc,
+  signedIn = false,
+  portalHref = "/my",
 }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -63,24 +68,38 @@ export function SiteHeader({
           <Logo src={logoSrc} size="sm" />
         </a>
         <div className="flex items-center justify-end gap-2">
-          <a
-            href={signInHref}
-            className={cx(
-              "hidden min-h-[32px] items-center px-2 font-body text-label font-medium uppercase tracking-label text-ink sm:flex",
-              focusLight,
-            )}
-          >
-            Sign in
-          </a>
-          <a
-            href={joinHref}
-            className={cx(
-              "flex min-h-[32px] items-center bg-navy px-4 font-body text-label font-medium uppercase tracking-label text-white hover:bg-navy-deep",
-              focusLight,
-            )}
-          >
-            Join free
-          </a>
+          {signedIn ? (
+            <a
+              href={portalHref}
+              className={cx(
+                "flex min-h-[32px] items-center bg-navy px-4 font-body text-label font-medium uppercase tracking-label text-white hover:bg-navy-deep",
+                focusLight,
+              )}
+            >
+              My portal
+            </a>
+          ) : (
+            <>
+              <a
+                href={signInHref}
+                className={cx(
+                  "hidden min-h-[32px] items-center px-2 font-body text-label font-medium uppercase tracking-label text-ink sm:flex",
+                  focusLight,
+                )}
+              >
+                Sign in
+              </a>
+              <a
+                href={joinHref}
+                className={cx(
+                  "flex min-h-[32px] items-center bg-navy px-4 font-body text-label font-medium uppercase tracking-label text-white hover:bg-navy-deep",
+                  focusLight,
+                )}
+              >
+                Join free
+              </a>
+            </>
+          )}
         </div>
       </div>
 
