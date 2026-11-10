@@ -20,6 +20,8 @@ export function LeadForm({
   successMessage = "Thanks. An agent will reply within one business day.",
   tone = "light",
   askPhone = true,
+  signinToken,
+  nextHref,
   children,
 }: {
   kind: LeadKind;
@@ -30,6 +32,10 @@ export function LeadForm({
   successMessage?: string;
   tone?: "light" | "dark";
   askPhone?: boolean;
+  /** Open-house sign-in: the event's link token (kind "open_house_signin"). */
+  signinToken?: string;
+  /** Shown after sending, e.g. "Next visitor" on the open-house tablet. */
+  nextHref?: string;
   children?: ReactNode;
 }) {
   const [state, action, pending] = useActionState<LeadFormState, FormData>(submitLead, { status: "idle" });
@@ -39,9 +45,16 @@ export function LeadForm({
 
   if (state.status === "sent") {
     return (
-      <p role="status" className={`font-body text-body ${text}`}>
-        {successMessage}
-      </p>
+      <div className="space-y-4">
+        <p role="status" className={`font-body text-body ${text}`}>
+          {successMessage}
+        </p>
+        {nextHref && (
+          <a href={nextHref} className="inline-flex min-h-[44px] items-center bg-navy px-6 py-3 font-body text-[12px] font-medium uppercase tracking-label text-white focus:outline-none focus:ring-2 focus:ring-navy focus:ring-offset-2">
+            Next visitor
+          </a>
+        )}
+      </div>
     );
   }
 
@@ -51,6 +64,7 @@ export function LeadForm({
       <input type="hidden" name="site" value={site} />
       {listingKey && <input type="hidden" name="listingKey" value={listingKey} />}
       {citySlug && <input type="hidden" name="citySlug" value={citySlug} />}
+      {signinToken && <input type="hidden" name="signinToken" value={signinToken} />}
       {/* Honeypot: hidden from people and assistive tech; bots fill it. */}
       <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
         <label>

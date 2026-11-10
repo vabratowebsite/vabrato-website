@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { icsEscape, openHouseIcs } from "./ics";
+import { icsEscape, openHouseIcs, saleTimelineIcs } from "./ics";
 
 const base = { listing_key: "FX-001", street: "107 Sample Ct", city: "San Carlos", postal_code: "94070", address_display: true };
 const make = (listing = base) =>
@@ -25,5 +25,25 @@ describe("open house .ics", () => {
 
   it("escapes text", () => {
     expect(icsEscape("a;b,c\\d\ne")).toBe("a\\;b\\,c\\\\d\\ne");
+  });
+});
+
+describe("sale timeline .ics", () => {
+  it("has one all-day event per milestone", () => {
+    const ics = saleTimelineIcs({
+      dealId: "d1",
+      address: "88 Fictional Dr, San Carlos",
+      milestones: [
+        { key: "ratified", label: "Contract ratified", date: "2026-10-14" },
+        { key: "coe", label: "Close of escrow", date: "2026-10-31" },
+      ],
+      url: "https://vabrato.com/my/seller",
+      now: new Date("2026-11-10T00:00:00Z"),
+    });
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261031\r\nDTEND;VALUE=DATE:20261101\r\n");
+    expect(ics).toContain("UID:d1-coe@vabrato.com");
+    expect(ics).toContain("SUMMARY:Close of escrow: 88 Fictional Dr\\, San Carlos");
+    expect(ics.split("\r\n").every((l) => l.length <= 75)).toBe(true);
   });
 });

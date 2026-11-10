@@ -57,3 +57,32 @@ export function openHouseIcs(opts: {
   ];
   return lines.map(fold).join("\r\n") + "\r\n";
 }
+
+/** All-day events for the seller's sale timeline ("Add to calendar", mockup 06). */
+export function saleTimelineIcs(opts: {
+  dealId: string;
+  address: string;
+  milestones: { key: string; label: string; date: string }[];
+  url: string;
+  now?: Date;
+}): string {
+  const day = (iso: string) => iso.replace(/-/g, "");
+  const next = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10).replace(/-/g, "");
+  };
+  const events = opts.milestones.flatMap((m) => [
+    "BEGIN:VEVENT",
+    `UID:${icsEscape(`${opts.dealId}-${m.key}`)}@vabrato.com`,
+    `DTSTAMP:${stamp((opts.now ?? new Date()).toISOString())}`,
+    `DTSTART;VALUE=DATE:${day(m.date)}`,
+    `DTEND;VALUE=DATE:${next(m.date)}`,
+    `SUMMARY:${icsEscape(`${m.label}: ${opts.address}`)}`,
+    `DESCRIPTION:${icsEscape(`Your sale timeline: ${opts.url}`)}`,
+    "TRANSP:TRANSPARENT",
+    "END:VEVENT",
+  ]);
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Vabrato Real Estate Services//Sale timeline//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", ...events, "END:VCALENDAR"];
+  return lines.map(fold).join("\r\n") + "\r\n";
+}

@@ -8,6 +8,7 @@ import { monthlyHoa } from "@/lib/payment";
 import { resolveListingPhoto } from "@/lib/photos";
 import type { Listing } from "@/lib/public/listings";
 import { breadcrumbJsonLd, listingJsonLd, openHouseJsonLd } from "@/lib/seo";
+import { ListingViewBeacon } from "@/member/components/ListingViewBeacon";
 import { PriceHistory } from "@/member/components/PriceHistory";
 import { SaveHomeButton } from "@/member/components/SaveIslands";
 import { FactsRow, LockedHistory, ListingGallery, ListingQa, PropertyDetails, StatusPills } from "./detail";
@@ -50,6 +51,7 @@ export function ListingDetail({
 
   return (
     <>
+      {site === "vabrato" && listing.is_own_listing && <ListingViewBeacon listingKey={listing.listing_key} />}
       <BreadcrumbBar items={crumbs} />
       <ListingGallery listing={listing} title={title} />
 

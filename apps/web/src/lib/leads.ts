@@ -10,7 +10,7 @@ import { z } from "zod";
 //   - per-email limit in the database (5/hour)
 // Leads are inserted without .select(): the public can never read them back.
 
-export const LEAD_KINDS = ["contact", "valuation", "tour", "transform", "newsletter"] as const;
+export const LEAD_KINDS = ["contact", "valuation", "tour", "transform", "newsletter", "open_house_signin"] as const;
 export type LeadKind = (typeof LEAD_KINDS)[number];
 
 const trimmed = (max: number) =>
@@ -43,6 +43,8 @@ const PAYLOAD_FIELDS: Record<LeadKind, string[]> = {
   tour: ["tourDate", "tourMode"],
   transform: ["address", "projectType", "budget"],
   newsletter: [],
+  // Sent through submit_open_house_signin() with the event's link token.
+  open_house_signin: ["hasAgent"],
 };
 
 export type ParsedLead =
@@ -131,4 +133,12 @@ export function leadRow(lead: LeadInput, ipHash: string | null) {
     site: lead.site,
     ip_hash: ipHash,
   };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** The sign-in link token from an open-house form, or null. */
+export function signinToken(form: FormData): string | null {
+  const v = form.get("signinToken");
+  return typeof v === "string" && UUID_RE.test(v) ? v : null;
 }

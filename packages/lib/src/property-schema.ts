@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 // Deterministic status ladder for tracked properties ("homes I'm pursuing";
-// free-text column in the DB, the app constrains it). Shared by /my
-// (apps/web) and the apps/buyer prototype until S5 retires it.
+// free-text column in the DB, the app constrains it). Used by /my in
+// apps/web; shared so apps/mobile can use it too (S7).
 export const PROPERTY_STATUSES = [
   "watching",
   "toured",

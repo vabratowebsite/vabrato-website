@@ -134,8 +134,9 @@ export async function inviteSellerAction(
 
   if (existing) {
     sellerId = existing.id;
+    // A buyer who is now also selling sees both sections of /my.
     if (existing.role === "buyer") {
-      await service.from("profiles").update({ role: "seller" }).eq("id", existing.id);
+      await service.from("profiles").update({ role: "both" }).eq("id", existing.id);
     }
   } else {
     const { data: created, error: createError } = await service.auth.admin.createUser({

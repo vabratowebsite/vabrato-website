@@ -31,6 +31,11 @@ describe("renderNotification", () => {
     }
   });
 
+  it("points the welcome email at the seller portal on the site it was sent from", () => {
+    expect(renderNotification("seller_welcome", MERGE).body).toContain("https://vabrato.com/my/seller");
+    expect(renderNotification("seller_welcome", MERGE, { siteUrl: "https://preview.example.test" }).body).toContain("https://preview.example.test/my/seller");
+  });
+
   it("throws on unknown template keys (no dynamic content, ever)", () => {
     expect(() => renderNotification("marketing_blast", MERGE)).toThrow(/Unknown notification/);
   });
