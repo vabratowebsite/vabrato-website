@@ -22,8 +22,8 @@ Everything on the public site that's still a placeholder, and what Vabrato needs
 
 | Item | Where it shows | Where it lives |
 |---|---|---|
-| Official IDX logo or icon | Other brokers' listing cards and details (MLS-2) | `apps/web/src/lib/mls-legal.ts` |
-| Official IDX disclaimer text | Every page with listing data (MLS-1) | `apps/web/src/lib/mls-legal.ts` (one file; set `MLS_LEGAL_IS_PLACEHOLDER = false`) |
+| Official IDX logo or icon | Other brokers' listing cards and details (MLS-2) | `packages/lib/src/mls-legal.ts` |
+| Official IDX disclaimer text | Every page with listing data (MLS-1) and every alert email | `packages/lib/src/mls-legal.ts` (one file; set `MLS_LEGAL_IS_PLACEHOLDER = false`) |
 
 ## Brand
 
