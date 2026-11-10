@@ -29,7 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
-| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (merged, 0018 on hosted 2026-11-10; sending waits for Render + Resend); PR 4 tracker, tours, documents, messages (merged, 0019 on hosted 2026-11-10; uploads checked on the preview); PR 5 seller portal, listing activity, open-house sign-in, prototypes retired (0020–0021, not yet on hosted) |
+| S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
@@ -197,6 +197,58 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
   - Report and screenshots in `docs/screenshots/s4/`.
   - Run against a local production build on Postgres 16 + PostgREST with the same migrations and preview seed. This session can't reach the hosted project or `*.vercel.app`. How to rerun it against the preview: `scripts/qa/README.md`.
 - **Still to do by hand:** paste a preview listing, city and post URL into validator.schema.org (blocked from this session). Send one test lead on the preview and delete it afterwards.
+
+### S5 membership portal (built 2026-11-10; PRs #12–#17)
+
+- **Accounts (PR 1, #12):** one free account per person, with role buyer,
+  seller or both. Join and sign-in use a magic link or Google (Google OAuth is
+  in Testing mode with 5 test users). Also:
+  - an onboarding fallback, with consents unchecked by default;
+  - account page and a deletion request queue;
+  - the assigned agent card;
+  - the staff notice.
+- **Saved homes and searches (PR 2, #13):** hearts and "Save search" on the
+  public pages, Compare, and the price-history teaser. The VOW pages
+  (`/my/sold`, `/my/listing/[key]`, history) are built and tested, but off
+  behind `vow_enabled` until MLSListings allows VOW.
+- **Alerts (PR 3, #14):** `run_member_alerts()` runs after each sync. It
+  feeds the bell, the "What changed" feed, and instant or daily emails
+  (static templates, one-click unsubscribe).
+- **Buyer records (PR 4, #15):**
+  - homes I'm pursuing (the tracker moved from apps/buyer);
+  - tour requests, which only staff confirm;
+  - the buyer agreement field;
+  - documents (magic-byte check, signed download links);
+  - messages with the agent, plus the console inbox.
+- **Seller portal (PR 5, #16):** the timeline, to-dos, wiring banner,
+  calendar download and listing activity. Also open-house sign-in links, and
+  the listing-key field in the console. apps/buyer and apps/seller are deleted.
+- **Done-when:**
+  - G3 complete: yes.
+  - RLS tests for every member table: yes (`packages/db/test/member-*.test.ts`).
+  - Test buyer alerted within 30 minutes of a feed change: proven against the
+    mock feed (`packages/mls/src/sync/alerts.e2e.test.ts`). Live delivery waits
+    on MLSListings credentials, the Render sync job and Resend.
+- **QA (PR 6):**
+  - `scripts/qa/s5-qa.mjs` covers 32 pages signed in as fictional buyer,
+    seller, both, VOW and staff accounts, plus the signed-out account pages.
+    axe at 1440 and 390 px: 0 violations in 64 runs.
+  - Screenshots and `report.json` are in `docs/screenshots/s5/`.
+  - The five flow scripts (auth, saved, alerts, buyer, seller) all pass.
+  - All runs used a local production build on Postgres 16 with Supabase Auth
+    and PostgREST.
+  - Checked on the preview by you: Google sign-in and document uploads.
+- **Your steps (not blocking S6):**
+  - Set `LISTING_VIEW_SECRET` on vabrato-website and add its hash to the
+    database (the SQL is under "Seller portal setup" below).
+  - Once Mark has signed in on the website, set him as admin and default agent
+    (`app_settings.default_agent_id`). Confirm the SQL with Claude first.
+  - Turn on Resend (domain verification, `RESEND_API_KEY`,
+    `NOTIFICATIONS_FROM`). This also lifts the magic-link email cap.
+  - VOW Terms of Use wording (legal) before `vow_enabled` is turned on.
+  - At S9: Google OAuth privacy and terms links, then publish the OAuth app.
+- **Follow-ups:** regenerate `packages/db/src/types.gen.ts` from hosted. It
+  was hand-edited for 0015–0021, and the tests and typecheck cover it.
 
 **Must ship before launch (S5 review item 17):** S6 notifications for new
 member messages (email and in-console) and for tour requests. Until then a

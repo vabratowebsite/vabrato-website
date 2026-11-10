@@ -1,4 +1,4 @@
-# Site QA (S4)
+# Site QA (S4, S5)
 
 `s4-qa.mjs` runs, for every public page type:
 
@@ -101,3 +101,13 @@ insert into listing_view_keys (key_hash) values (encode(sha256(convert_to('<the 
 ```
 
 `SHOTS=/some/dir` saves screenshots of the seller pages.
+
+## S5 QA pass
+
+`s5-qa.mjs` opens every member and account page as fictional buyer, seller, both, VOW and staff accounts, plus the signed-out pages. For each page it checks the HTTP status, runs axe at 1440 and 390 px and takes full-page screenshots. Screenshots and `report.json` go to `docs/screenshots/s5/`.
+
+It needs the full fictional seed, apps/va on :3000 and `REVALIDATE_SECRET` (it turns `vow_enabled` on for the VOW pages and off again at the end).
+
+```bash
+QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa REVALIDATE_SECRET=… node scripts/qa/s5-qa.mjs
+```
