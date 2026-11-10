@@ -3,6 +3,8 @@ import { Button, KpiTile, Panel, PanelAction } from "@vabrato/ui/web";
 import { MlsAttribution } from "@/components/MlsAttribution";
 import { ResultsGrid } from "@/components/search/results";
 import { mlsLastUpdated } from "@/lib/public/listings";
+import { alertFeed, unseenAlertCount } from "@/member/alerts";
+import { AlertFeed } from "@/member/components/AlertFeed";
 import { MemberShell } from "@/member/components/MemberShell";
 import { SearchFormFrequency } from "@/member/components/SearchFrequency";
 import { savedListings } from "@/member/listings";
@@ -11,15 +13,17 @@ import { isFrequency, searchHref } from "@/member/saved";
 import { requirePortalMember } from "@/member/session";
 
 // Buyer portal home (mockup 05): KPIs, latest saved homes, saved searches.
-// PR 3 adds "What changed" (alerts); PR 4 adds homes I'm pursuing and tours.
+// "What changed" is the alert feed (PR 3); PR 4 adds homes I'm pursuing and tours.
 export default async function BuyerHome() {
   const member = await requirePortalMember("/my/buyer");
   if (!buys(member.role)) redirect("/my/seller");
   const first = member.profile.full_name.split(/\s+/)[0];
-  const [saved, searches, lastUpdated] = await Promise.all([
+  const [saved, searches, lastUpdated, changes, newCount] = await Promise.all([
     savedListings(member.supabase),
     member.supabase.from("saved_searches").select("id, name, criteria, frequency").order("created_at", { ascending: false }).limit(5),
     mlsLastUpdated(),
+    alertFeed(member.supabase, 5),
+    unseenAlertCount(member.supabase),
   ]);
   const searchList = searches.data ?? [];
 
@@ -28,8 +32,12 @@ export default async function BuyerHome() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiTile value={String(saved.keys.length)} label="Saved homes" />
         <KpiTile value={String(searchList.length)} label="Saved searches" />
-        <KpiTile value={String(saved.rows.length)} label="Saved homes on the market" />
+        <KpiTile value={String(newCount)} label="New updates" />
       </div>
+
+      <Panel title="What changed" action={changes.length ? <PanelAction href="/my/alerts">All activity</PanelAction> : undefined}>
+        <AlertFeed items={changes} emptyText="New listings that match your saved searches, and price changes on your saved homes, will show up here." />
+      </Panel>
 
       <Panel title="Saved homes" action={saved.keys.length ? <PanelAction href="/my/saved">All saved homes</PanelAction> : undefined}>
         {saved.rows.length ? (
@@ -60,7 +68,7 @@ export default async function BuyerHome() {
           <p className="font-body text-body text-ink">On the search page, set your filters and choose &ldquo;Save search&rdquo; to get alerts for new matches.</p>
         )}
       </Panel>
-      {saved.rows.length > 0 && <MlsAttribution lastUpdated={lastUpdated} />}
+      {(saved.rows.length > 0 || changes.length > 0) && <MlsAttribution lastUpdated={lastUpdated} />}
     </MemberShell>
   );
 }

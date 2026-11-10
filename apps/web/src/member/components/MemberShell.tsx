@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
-import { Avatar, EqualHousingIcon, PortalShell } from "@vabrato/ui/web";
+import { Avatar, BellIcon, EqualHousingIcon, PortalShell } from "@vabrato/ui/web";
 import { BROKER_DISCLOSURE, ORG } from "@/lib/org";
 import { flagEnabled } from "@/lib/public/listings";
 import { MemberQueryProvider } from "./MemberQueryProvider";
+import { unseenAlertCount } from "../alerts";
 import { portalNav, initials, type PortalPage } from "../nav";
-import type { MemberRole } from "../roles";
+import { buys, type MemberRole } from "../roles";
 import { assignedAgent, type Member } from "../session";
 
 // Portal frame for every /my page (mockups 05/06): role-based nav, agent card,
@@ -28,7 +29,11 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow] = await Promise.all([assignedAgent(member.supabase, member.profile.agent_id), flagEnabled("vow_enabled")]);
+  const [agent, vow, unseen] = await Promise.all([
+    assignedAgent(member.supabase, member.profile.agent_id),
+    flagEnabled("vow_enabled"),
+    buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
+  ]);
   const nav = portalNav(role, { vow }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current })),
@@ -47,6 +52,21 @@ export async function MemberShell({
         topRight={
           <>
             {topRight}
+            {buys(role) && (
+              <a
+                href="/my/alerts"
+                aria-current={current === "alerts" ? "page" : undefined}
+                className="relative flex h-11 w-11 items-center justify-center text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+              >
+                <BellIcon size={20} />
+                <span className="sr-only">What changed{unseen ? `, ${unseen} new` : ""}</span>
+                {unseen > 0 && (
+                  <span aria-hidden="true" className="absolute right-0.5 top-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-pill bg-gold px-1 text-[11px] font-bold text-ink">
+                    {unseen > 99 ? "99+" : unseen}
+                  </span>
+                )}
+              </a>
+            )}
             <Avatar initials={initials(member.profile.full_name, member.profile.email)} label={`Signed in as ${name}`} />
           </>
         }

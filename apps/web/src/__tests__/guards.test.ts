@@ -166,7 +166,7 @@ describe("member listing guards", () => {
     for (const f of files(join(SRC, "app/my"))) {
       if (!f.endsWith("page.tsx")) continue;
       const text = readFileSync(f, "utf8");
-      const readsListings = /\b(savedListings|soldSearch|memberListing|cards\(|search_listings|listing_cards)\b/.test(text);
+      const readsListings = /\b(savedListings|soldSearch|memberListing|cards\(|search_listings|listing_cards|alertFeed)\b/.test(text);
       if (readsListings && !/<MlsAttribution\b/.test(text)) missing.push(relative(SRC, f));
     }
     expect(missing).toEqual([]);
@@ -204,5 +204,23 @@ describe("member listing guards", () => {
         expect(m[0], `${relative(SRC, f)} ${m[1]}`).toMatch(/if \(!sameOrigin\(req\)\) return forbiddenOrigin\(\);/);
       }
     }
+  });
+});
+
+// S5 PR 3: alerts.
+describe("alert guards", () => {
+  const read = (p: string) => readFileSync(join(SRC, p), "utf8");
+
+  it("never unsubscribes on GET (review item 15)", () => {
+    const route = read("app/api/alerts/unsubscribe/route.ts");
+    const get = route.slice(route.indexOf("export async function GET"));
+    expect(get).not.toMatch(/unsubscribeAlerts/);
+    expect(read("app/(account)/alerts/unsubscribe/page.tsx")).not.toMatch(/unsubscribeAlerts\(/);
+  });
+
+  it("shows only the new price in the feed (review item 3)", () => {
+    const feed = read("member/alerts.ts");
+    expect(feed).toMatch(/select\("id, kind, listing_key, new_price, created_at, seen_at, saved_searches\(name\)"\)/);
+    expect(feed).not.toMatch(/old_price|previous|close_price/);
   });
 });

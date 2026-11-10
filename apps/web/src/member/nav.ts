@@ -4,7 +4,7 @@ import { buys, sells, type MemberRole } from "./roles";
 // sections show; Both sees both"). Only pages that exist are listed; later S5
 // PRs add saved homes, searches, tours, documents and messages.
 
-export type PortalPage = "buyer" | "saved" | "searches" | "compare" | "sold" | "seller" | "account";
+export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "sold" | "seller" | "account";
 
 export interface NavGroup {
   label?: string;
