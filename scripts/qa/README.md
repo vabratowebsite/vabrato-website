@@ -67,3 +67,10 @@ QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:5
 ```
 
 `STAFF_EMAIL` must be an existing admin account in that database.
+
+`s5-saved-flow.mjs` covers saved homes and searches, compare, the price-history teaser and the VOW pages. It runs with `vow_enabled` off, then on. Same stack, plus:
+
+- the full fictional seed (`seed-preview.ts --publish-placeholders`, without `--public-only`), so VOW rows exist;
+- `REVALIDATE_SECRET` set to the running server's secret: flags are read through Next's 15-minute cache, so the script calls `/api/revalidate` after flipping one.
+
+After applying a migration to the local database, run `notify pgrst, 'reload schema'`, or PostgREST keeps the old schema and the new tables return errors. Hosted Supabase does this automatically.
