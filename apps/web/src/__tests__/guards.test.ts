@@ -73,6 +73,24 @@ describe("public site guards", () => {
     expect(listing).toMatch(/canonical: `\$\{SITE_URL\}\$\{listingPath\(parts\)\}`/);
   });
 
+  it("collects personal data only through LeadForm, which shows the privacy notice and consent line (review item 4)", () => {
+    const leadForm = readFileSync(join(SRC, "components/forms/LeadForm.tsx"), "utf8");
+    expect(leadForm).toMatch(/\/privacy/);
+    expect(leadForm).toMatch(/may call or text me/);
+    expect(leadForm).toMatch(/name="website"/); // honeypot
+    const stray: string[] = [];
+    for (const dir of PUBLIC_DIRS) {
+      for (const f of files(dir)) {
+        if (f.endsWith("LeadForm.tsx")) continue;
+        const text = readFileSync(f, "utf8");
+        // Search forms are GET forms with no personal data; anything else must use LeadForm.
+        for (const m of text.matchAll(/<form\b[^>]*>/g)) if (!/method="get"/.test(m[0])) stray.push(`${relative(SRC, f)}: ${m[0]}`);
+        if (/type="email"/.test(text) && !/<LeadForm\b/.test(text) && !f.endsWith("fields.tsx")) stray.push(`${relative(SRC, f)}: email field outside LeadForm`);
+      }
+    }
+    expect(stray).toEqual([]);
+  });
+
   it("puts the broker disclosure and Equal Housing logo in the vabrato.com footer", () => {
     const layout = readFileSync(join(SRC, "app/(site)/layout.tsx"), "utf8");
     expect(layout).toMatch(/dre=\{BROKER_DISCLOSURE\}/);

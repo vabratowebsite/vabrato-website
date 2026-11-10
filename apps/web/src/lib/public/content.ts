@@ -65,3 +65,61 @@ export async function cityGuide(slug: string): Promise<CityGuide | null> {
   if (error) throw new Error(`city guide query failed: ${error.message}`);
   return data ? GuideSchema.parse(data) : null;
 }
+
+// Agent profiles (SPEC <agent_roster>; mockups 09/10). Business contact only.
+const skillList = z.array(z.object({ title: z.string(), detail: z.string().optional() })).catch([]);
+const socialList = z
+  .array(z.object({ network: z.enum(["facebook", "instagram", "youtube", "linkedin"]), href: z.string().url() }))
+  .catch([]);
+
+export const AgentSchema = z.object({
+  slug: z.string(),
+  display_name: z.string(),
+  title: z.string(),
+  bio: z.string(),
+  photo_path: z.string().nullable(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+  license_number: z.string().nullable(),
+  mls_member_id: z.string().nullable(),
+  start_year: z.number().nullable(),
+  social_links: socialList,
+  outlook: z.string(),
+  skills: skillList,
+  history: z.string(),
+  video_youtube_id: z.string().nullable(),
+  faq: faqList,
+});
+export type Agent = z.infer<typeof AgentSchema>;
+
+const AGENT_COLUMNS =
+  "slug, display_name, title, bio, photo_path, phone, email, license_number, mls_member_id, start_year, social_links, outlook, skills, history, video_youtube_id, faq";
+
+export async function listAgents(): Promise<Agent[]> {
+  const { data, error } = await publicSupabase().from("agent_profiles").select(AGENT_COLUMNS).order("sort");
+  if (error) throw new Error(`agent profiles query failed: ${error.message}`);
+  return z.array(AgentSchema).parse(data ?? []);
+}
+
+export async function getAgent(slug: string): Promise<Agent | null> {
+  const { data, error } = await publicSupabase().from("agent_profiles").select(AGENT_COLUMNS).eq("slug", slug).maybeSingle();
+  if (error) throw new Error(`agent profile query failed: ${error.message}`);
+  return data ? AgentSchema.parse(data) : null;
+}
+
+export async function listPosts(limit = 50): Promise<PostSummary[]> {
+  return latestPosts(limit);
+}
+
+const PostFullSchema = PostSchema.extend({ body_md: z.string() });
+export type Post = z.infer<typeof PostFullSchema>;
+
+export async function getPost(slug: string): Promise<Post | null> {
+  const { data, error } = await publicSupabase()
+    .from("posts")
+    .select("slug, kind, title, excerpt, body_md, published_at")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (error) throw new Error(`post query failed: ${error.message}`);
+  return data ? PostFullSchema.parse(data) : null;
+}

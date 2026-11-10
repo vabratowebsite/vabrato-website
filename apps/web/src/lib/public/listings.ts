@@ -198,3 +198,50 @@ export async function listCities(): Promise<City[]> {
   if (error) throw new Error(`cities query failed: ${error.message}`);
   return z.array(CitySchema).parse(data ?? []);
 }
+
+/**
+ * For-sale listings by one agent (agent profile pages), matched on the IDX
+ * ListAgentMlsId field. For-sale statuses only, so sold listings never show
+ * here even when `public_sold` is on (those come from public_own_sold()).
+ */
+export async function listingsByAgent(mlsMemberId: string, limit = 12): Promise<SearchRow[]> {
+  const { data, error } = await publicSupabase()
+    .from("mls_listings")
+    .select(
+      "listing_key, listing_id, standard_status, property_type, property_sub_type, list_price, city, postal_code, bedrooms_total, bathrooms_total, living_area, latitude, longitude, list_office_name, is_own_listing, address_display, modification_ts, data, mls_media(url, storage_path, sort_order)",
+    )
+    .eq("data->>ListAgentMlsId", mlsMemberId)
+    .in("standard_status", ["Active", "ActiveUnderContract", "Pending"])
+    .order("modification_ts", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`agent listings query failed: ${error.message}`);
+  const rows = z
+    .array(
+      SearchRowSchema.omit({ street: true, on_market_date: true, photo_url: true, photo_storage_path: true, next_open_house_start: true, next_open_house_end: true, total_count: true }).extend({
+        data: z.record(z.unknown()),
+        mls_media: z.array(z.object({ url: z.string().nullable(), storage_path: z.string().nullable(), sort_order: z.number() })),
+      }),
+    )
+    .parse(data ?? []);
+  return rows.map(({ data: d, mls_media, ...r }) => {
+    const str = (v: unknown) => (typeof v === "string" && v ? v : null);
+    const street = r.address_display
+      ? [str(d.StreetNumber), str(d.StreetName), str(d.StreetSuffix), str(d.UnitNumber) ? `#${str(d.UnitNumber)}` : null].filter(Boolean).join(" ") ||
+        str(d.UnparsedAddress)?.split(",")[0] ||
+        null
+      : null;
+    const photo = [...mls_media].sort((a, b) => a.sort_order - b.sort_order)[0];
+    return {
+      ...r,
+      latitude: r.address_display ? r.latitude : null,
+      longitude: r.address_display ? r.longitude : null,
+      street,
+      on_market_date: str(d.OnMarketDate),
+      photo_url: photo?.url ?? null,
+      photo_storage_path: photo?.storage_path ?? null,
+      next_open_house_start: null,
+      next_open_house_end: null,
+      total_count: rows.length,
+    };
+  });
+}
