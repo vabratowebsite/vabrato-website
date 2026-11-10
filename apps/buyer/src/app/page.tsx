@@ -3,7 +3,7 @@ import { Panel, T } from "@vabrato/ui";
 import { AccessDenied } from "@/components/access-denied";
 import { Header } from "@/components/header";
 import { requireSignIn } from "@/lib/auth";
-import { STATUS_LABELS, type PropertyStatus } from "@/lib/property-schema";
+import { STATUS_LABELS, type PropertyStatus } from "@vabrato/lib";
 import { supabaseServer } from "@/lib/supabase-server";
 import { AddPropertyForm } from "./add-property-form";
 

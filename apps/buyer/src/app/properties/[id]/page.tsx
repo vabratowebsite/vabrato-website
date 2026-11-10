@@ -4,7 +4,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { Header } from "@/components/header";
 import { deletePropertyAction, updateStatusAction } from "@/lib/actions";
 import { requireSignIn } from "@/lib/auth";
-import { PROPERTY_STATUSES, STATUS_LABELS, type PropertyStatus } from "@/lib/property-schema";
+import { PROPERTY_STATUSES, STATUS_LABELS, type PropertyStatus } from "@vabrato/lib";
 import { supabaseServer } from "@/lib/supabase-server";
 
 export const dynamic = "force-dynamic";

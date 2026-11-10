@@ -1,7 +1,8 @@
 import { z } from "zod";
 
-// Deterministic status ladder for tracked properties (free-text column in the
-// DB; the app constrains it).
+// Deterministic status ladder for tracked properties ("homes I'm pursuing";
+// free-text column in the DB, the app constrains it). Shared by /my
+// (apps/web) and the apps/buyer prototype until S5 retires it.
 export const PROPERTY_STATUSES = [
   "watching",
   "toured",
@@ -47,3 +48,14 @@ export function parsePropertyForm(
   }
   return { data: result.data, error: null };
 }
+
+/** Display steps of the portal StatusLadder (packages/ui); "lost" is shown as a pill instead. */
+export const LADDER_LABEL: Partial<Record<PropertyStatus, "Watching" | "Toured" | "Offer made" | "In escrow" | "Purchased">> = {
+  watching: "Watching",
+  toured: "Toured",
+  offer_made: "Offer made",
+  in_escrow: "In escrow",
+  purchased: "Purchased",
+};
+
+export const isPropertyStatus = (v: unknown): v is PropertyStatus => (PROPERTY_STATUSES as readonly string[]).includes(v as string);

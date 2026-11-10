@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePropertyForm } from "./property-schema";
+import { parsePropertyForm } from "../property-schema";
 
 function form(entries: Record<string, string>): FormData {
   const f = new FormData();
