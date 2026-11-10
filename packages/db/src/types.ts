@@ -72,3 +72,23 @@ export type AlertDelivery = Tables["alert_deliveries"]["Row"];
 export type TourStatus = Enums["tour_status"];
 export type MemberDocument = Tables["member_documents"]["Row"];
 export type Message = Tables["messages"]["Row"];
+
+export type OpenHouseSigninLink = Tables["open_house_signin_links"]["Row"];
+
+/** listing_performance(deal) (0021): counts only, IDX-level listing fields. */
+export interface ListingPerformanceWeek {
+  week_start: string;
+  views: number;
+  saves: number;
+  tour_requests: number;
+  open_house_signins: number;
+}
+export type ListingPerformance =
+  | { linked: false }
+  | {
+      linked: true;
+      listing_key: string;
+      listing: { standard_status: string | null; list_price: number | null } | null;
+      totals: Omit<ListingPerformanceWeek, "week_start">;
+      weeks: ListingPerformanceWeek[];
+    };

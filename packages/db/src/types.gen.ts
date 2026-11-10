@@ -397,6 +397,7 @@ export type Database = {
           days_to_close: number
           escrow_number: string | null
           id: string
+          listing_key: string | null
           ratification_date: string
           rent_back_days: number
           sale_price: number | null
@@ -413,6 +414,7 @@ export type Database = {
           days_to_close?: number
           escrow_number?: string | null
           id?: string
+          listing_key?: string | null
           ratification_date: string
           rent_back_days?: number
           sale_price?: number | null
@@ -429,6 +431,7 @@ export type Database = {
           days_to_close?: number
           escrow_number?: string | null
           id?: string
+          listing_key?: string | null
           ratification_date?: string
           rent_back_days?: number
           sale_price?: number | null
@@ -572,6 +575,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      listing_view_keys: {
+        Row: {
+          created_at: string
+          key_hash: string
+        }
+        Insert: {
+          created_at?: string
+          key_hash: string
+        }
+        Update: {
+          created_at?: string
+          key_hash?: string
+        }
+        Relationships: []
+      }
+      listing_view_visitors: {
+        Row: {
+          day: string
+          listing_key: string
+          visitor: string
+        }
+        Insert: {
+          day: string
+          listing_key: string
+          visitor: string
+        }
+        Update: {
+          day?: string
+          listing_key?: string
+          visitor?: string
+        }
+        Relationships: []
+      }
+      listing_views_daily: {
+        Row: {
+          day: string
+          listing_key: string
+          views: number
+        }
+        Insert: {
+          day: string
+          listing_key: string
+          views?: number
+        }
+        Update: {
+          day?: string
+          listing_key?: string
+          views?: number
+        }
+        Relationships: []
       }
       member_documents: {
         Row: {
@@ -1104,6 +1158,27 @@ export type Database = {
           },
         ]
       }
+      open_house_signin_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          open_house_key: string
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          open_house_key: string
+          token?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          open_house_key?: string
+          token?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           body_md: string
@@ -1589,6 +1664,32 @@ export type Database = {
           original_list_price: number
         }[]
       }
+      listing_performance: { Args: { p_deal: string }; Returns: Json }
+      open_house_signin_info: {
+        Args: { p_token: string }
+        Returns: {
+          accepting: boolean
+          city: string
+          end_time: string
+          listing_key: string
+          open_house_key: string
+          start_time: string
+          street: string
+        }[]
+      }
+      open_house_signin_link: { Args: { p_open_house_key: string }; Returns: string }
+      record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }
+      submit_open_house_signin: {
+        Args: {
+          p_consent_contact: boolean
+          p_email: string
+          p_has_agent: string
+          p_name: string
+          p_phone: string
+          p_token: string
+        }
+        Returns: undefined
+      }
       mark_alerts_seen: { Args: never; Returns: number }
       mark_messages_read: { Args: { p_member: string }; Returns: number }
       mls_last_updated: { Args: never; Returns: string }
@@ -1732,7 +1833,7 @@ export type Database = {
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
       deletion_request_status: "pending" | "completed" | "cancelled"
-      lead_kind: "contact" | "valuation" | "tour" | "transform" | "newsletter"
+      lead_kind: "contact" | "valuation" | "tour" | "transform" | "newsletter" | "open_house_signin"
       mls_data_level: "IDX" | "VOW" | "FULL"
       mls_sync_kind: "incremental" | "reconcile" | "purge"
       mls_sync_status: "running" | "succeeded" | "failed"
@@ -2326,7 +2427,7 @@ export const Constants = {
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
       deletion_request_status: ["pending", "completed", "cancelled"],
-      lead_kind: ["contact", "valuation", "tour", "transform", "newsletter"],
+      lead_kind: ["contact", "valuation", "tour", "transform", "newsletter", "open_house_signin"],
       mls_data_level: ["IDX", "VOW", "FULL"],
       mls_sync_kind: ["incremental", "reconcile", "purge"],
       mls_sync_status: ["running", "succeeded", "failed"],
