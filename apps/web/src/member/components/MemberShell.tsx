@@ -29,14 +29,21 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow, unseen] = await Promise.all([
+  const [agent, vow, unseen, unread] = await Promise.all([
     assignedAgent(member.supabase, member.profile.agent_id),
     flagEnabled("vow_enabled"),
     buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
+    member.supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("member_id", member.profile.id)
+      .neq("sender_id", member.profile.id)
+      .is("read_at", null)
+      .then((r) => r.count ?? 0),
   ]);
-  const nav = portalNav(role, { vow }).map((g) => ({
+  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread }).map((g) => ({
     label: g.label,
-    items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current })),
+    items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current, ...(it.count ? { count: it.count } : {}) })),
   }));
   const name = member.profile.full_name || member.profile.email;
 

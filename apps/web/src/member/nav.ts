@@ -4,15 +4,18 @@ import { buys, sells, type MemberRole } from "./roles";
 // sections show; Both sees both"). Only pages that exist are listed; later S5
 // PRs add saved homes, searches, tours, documents and messages.
 
-export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "sold" | "seller" | "account";
+export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "documents" | "messages" | "account";
 
 export interface NavGroup {
   label?: string;
-  items: { key: PortalPage | "search"; label: string; href: string }[];
+  items: { key: PortalPage | "search"; label: string; href: string; count?: number }[];
 }
 
-/** `vow`: show "Sold near me" (vow_enabled on; the page asks for the terms if needed). */
-export function portalNav(role: MemberRole, opts: { vow?: boolean } = {}): NavGroup[] {
+/**
+ * `vow`: show "Sold near me" (vow_enabled on; the page asks for the terms if
+ * needed). `unreadMessages`: badge on Messages.
+ */
+export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessages?: number } = {}): NavGroup[] {
   const groups: NavGroup[] = [];
   if (buys(role)) {
     groups.push({
@@ -22,10 +25,19 @@ export function portalNav(role: MemberRole, opts: { vow?: boolean } = {}): NavGr
         { key: "saved", label: "Saved homes", href: "/my/saved" },
         { key: "searches", label: "Saved searches", href: "/my/searches" },
         { key: "compare", label: "Compare", href: "/my/compare" },
+        { key: "tours", label: "Tours", href: "/my/tours" },
       ],
     });
   }
   if (sells(role)) groups.push({ label: role === "both" ? "Selling" : undefined, items: [{ key: "seller", label: "My sale", href: "/my/seller" }] });
+  // Shared by buyers and sellers, listed once.
+  groups.push({
+    label: role === "both" ? "Your team" : undefined,
+    items: [
+      { key: "documents", label: "Documents", href: "/my/documents" },
+      { key: "messages", label: "Messages", href: "/my/messages", ...(opts.unreadMessages ? { count: opts.unreadMessages } : {}) },
+    ],
+  });
   groups.push({
     label: "Explore",
     items: [{ key: "search", label: "Search homes", href: "/search" }, ...(opts.vow && buys(role) ? [{ key: "sold" as const, label: "Sold near me", href: "/my/sold" }] : [])],

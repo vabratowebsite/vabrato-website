@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { joinAction, signInAction, type AuthFormState } from "@/app/(account)/actions";
 import { TextField } from "@/components/forms/fields";
 import { Turnstile } from "@/components/forms/Turnstile";
@@ -30,11 +30,14 @@ function Sent({ email }: { email?: string }) {
 /** Join step 2 (mockup 04): details, consents, magic link or Google. */
 export function JoinForm({ role, next, vowEnabled }: { role: MemberRole; next?: string; vowEnabled: boolean }) {
   const [state, action, pending] = useActionState(joinAction, idle);
+  const provider = useRef<HTMLInputElement>(null);
   const err = state.fieldErrors ?? {};
   if (state.status === "sent") return <Sent email={state.email} />;
 
   return (
     <form action={action} noValidate className="space-y-5">
+      {/* Set by the button clicked: the submitter's own value isn't reliably sent with server actions. */}
+      <input ref={provider} type="hidden" name="provider" defaultValue="email" />
       <input type="hidden" name="role" value={role} />
       {next && <input type="hidden" name="next" value={next} />}
       <Honeypot />
@@ -71,10 +74,10 @@ export function JoinForm({ role, next, vowEnabled }: { role: MemberRole; next?: 
       <Turnstile />
       <FormMessage status={state.status} message={state.message} />
       <div className="flex flex-wrap gap-3">
-        <SubmitButton pending={pending} name="provider" value="email">
+        <SubmitButton pending={pending} onClick={() => provider.current && (provider.current.value = "email")}>
           Email me a sign-in link
         </SubmitButton>
-        <SubmitButton pending={pending} name="provider" value="google" variant="outline" formNoValidate>
+        <SubmitButton pending={pending} variant="outline" formNoValidate onClick={() => provider.current && (provider.current.value = "google")}>
           Continue with Google
         </SubmitButton>
       </div>
@@ -84,21 +87,23 @@ export function JoinForm({ role, next, vowEnabled }: { role: MemberRole; next?: 
 
 export function SignInForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signInAction, idle);
+  const provider = useRef<HTMLInputElement>(null);
   const err = state.fieldErrors ?? {};
   if (state.status === "sent") return <Sent email={state.email} />;
 
   return (
     <form action={action} noValidate className="space-y-5">
+      <input ref={provider} type="hidden" name="provider" defaultValue="email" />
       {next && <input type="hidden" name="next" value={next} />}
       <Honeypot />
       <TextField label="Email address" name="email" type="email" autoComplete="email" required error={err.email} />
       <Turnstile />
       <FormMessage status={state.status} message={state.message} />
       <div className="flex flex-wrap gap-3">
-        <SubmitButton pending={pending} name="provider" value="email">
+        <SubmitButton pending={pending} onClick={() => provider.current && (provider.current.value = "email")}>
           Email me a sign-in link
         </SubmitButton>
-        <SubmitButton pending={pending} name="provider" value="google" variant="outline" formNoValidate>
+        <SubmitButton pending={pending} variant="outline" formNoValidate onClick={() => provider.current && (provider.current.value = "google")}>
           Continue with Google
         </SubmitButton>
       </div>
