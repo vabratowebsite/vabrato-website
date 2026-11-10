@@ -171,6 +171,8 @@ export function articleJsonLd(p: { title: string; excerpt: string; path: string;
     description: p.excerpt,
     url: absoluteUrl(p.path),
     ...(p.publishedAt ? { datePublished: p.publishedAt } : {}),
+    // Posts are written by the brokerage, not a named agent.
+    author: { "@type": "Organization", name: ORG.name, url: SITE_URL },
     publisher: { "@id": absoluteUrl("/#organization") },
   };
 }

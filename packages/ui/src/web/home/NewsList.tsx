@@ -31,7 +31,7 @@ export function NewsList({
         {blurb && <p className="mt-3 max-w-sm font-body text-body-sm text-white/85">{blurb}</p>}
         <div className="mt-6">
           <Button href={allHref} variant="ghost-dark" size="sm">
-            Read more
+            Read more<span className="sr-only">: {title}</span>
           </Button>
         </div>
       </div>

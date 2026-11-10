@@ -15,5 +15,5 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Static assets, image optimizer and metadata files are served as is.
-  matcher: ["/((?!_next/|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: ["/((?!_next/|favicon.ico|icon.svg|robots.txt|sitemap.xml).*)"],
 };

@@ -1,6 +1,6 @@
 # Project Status
 
-> Last updated: 2026-11-10 (S3 MLS package, mock). Update this file when a phase completes or a blocker changes.
+> Last updated: 2026-11-10 (S4 public website). Update this file when a phase completes or a blocker changes.
 
 ## What this is
 
@@ -28,8 +28,8 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S1 | Repo prep & plan | Done 2026-11-09 |
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
-| S4 | Public website | Next |
-| S5 | Membership portal | Not started |
+| S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
+| S5 | Membership portal | Next |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
@@ -124,8 +124,9 @@ prototypes are being folded into web `/my` (S5). Product spec in
 - Render jobs documented in `packages/mls/RENDER.md` and
   `render.example.yaml` (not deployed): `*/15` incremental, nightly reconcile
   10:17 UTC, dedicated `mls_sync` DB role.
-- Decisions made in S3: no PostGIS column yet (lat/lng numerics; S4 adds
-  `geography` + GIST for map search). `is_own_listing` is set at sync time from
+- Decisions made in S3: no PostGIS column yet (lat/lng numerics). S4 kept
+  it that way: map bounds use a lat/lng btree index; PostGIS comes with
+  draw-area saved searches (S5). `is_own_listing` is set at sync time from
   `MLS_OFFICE_ID`. `ComingSoon` and `IDXParticipationYN=false` are treated as not
   displayable until MLSListings confirms. Broker open houses are not stored. The
   reconcile filters by status server-side and checks county locally.
@@ -162,6 +163,51 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 - No staff policy on the buyer tracker: agents can't see buyers' tracked
   properties yet (S5 decides).
 
+### S4 public website (built 2026-11-10; PRs #6–#11)
+
+- **Pages (apps/web, all G1):**
+  - home (mockup 01);
+  - `/search` with list, filters, paging and a Mapbox map behind `NEXT_PUBLIC_MAPBOX_TOKEN` (list-only without it);
+  - `/listing/[key]/[slug]` (mockup 03) with the `.ics` open-house download, a templated Q&A, a payment estimate and a tour request;
+  - `/open-houses`, `/properties`, `/buy`, `/neighborhoods` plus 35 city pages (`/explore` 308s there);
+  - `/about`, `/team/[slug]`, `/testimonials`, `/contact`, `/sell`, `/transform`, `/insights` and its posts;
+  - the `/join` stub, `/privacy`, `/terms`, `/accessibility`;
+  - branded not-found and error pages.
+- **homes.sancarloslife.com (G2):** San Carlos listings and detail, Vabrato-branded with the broker disclosure. Canonical URLs point to vabrato.com. The host returns 404 while `site_scl_enabled` is off (it is off).
+- **Database:** `0014_content.sql`, applied to the hosted project.
+  - Content tables: `cities`, `city_guides`, `agent_profiles`, `testimonials`, `videos` and `posts`, each with `is_placeholder`.
+  - `leads`, insert-only with per-email and per-IP limits, plus `purge_old_leads()` (24 months; S6 schedules it).
+  - Public functions: `search_listings()`, `mls_last_updated()`, and `public_own_sold()` behind `public_sold`.
+  - The `source = 'mock'` marker. The preview project holds the fictional fixtures (IDX tables only).
+- **MLS rules:**
+  - MLS-1 attribution and last-updated time on every listing page, enforced by a guard test.
+  - MLS-2 courtesy line and IDX icon on other brokers' listings.
+  - MLS-3 hidden-address listings: city-only title, slug, JSON-LD, sitemap and `.ics`.
+  - MLS-6/10: no sold data signed out.
+  - MLS photos are served unoptimized. Pages revalidate every 15 min or by tag from the sync job (`/api/revalidate`). Listings that leave the feed return 404.
+- **Forms:** server actions with Zod, a honeypot, optional Turnstile, and a hashed-IP limit. Each form links the privacy notice and has an optional call/text consent. Leads stay unrouted until S6.
+- **SEO:**
+  - schema-dts JSON-LD: RealEstateAgent, RealEstateListing, Event, Place, Person, Article, BreadcrumbList, and FAQPage on the home and city pages. No Review or AggregateRating markup.
+  - Sitemap generated; robots disallow and noindex until S9.
+  - Metadata is rendered in `<head>` for every user agent (`htmlLimitedBots`).
+- **QA (PR #11, `scripts/qa/`):**
+  - axe (WCAG 2.2 AA tags) at 1440 and 390 px on all 30 page types, including the homes.sancarloslife.com pages: 0 violations.
+  - Lighthouse mobile on home, search, listing (own and hidden address), city, agent and contact: performance 94–96, accessibility 100, best practices 100. SEO is 66 only because of noindex.
+  - The JSON-LD check passes on every page.
+  - Report and screenshots in `docs/screenshots/s4/`.
+  - Run against a local production build on Postgres 16 + PostgREST with the same migrations and preview seed. This session can't reach the hosted project or `*.vercel.app`. How to rerun it against the preview: `scripts/qa/README.md`.
+- **Still to do by hand:** paste a preview listing, city and post URL into validator.schema.org (blocked from this session). Send one test lead on the preview and delete it afterwards.
+
+**Outstanding for launch (S9), not blocking S5.** Full list in [s4-content-checklist.md](s4-content-checklist.md):
+- MLSListings' official IDX icon and disclaimer (one file, `apps/web/src/lib/mls-legal.ts`);
+- the Mapbox token;
+- Turnstile keys, `LEAD_IP_SALT` and `REVALIDATE_SECRET` in Vercel;
+- real copy, photos, bios, testimonials and the San Carlos guide;
+- the office phone (currently a fictional 555 number) and the CSLB license number;
+- final legal pages;
+- homes.sancarloslife.com DNS, Vercel domain, then the flag;
+- purging the preview fixtures before the live feed.
+
 ### Plan: retire apps/buyer and apps/seller (do in S5)
 
 | What | Moves to |
@@ -190,7 +236,7 @@ no data migration). Test count must not drop: tests move with the code.
 
 ### Done and validated live (against the hosted Supabase project)
 
-- **Foundation** — pnpm monorepo; 13 migrations (23 tables, RLS, storage buckets)
+- **Foundation** — pnpm monorepo; 14 migrations (RLS on every table, storage buckets)
   applied to the hosted project; types generated from the live schema
   (`pnpm --filter @vabrato/db gen:types` after any migration).
 - **Auth** — magic-link + Google helpers via @supabase/ssr; per-app role guards.
@@ -217,7 +263,7 @@ no data migration). Test count must not drop: tests move with the code.
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 398 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls and the
+Tests: 490 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls and the
 four apps (`pnpm test`).
 
 ### Blocked / waiting
@@ -261,6 +307,11 @@ project is paused. Re-link the Supabase CLI from `packages/db`
   replacing the file (or use the CLI `gen:types`, which includes both).
 - RLS tests run in PGlite (no PostGIS, stub storage). Keep new migrations
   PGlite-compatible, or extend the shim in `packages/db/test/harness.ts`.
+
+- Next's fetch cache lives in `.next/cache` and survives rebuilds. After
+  changing a feature flag or content directly in the DB, call
+  `/api/revalidate?tag=content` (or `tag=mls`) or wait the 15-minute
+  revalidate; locally, deleting `.next/cache/fetch-cache` also works.
 
 - Magic links are single-use and must be opened in the SAME browser that
   requested them (PKCE) — Gmail opening links in another browser breaks it.

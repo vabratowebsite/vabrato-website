@@ -61,7 +61,11 @@ describe("JSON-LD", () => {
     expect(faqJsonLd([{ q: "Q?", a: "A." }]).mainEntity).toEqual([{ "@type": "Question", name: "Q?", acceptedAnswer: { "@type": "Answer", text: "A." } }]);
     expect(placeJsonLd({ name: "Belmont", county: "San Mateo" }, "/neighborhoods/belmont")).toMatchObject({ "@type": "Place", name: "Belmont, CA" });
     expect(personJsonLd({ name: "Viv Kelvin", path: "/team/viv-kelvin" })).toMatchObject({ "@type": "Person", worksFor: { "@id": expect.any(String) } });
-    expect(articleJsonLd({ title: "T", excerpt: "E", path: "/insights/t", publishedAt: null })).toMatchObject({ "@type": "Article", headline: "T" });
+    expect(articleJsonLd({ title: "T", excerpt: "E", path: "/insights/t", publishedAt: null })).toMatchObject({
+      "@type": "Article",
+      headline: "T",
+      author: { "@type": "Organization", name: "Vabrato Real Estate Services" },
+    });
   });
 
   it("never emits review markup for our own testimonials (review item 15)", () => {

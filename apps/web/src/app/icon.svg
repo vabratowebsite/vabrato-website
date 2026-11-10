@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- PLACEHOLDER favicon (content checklist): the wordmark's gold rays on navy, until the real logo file arrives. -->
+  <rect width="32" height="32" rx="4" fill="#151B5C"/>
+  <g stroke="#E8A90C" stroke-width="2.2" stroke-linecap="round">
+    <path d="M16 25 L5 10"/><path d="M16 25 L9.5 8"/><path d="M16 25 L14 7"/><path d="M16 25 L18 7"/><path d="M16 25 L22.5 8"/><path d="M16 25 L27 10"/>
+  </g>
+</svg>
