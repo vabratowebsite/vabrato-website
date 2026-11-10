@@ -45,3 +45,15 @@ export type MlsOffice = Tables["mls_offices"]["Row"];
 export type MlsMember = Tables["mls_members"]["Row"];
 export type MlsAgentAccess = Tables["mls_agent_access"]["Row"];
 export type MlsSyncRun = Tables["mls_sync_runs"]["Row"];
+
+export type CityKind = Enums["city_kind"];
+export type LeadKind = Enums["lead_kind"];
+export type PostKind = Enums["post_kind"];
+
+export type City = Tables["cities"]["Row"];
+export type CityGuide = Tables["city_guides"]["Row"];
+export type AgentProfile = Tables["agent_profiles"]["Row"];
+export type Testimonial = Tables["testimonials"]["Row"];
+export type Video = Tables["videos"]["Row"];
+export type Post = Tables["posts"]["Row"];
+export type Lead = Tables["leads"]["Row"];

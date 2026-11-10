@@ -14,6 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_profiles: {
+        Row: {
+          bio: string
+          display_name: string
+          email: string | null
+          faq: Json
+          history: string
+          is_placeholder: boolean
+          license_number: string | null
+          mls_member_id: string | null
+          outlook: string
+          phone: string | null
+          photo_path: string | null
+          profile_id: string | null
+          published: boolean
+          skills: Json
+          slug: string
+          social_links: Json
+          sort: number
+          start_year: number | null
+          title: string
+          updated_at: string
+          video_youtube_id: string | null
+        }
+        Insert: {
+          bio?: string
+          display_name: string
+          email?: string | null
+          faq?: Json
+          history?: string
+          is_placeholder?: boolean
+          license_number?: string | null
+          mls_member_id?: string | null
+          outlook?: string
+          phone?: string | null
+          photo_path?: string | null
+          profile_id?: string | null
+          published?: boolean
+          skills?: Json
+          slug: string
+          social_links?: Json
+          sort?: number
+          start_year?: number | null
+          title?: string
+          updated_at?: string
+          video_youtube_id?: string | null
+        }
+        Update: {
+          bio?: string
+          display_name?: string
+          email?: string | null
+          faq?: Json
+          history?: string
+          is_placeholder?: boolean
+          license_number?: string | null
+          mls_member_id?: string | null
+          outlook?: string
+          phone?: string | null
+          photo_path?: string | null
+          profile_id?: string | null
+          published?: boolean
+          skills?: Json
+          slug?: string
+          social_links?: Json
+          sort?: number
+          start_year?: number | null
+          title?: string
+          updated_at?: string
+          video_youtube_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          county: string
+          created_at: string
+          kind: Database["public"]["Enums"]["city_kind"]
+          mls_city_names: string[]
+          name: string
+          priority: number
+          slug: string
+        }
+        Insert: {
+          county: string
+          created_at?: string
+          kind?: Database["public"]["Enums"]["city_kind"]
+          mls_city_names: string[]
+          name: string
+          priority?: number
+          slug: string
+        }
+        Update: {
+          county?: string
+          created_at?: string
+          kind?: Database["public"]["Enums"]["city_kind"]
+          mls_city_names?: string[]
+          name?: string
+          priority?: number
+          slug?: string
+        }
+        Relationships: []
+      }
+      city_guides: {
+        Row: {
+          city_slug: string
+          faq: Json
+          intro: string
+          is_placeholder: boolean
+          neighborhoods: Json
+          published: boolean
+          school_links: Json
+          updated_at: string
+        }
+        Insert: {
+          city_slug: string
+          faq?: Json
+          intro?: string
+          is_placeholder?: boolean
+          neighborhoods?: Json
+          published?: boolean
+          school_links?: Json
+          updated_at?: string
+        }
+        Update: {
+          city_slug?: string
+          faq?: Json
+          intro?: string
+          is_placeholder?: boolean
+          neighborhoods?: Json
+          published?: boolean
+          school_links?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_guides_city_slug_fkey"
+            columns: ["city_slug"]
+            isOneToOne: true
+            referencedRelation: "cities"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       deal_contingencies: {
         Row: {
           deal_id: string
@@ -231,6 +382,68 @@ export type Database = {
           source?: string
         }
         Relationships: []
+      }
+      leads: {
+        Row: {
+          assigned_to: string | null
+          city_slug: string | null
+          consent_contact: boolean
+          created_at: string
+          email: string
+          id: string
+          ip_hash: string | null
+          kind: Database["public"]["Enums"]["lead_kind"]
+          listing_key: string | null
+          message: string | null
+          name: string | null
+          payload: Json
+          phone: string | null
+          site: string
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          city_slug?: string | null
+          consent_contact?: boolean
+          created_at?: string
+          email: string
+          id?: string
+          ip_hash?: string | null
+          kind: Database["public"]["Enums"]["lead_kind"]
+          listing_key?: string | null
+          message?: string | null
+          name?: string | null
+          payload?: Json
+          phone?: string | null
+          site?: string
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          city_slug?: string | null
+          consent_contact?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          ip_hash?: string | null
+          kind?: Database["public"]["Enums"]["lead_kind"]
+          listing_key?: string | null
+          message?: string | null
+          name?: string | null
+          payload?: Json
+          phone?: string | null
+          site?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mls_agent_access: {
         Row: {
@@ -470,6 +683,7 @@ export type Database = {
           member_status: string | null
           modification_ts: string | null
           office_mls_id: string | null
+          source: string
         }
         Insert: {
           data?: Json
@@ -481,6 +695,7 @@ export type Database = {
           member_status?: string | null
           modification_ts?: string | null
           office_mls_id?: string | null
+          source?: string
         }
         Update: {
           data?: Json
@@ -492,6 +707,7 @@ export type Database = {
           member_status?: string | null
           modification_ts?: string | null
           office_mls_id?: string | null
+          source?: string
         }
         Relationships: []
       }
@@ -504,6 +720,7 @@ export type Database = {
           office_key: string
           office_mls_id: string | null
           phone: string | null
+          source: string
         }
         Insert: {
           data?: Json
@@ -513,6 +730,7 @@ export type Database = {
           office_key: string
           office_mls_id?: string | null
           phone?: string | null
+          source?: string
         }
         Update: {
           data?: Json
@@ -522,6 +740,7 @@ export type Database = {
           office_key?: string
           office_mls_id?: string | null
           phone?: string | null
+          source?: string
         }
         Relationships: []
       }
@@ -690,6 +909,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      posts: {
+        Row: {
+          body_md: string
+          excerpt: string
+          is_placeholder: boolean
+          kind: Database["public"]["Enums"]["post_kind"]
+          published: boolean
+          published_at: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_md?: string
+          excerpt?: string
+          is_placeholder?: boolean
+          kind?: Database["public"]["Enums"]["post_kind"]
+          published?: boolean
+          published_at?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_md?: string
+          excerpt?: string
+          is_placeholder?: boolean
+          kind?: Database["public"]["Enums"]["post_kind"]
+          published?: boolean
+          published_at?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -864,6 +1119,42 @@ export type Database = {
           },
         ]
       }
+      testimonials: {
+        Row: {
+          author_display: string
+          created_at: string
+          id: string
+          is_placeholder: boolean
+          published: boolean
+          quote: string
+          role: string | null
+          sort: number
+          source: string | null
+        }
+        Insert: {
+          author_display: string
+          created_at?: string
+          id?: string
+          is_placeholder?: boolean
+          published?: boolean
+          quote: string
+          role?: string | null
+          sort?: number
+          source?: string | null
+        }
+        Update: {
+          author_display?: string
+          created_at?: string
+          id?: string
+          is_placeholder?: boolean
+          published?: boolean
+          quote?: string
+          role?: string | null
+          sort?: number
+          source?: string | null
+        }
+        Relationships: []
+      }
       tracked_properties: {
         Row: {
           address: string
@@ -929,17 +1220,55 @@ export type Database = {
         }
         Relationships: []
       }
+      videos: {
+        Row: {
+          created_at: string
+          id: string
+          is_placeholder: boolean
+          published: boolean
+          sort: number
+          title: string
+          youtube_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_placeholder?: boolean
+          published?: boolean
+          sort?: number
+          title: string
+          youtube_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_placeholder?: boolean
+          published?: boolean
+          sort?: number
+          title?: string
+          youtube_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      content_launch_blockers: {
+        Args: never
+        Returns: {
+          row_key: string
+          table_name: string
+        }[]
+      }
       flag_enabled: { Args: { p_key: string }; Returns: boolean }
       has_deal_access: { Args: { p_deal_id: string }; Returns: boolean }
       has_full_mls_access: { Args: never; Returns: boolean }
       has_vow_access: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mls_last_updated: { Args: never; Returns: string }
       mls_sync_health: {
         Args: never
         Returns: {
@@ -949,15 +1278,75 @@ export type Database = {
           stale: boolean
         }[]
       }
+      public_own_sold: {
+        Args: { p_limit?: number }
+        Returns: {
+          bathrooms_total: number
+          bedrooms_total: number
+          city: string
+          close_date: string
+          close_price: number
+          listing_key: string
+          postal_code: string
+          property_sub_type: string
+          street: string
+        }[]
+      }
+      purge_old_leads: { Args: { p_months?: number }; Returns: number }
+      search_listings: {
+        Args: {
+          p_bbox?: number[]
+          p_cities?: string[]
+          p_limit?: number
+          p_max_price?: number
+          p_min_baths?: number
+          p_min_beds?: number
+          p_min_price?: number
+          p_offset?: number
+          p_open_houses_only?: boolean
+          p_own_only?: boolean
+          p_sort?: string
+          p_sub_types?: string[]
+        }
+        Returns: {
+          address_display: boolean
+          bathrooms_total: number
+          bedrooms_total: number
+          city: string
+          is_own_listing: boolean
+          latitude: number
+          list_office_name: string
+          list_price: number
+          listing_id: string
+          listing_key: string
+          living_area: number
+          longitude: number
+          modification_ts: string
+          next_open_house_end: string
+          next_open_house_start: string
+          on_market_date: string
+          photo_storage_path: string
+          photo_url: string
+          postal_code: string
+          property_sub_type: string
+          property_type: string
+          standard_status: string
+          street: string
+          total_count: number
+        }[]
+      }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
     }
     Enums: {
+      city_kind: "city" | "unincorporated"
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
+      lead_kind: "contact" | "valuation" | "tour" | "transform" | "newsletter"
       mls_data_level: "IDX" | "VOW" | "FULL"
       mls_sync_kind: "incremental" | "reconcile" | "purge"
       mls_sync_status: "running" | "succeeded" | "failed"
       notification_status: "scheduled" | "sent" | "cancelled" | "failed"
+      post_kind: "insight" | "news" | "event" | "market_update"
       receipt_source: "drive" | "dropbox" | "manual"
       seller_type: "normal" | "trust" | "successor_trustee" | "probate"
       task_phase: "after_ratification" | "closing_week" | "after_coe"
@@ -1539,12 +1928,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      city_kind: ["city", "unincorporated"],
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
+      lead_kind: ["contact", "valuation", "tour", "transform", "newsletter"],
       mls_data_level: ["IDX", "VOW", "FULL"],
       mls_sync_kind: ["incremental", "reconcile", "purge"],
       mls_sync_status: ["running", "succeeded", "failed"],
       notification_status: ["scheduled", "sent", "cancelled", "failed"],
+      post_kind: ["insight", "news", "event", "market_update"],
       receipt_source: ["drive", "dropbox", "manual"],
       seller_type: ["normal", "trust", "successor_trustee", "probate"],
       task_phase: ["after_ratification", "closing_week", "after_coe"],

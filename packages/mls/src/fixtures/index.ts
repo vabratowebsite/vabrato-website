@@ -322,13 +322,15 @@ function media(p: Property, index: number): Media[] {
 
 function openHouses(): OpenHouse[] {
   const oh = (key: string, listing: string, daysAhead: number, type = "Public", status = "Active"): OpenHouse => {
-    const start = new Date(FIXTURE_NOW.getTime() + daysAhead * 86_400_000 + 3 * 3_600_000);
+    // 1-4 PM Pacific (21:00-00:00 UTC in standard time), as on mockup 03.
+    const day = new Date(FIXTURE_NOW.getTime() + daysAhead * 86_400_000);
+    const start = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), 21));
     return {
       OpenHouseKey: key,
       ListingKey: listing,
       OpenHouseDate: start.toISOString().slice(0, 10),
       OpenHouseStartTime: start.toISOString(),
-      OpenHouseEndTime: new Date(start.getTime() + 2 * 3_600_000).toISOString(),
+      OpenHouseEndTime: new Date(start.getTime() + 3 * 3_600_000).toISOString(),
       OpenHouseRemarks: "Fictional open house.",
       OpenHouseType: type,
       OpenHouseStatus: status,

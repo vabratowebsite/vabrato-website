@@ -3,8 +3,10 @@
 // preview project; never for production data. Remove with
 // `mls-sync purge --mock --confirm` before the live feed starts.
 //
-//   pnpm --filter @vabrato/mls exec tsx src/jobs/seed-preview.ts [--publish-placeholders] > seed.sql
+//   pnpm --filter @vabrato/mls exec tsx src/jobs/seed-preview.ts [--public-only] [--publish-placeholders] > seed.sql
 //
+// --public-only seeds only the IDX tables the public pages read (offices,
+// listings, media, open houses), leaving the VOW/FULL tables empty.
 // --publish-placeholders also publishes the placeholder agent profiles, city
 // guide and posts so preview pages aren't empty. Testimonials stay
 // unpublished. content_launch_blockers() reports all of these until real
@@ -17,18 +19,20 @@ import { createMockHandler } from "../mock/handler";
 import { clientEventCounter, createClientFromConfig, PgSyncStore, pgliteSql, runReconcile } from "../sync";
 
 // Parents before children. Columns are listed so generated / identity columns are skipped.
-const TABLES: { name: string; skip?: string[] }[] = [
-  { name: "mls_offices" },
-  { name: "mls_members" },
-  { name: "mls_listings" },
-  { name: "mls_listing_vow" },
-  { name: "mls_listing_full" },
-  { name: "mls_price_events", skip: ["id"] },
-  { name: "mls_media" },
-  { name: "mls_open_houses" },
+const TABLES: { name: string; skip?: string[]; idx: boolean }[] = [
+  { name: "mls_offices", idx: true },
+  { name: "mls_members", idx: false },
+  { name: "mls_listings", idx: true },
+  { name: "mls_listing_vow", idx: false },
+  { name: "mls_listing_full", idx: false },
+  { name: "mls_price_events", skip: ["id"], idx: false },
+  { name: "mls_media", idx: true },
+  { name: "mls_open_houses", idx: true },
 ];
 
-export async function seedPreviewSql(opts: { now?: Date; publishPlaceholders?: boolean } = {}): Promise<string> {
+export async function seedPreviewSql(
+  opts: { now?: Date; publishPlaceholders?: boolean; publicOnly?: boolean } = {},
+): Promise<string> {
   const now = opts.now ?? new Date();
   const t = await createTestDb();
   try {
@@ -47,7 +51,8 @@ export async function seedPreviewSql(opts: { now?: Date; publishPlaceholders?: b
       "delete from public.mls_members where source = 'mock';",
       "delete from public.mls_offices where source = 'mock';",
     ];
-    for (const { name, skip = [] } of TABLES) {
+    for (const { name, skip = [], idx } of TABLES) {
+      if (opts.publicOnly && !idx) continue;
       const cols = (
         await t.query<{ column_name: string }>(
           `select column_name from information_schema.columns where table_schema = 'public' and table_name = $1 order by ordinal_position`,
@@ -85,7 +90,10 @@ export async function seedPreviewSql(opts: { now?: Date; publishPlaceholders?: b
 }
 
 if (process.argv[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href) {
-  seedPreviewSql({ publishPlaceholders: process.argv.includes("--publish-placeholders") }).then(
+  seedPreviewSql({
+    publishPlaceholders: process.argv.includes("--publish-placeholders"),
+    publicOnly: process.argv.includes("--public-only"),
+  }).then(
     (sql) => process.stdout.write(sql),
     (e: unknown) => {
       console.error((e instanceof Error ? e.message : String(e)).split("\n")[0]);
