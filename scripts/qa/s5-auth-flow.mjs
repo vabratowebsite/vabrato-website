@@ -145,6 +145,22 @@ const buyerEmail = `jordan.${stamp}@example.test`;
   await ctx.close();
 }
 
+// 6b. "Continue with Google" really starts a Google sign-in (the provider
+// isn't configured locally, so we only check where it goes).
+{
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/sign-in`);
+  const google = page.waitForRequest((r) => r.url().includes("/auth/v1/authorize") && r.url().includes("provider=google"), { timeout: 15000 }).catch(() => null);
+  await page.getByRole("button", { name: "Continue with Google" }).click();
+  check("sign-in: Google button starts a Google sign-in", Boolean(await google));
+  await page.goto(`${BASE}/join?role=buyer`);
+  const google2 = page.waitForRequest((r) => r.url().includes("/auth/v1/authorize") && r.url().includes("provider=google"), { timeout: 15000 }).catch(() => null);
+  await page.getByRole("button", { name: "Continue with Google" }).click();
+  check("join: Google button starts a Google sign-in", Boolean(await google2));
+  await ctx.close();
+}
+
 // 7. Unknown address on /sign-in: same reply, no account, no email.
 {
   const ctx = await browser.newContext();
