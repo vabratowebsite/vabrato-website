@@ -1,5 +1,6 @@
 // Sync job API (Render). Node-only: pulls in postgres.js and supabase-js.
 export { verifyAgentAccess, recheckAgentAccess } from "./access";
+export { alertsEnabled, pokeNotificationProcessor, runMemberAlerts, type AlertRunResult } from "./alerts";
 export {
   clientEventCounter,
   dataSource,

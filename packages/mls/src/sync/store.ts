@@ -298,6 +298,8 @@ export class PgSyncStore {
       const listings = await tx.query(`delete from mls_listings where source = 'mock' returning listing_key`);
       const members = await tx.query(`delete from mls_members where source = 'mock' returning member_key`);
       await tx.query(`delete from mls_offices where source = 'mock'`);
+      // Alert emails quoting the fictional listings go too (deliveries cascade).
+      await tx.query(`select public.purge_member_alert_data(true)`);
       return { storagePaths: paths.map((p) => p.storage_path), listings: listings.length, members: members.length };
     });
   }
@@ -310,6 +312,8 @@ export class PgSyncStore {
       const members = await tx.query(`delete from mls_members returning member_key`);
       await tx.query(`delete from mls_offices`);
       await tx.query(`update mls_agent_access set active = false`);
+      // Member copies of MLS data: alert feed and alert emails (review item 5, MLS-9).
+      await tx.query(`select public.purge_member_alert_data(true)`);
       return { storagePaths: paths.map((p) => p.storage_path), listings: listings.length, members: members.length };
     });
   }
