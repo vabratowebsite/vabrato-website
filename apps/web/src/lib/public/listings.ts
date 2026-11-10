@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { toSearchArgs, type SearchFilters } from "../search-params";
-import { publicSupabase } from "./supabase";
+import { publicSupabase, publicWriteSupabase } from "./supabase";
 
 // Public (IDX) listing reads. Everything goes through the anon client, so RLS
 // decides what is visible: for-sale listings only, never VOW/FULL tables.
@@ -244,4 +244,28 @@ export async function listingsByAgent(mlsMemberId: string, limit = 12): Promise<
       total_count: rows.length,
     };
   });
+}
+
+const OpenHouseSigninSchema = z.object({
+  open_house_key: z.string(),
+  listing_key: z.string(),
+  street: z.string().nullable(),
+  city: z.string().nullable(),
+  start_time: z.string().nullable(),
+  end_time: z.string().nullable(),
+  accepting: z.boolean(),
+});
+export type OpenHouseSignin = z.infer<typeof OpenHouseSigninSchema>;
+
+/**
+ * The open house behind a sign-in link (0021), or null for an unknown token.
+ * Never cached: `accepting` depends on the day. The street is null when the
+ * listing hides its address.
+ */
+export async function openHouseSigninInfo(token: string): Promise<OpenHouseSignin | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(token)) return null;
+  const { data, error } = await publicWriteSupabase().rpc("open_house_signin_info", { p_token: token });
+  if (error) throw new Error(`open_house_signin_info failed: ${error.message}`);
+  const rows = z.array(OpenHouseSigninSchema).parse(data ?? []);
+  return rows[0] ?? null;
 }

@@ -29,15 +29,16 @@ const WIRING_SAFETY =
 
 const signoff = "\n\n— The Vabrato Team";
 
-const TEMPLATES: Record<string, (m: MergeFields) => RenderedEmail> = {
-  seller_welcome: (m) => ({
+const TEMPLATES: Record<string, (m: MergeFields, ctx: RenderContext) => RenderedEmail> = {
+  seller_welcome: (m, ctx) => ({
     subject: `Your sale is underway — ${m.address}`,
     body:
       `Hi${m.sellerName ? ` ${m.sellerName}` : ""},\n\n` +
       `Congratulations — your contract for ${m.address} is ratified. ` +
       `Closing is currently set for ${m.coe}.\n\n` +
       `We'll keep everything on track and send you a reminder before each step that needs you. ` +
-      `You can follow your sale timeline any time in your Vabrato seller portal.\n\n` +
+      `You can follow your sale timeline, to-dos and listing activity any time at ` +
+      `${ctx.siteUrl}/my/seller. Sign in with this email address.\n\n` +
       WIRING_SAFETY +
       signoff,
   }),
@@ -93,7 +94,7 @@ export function renderNotification(templateKey: string, payload: unknown, ctx: R
   if (alert) return alert(payload, ctx);
   const template = TEMPLATES[templateKey];
   if (!template) throw new Error(`Unknown notification template: ${templateKey}`);
-  return template((payload ?? {}) as MergeFields);
+  return template((payload ?? {}) as MergeFields, ctx);
 }
 
 /** Seller (deal) templates; buyer alert templates are ALERT_TEMPLATE_KEYS. */

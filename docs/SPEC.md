@@ -37,8 +37,6 @@ Existing contents:
 | Path | Purpose |
 |---|---|
 | `apps/va` | Internal transaction desk. Extend this into the agent console. |
-| `apps/seller` | Seller portal prototype. Absorb into `/my` in `apps/web`, then delete. |
-| `apps/buyer` | Buyer tracker prototype. Absorb into `/my` in `apps/web`, then delete. |
 | `packages/db` | Supabase schema, migrations, RLS |
 | `packages/lib` | Holiday-aware schedule engine, auth, notifications |
 | `packages/ui` | Design tokens, Panel |
@@ -52,7 +50,7 @@ New apps and packages to create:
 | `apps/mobile` | iOS/Android app |
 | `packages/mls` | RESO Web API client, mock server, fixtures, sync jobs |
 
-`apps/buyer` and `apps/seller` were test-only prototypes with no real users. Delete them once `/my` covers their features. No user or data migration is needed.
+`apps/buyer` and `apps/seller` were test-only prototypes with no real users. They were absorbed into `/my` and deleted in S5. No user or data migration was needed.
 </repository>
 
 <stack>

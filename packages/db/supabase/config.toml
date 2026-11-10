@@ -10,7 +10,7 @@ schemas = ["public", "storage"]
 
 [auth]
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3001", "http://localhost:3002", "http://localhost:3003/auth/callback"]
+additional_redirect_urls = ["http://localhost:3000/auth/callback", "http://localhost:3003/auth/callback"]
 
 [auth.email]
 enable_signup = true

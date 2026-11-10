@@ -28,6 +28,9 @@ export function Header({ profile }: { profile: Profile }) {
           <Link href="/messages" style={{ color: T.muted }}>
             Messages
           </Link>
+          <Link href="/open-houses" style={{ color: T.muted }}>
+            Open houses
+          </Link>
         </nav>
         <span className="text-xs" style={{ color: T.muted }}>
           {profile.email} · {profile.role}

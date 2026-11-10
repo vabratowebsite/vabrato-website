@@ -29,7 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
-| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (merged, 0018 on hosted 2026-11-10; sending waits for Render + Resend); PR 4 tracker, tours, documents, messages (0019, not yet on hosted) |
+| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (merged, 0018 on hosted 2026-11-10; sending waits for Render + Resend); PR 4 tracker, tours, documents, messages (merged, 0019 on hosted 2026-11-10; uploads checked on the preview); PR 5 seller portal, listing activity, open-house sign-in, prototypes retired (0020–0021, not yet on hosted) |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
@@ -212,7 +212,9 @@ member's message waits in the agent console's Messages page.
 - homes.sancarloslife.com DNS, Vercel domain, then the flag;
 - purging the preview fixtures before the live feed.
 
-### Plan: retire apps/buyer and apps/seller (do in S5)
+### Retire apps/buyer and apps/seller (done in S5 PR 5)
+
+Both apps are deleted. Where everything went:
 
 | What | Moves to |
 |---|---|
@@ -223,8 +225,18 @@ member's message waits in the agent console's Messages page.
 | access-denied, header components | packages/ui |
 | `middleware.ts`, `supabase-server.ts`, `auth.ts` role guards | apps/web, using packages/lib helpers |
 
-Then delete apps/buyer and apps/seller (test-only prototypes, no real users,
-no data migration). Test count must not drop: tests move with the code.
+Auth helpers were already shared in packages/lib, and `/my` has its own
+sign-in, callback and shell, so nothing else needed moving. The tests moved
+with the code (timeline: 5 tests, now in packages/lib).
+
+**Seller portal setup still needed (your step, not blocking):**
+- Listing views count only once `LISTING_VIEW_SECRET` is set on the
+  vabrato-website Vercel project *and* its sha256 is in the database:
+  `insert into listing_view_keys (key_hash) values (encode(sha256(convert_to('<secret>', 'UTF8')), 'hex'));`
+  in the Supabase SQL editor. Until then the route answers 204 and counts nothing.
+- Staff link each deal to its MLS listing key on the deal page (apps/va).
+- Open-house sign-in links: apps/va → Open houses → Create sign-in link.
+  `PUBLIC_SITE_URL` on vabrato-console sets the link's host.
 
 ## Decisions
 
@@ -256,19 +268,22 @@ no data migration). Test count must not drop: tests move with the code.
   phase with done-toggles, calendar tab (month grid), receipts tab
   (manual logging + reimbursement total), org-wide vendors rolodex,
   seller-access panel.
-- **Seller portal** — milestone timeline, seller to-dos, wiring-safety banner.
-  Invite flow creates the auth user via service role with NO email sent
-  (avoids mailer rate limit); seller signs in later with a magic link.
-- **Buyer tracker** — tracked properties with status ladder, per-property
-  activity feed (empty until inbound parsing lands).
+- **Seller portal** (apps/web `/my/seller`, S5) — wiring banner, listing
+  KPIs, timeline from the schedule engine with an .ics download, seller
+  to-dos (read-only), weekly listing activity. Invite flow creates the auth
+  user via service role with NO email sent (avoids mailer rate limit); a buyer
+  invited as seller becomes `both`; the seller signs in at `/my`.
+- **Buyer tracker** (apps/web "Homes I'm pursuing", S5) — tracked properties
+  with status ladder, per-property activity feed (empty until inbound parsing
+  lands).
 - **Notification pipeline (code-complete)** — 5 static seller templates
   (merge fields only, no runtime AI), rows queued on seller invite (future
   dates only, re-invite replaces), DI processor + Resend REST sender at
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 490 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls and the
-four apps (`pnpm test`).
+Tests: 708 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
+apps/web and apps/va (`pnpm test`).
 
 ### Blocked / waiting
 

@@ -10,6 +10,7 @@ import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { InviteForm } from "./invite-form";
+import { ListingKeyForm } from "./listing-key-form";
 
 export const dynamic = "force-dynamic";
 
@@ -83,11 +84,19 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           </ul>
         ) : (
           <p className="mb-3 text-sm" style={{ color: T.muted }}>
-            No seller has portal access yet. Add their email — no invite email is sent; they
-            simply sign in at the seller portal with this address.
+            No seller has portal access yet. Add their email. No invite email is sent; they
+            sign in at vabrato.com/my with this address to see their sale.
           </p>
         )}
         <InviteForm dealId={deal.id} />
+      </Panel>
+
+      <Panel title="MLS listing">
+        <p className="mb-3 text-sm" style={{ color: T.muted }}>
+          Link this sale to its listing to show the seller weekly views, saves, tour requests and
+          open-house visitors in their portal.
+        </p>
+        <ListingKeyForm dealId={deal.id} current={deal.listing_key} />
       </Panel>
 
       {PHASES.map(({ key, label }) => {

@@ -4,11 +4,11 @@ import { buys, sells, type MemberRole } from "./roles";
 // sections show; Both sees both"). Only pages that exist are listed; later S5
 // PRs add saved homes, searches, tours, documents and messages.
 
-export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "documents" | "messages" | "account";
+export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "seller-performance" | "documents" | "messages" | "account";
 
 export interface NavGroup {
   label?: string;
-  items: { key: PortalPage | "search"; label: string; href: string; count?: number }[];
+  items: { key: PortalPage | "search" | "home-value" | "pre-sale"; label: string; href: string; count?: number }[];
 }
 
 /**
@@ -29,7 +29,18 @@ export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessage
       ],
     });
   }
-  if (sells(role)) groups.push({ label: role === "both" ? "Selling" : undefined, items: [{ key: "seller", label: "My sale", href: "/my/seller" }] });
+  if (sells(role)) {
+    groups.push({
+      label: role === "both" ? "Selling" : undefined,
+      items: [
+        { key: "seller", label: "My sale", href: "/my/seller" },
+        { key: "seller-performance", label: "Listing activity", href: "/my/seller/performance" },
+        // The public request forms; signed-in requests are linked to the account.
+        { key: "home-value", label: "Home value", href: "/sell" },
+        { key: "pre-sale", label: "Pre-sale projects", href: "/transform" },
+      ],
+    });
+  }
   // Shared by buyers and sellers, listed once.
   groups.push({
     label: role === "both" ? "Your team" : undefined,

@@ -53,7 +53,7 @@ describe("public site guards", () => {
       for (const f of files(dir)) {
         if (!/(page|layout)\.tsx$/.test(f)) continue;
         const text = readFileSync(f, "utf8");
-        const readsListings = /\b(searchListings|getListing|ownSoldListings|loadListing)\b/.test(text);
+        const readsListings = /\b(searchListings|getListing|ownSoldListings|loadListing|openHouseSigninInfo)\b/.test(text);
         // <ListingDetail> renders the attribution itself (checked below).
         // Redirect-only routes render nothing, so they show no MLS data.
         const renders = /<[A-Za-z]/.test(text);
@@ -166,7 +166,7 @@ describe("member listing guards", () => {
     for (const f of files(join(SRC, "app/my"))) {
       if (!f.endsWith("page.tsx")) continue;
       const text = readFileSync(f, "utf8");
-      const readsListings = /\b(savedListings|soldSearch|memberListing|cards\(|search_listings|listing_cards|alertFeed)\b/.test(text);
+      const readsListings = /\b(savedListings|soldSearch|memberListing|cards\(|search_listings|listing_cards|alertFeed|listingPerformance)\b/.test(text);
       if (readsListings && !/<MlsAttribution\b/.test(text)) missing.push(relative(SRC, f));
     }
     expect(missing).toEqual([]);
@@ -272,5 +272,17 @@ describe("form submit guards", () => {
       }
     }
     expect(hits).toEqual([]);
+  });
+
+  it('exports only async functions from "use server" files (Next refuses to build otherwise)', () => {
+    const bad: string[] = [];
+    for (const dir of [SRC, join(SRC, "../../va/src")]) {
+      for (const f of files(dir)) {
+        const text = readFileSync(f, "utf8");
+        if (!/^\s*["']use server["']/.test(text)) continue;
+        for (const m of text.matchAll(/^export\s+(?!async\s+function|interface\b|type\b)(\w+\s+\w+)/gm)) bad.push(`${relative(SRC, f)}: export ${m[1]}`);
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
