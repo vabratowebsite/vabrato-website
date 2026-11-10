@@ -77,7 +77,7 @@ export default async function SellerHome({ searchParams }: { searchParams: Promi
       )}
 
       {linked ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <KpiTile value={fmtCount(linked.totals.views)} label="Listing views" />
           <KpiTile value={fmtCount(linked.totals.saves)} label="Saves" />
           <KpiTile value={fmtCount(linked.totals.tour_requests)} label="Tour requests" />

@@ -1,0 +1,294 @@
+{
+  "base": "http://localhost:3003",
+  "ranAt": "2026-11-10T21:00:39.817Z",
+  "pages": [
+    {
+      "name": "join-role",
+      "path": "/join",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "join-details",
+      "path": "/join?role=buyer",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "sign-in",
+      "path": "/sign-in",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "vow-terms",
+      "path": "/vow-terms",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "signed-out-redirect",
+      "path": "/my/buyer",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-home",
+      "path": "/my/buyer",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-saved",
+      "path": "/my/saved",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-searches",
+      "path": "/my/searches",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-compare",
+      "path": "/my/compare",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-tours",
+      "path": "/my/tours",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-pursuing",
+      "path": "/my/pursuing/94cf52ba-5307-4b47-ae88-5a19f2af3333",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-documents",
+      "path": "/my/documents",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-messages",
+      "path": "/my/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-account",
+      "path": "/my/account",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-alerts",
+      "path": "/my/alerts",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-sold-flag-off",
+      "path": "/my/sold",
+      "status": 404,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "buyer-to-seller-redirect",
+      "path": "/my/seller",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "alerts-unsubscribe",
+      "path": "/alerts/unsubscribe?t=4aa073f2-366e-4edc-a904-5d6e41f756eb",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-home",
+      "path": "/my/seller",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-performance",
+      "path": "/my/seller/performance",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-documents",
+      "path": "/my/documents",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-messages",
+      "path": "/my/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-account",
+      "path": "/my/account",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "seller-to-buyer-redirect",
+      "path": "/my/buyer",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "both-buyer-home",
+      "path": "/my/buyer",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "both-seller-empty",
+      "path": "/my/seller",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "welcome-onboarding",
+      "path": "/my/welcome",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "staff-notice",
+      "path": "/my",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "vow-terms-prompt",
+      "path": "/my/sold",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "vow-sold",
+      "path": "/my/sold?within=365",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "vow-sold-detail",
+      "path": "/my/listing/FX-005",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "name": "vow-account",
+      "path": "/my/account",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    }
+  ]
+}
