@@ -46,3 +46,24 @@ The cloud session that built S4 couldn't reach the hosted Supabase project or `*
 The web app was built with `NEXT_PUBLIC_SUPABASE_URL` pointing at that proxy. Same code and same data as the preview; only the database host differs.
 
 To check the Vercel preview itself, run the same command with `--base <preview URL>` from a machine that can reach it. The URL needs a protection-bypass token if Deployment Protection is on.
+
+## Member flows (S5)
+
+`s5-auth-flow.mjs` runs the real sign-in flow end to end:
+- join with a magic link, then the callback and the portal;
+- account changes, sign-out and sign-in;
+- the onboarding fallback and the staff notice;
+- axe on every new page at 1440 and 390 px.
+
+It needs a local stack with Supabase Auth, because the hosted project's email cap and redirect allowlist get in the way. The S5 run used:
+
+- Postgres 16 with the Auth server's own migrations, then the storage stub from the PGlite shim, then every migration and the preview seed;
+- Supabase Auth (`github.com/supabase/auth`, built with `go build`), with SMTP pointed at a local sink that writes `.eml` files (`aiosmtpd`);
+- PostgREST v12 and a small proxy that maps `/auth/v1` and `/rest/v1` to them;
+- apps/web built with `NEXT_PUBLIC_SUPABASE_URL` pointing at that proxy.
+
+```bash
+QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa node scripts/qa/s5-auth-flow.mjs
+```
+
+`STAFF_EMAIL` must be an existing admin account in that database.

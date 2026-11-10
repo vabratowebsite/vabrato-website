@@ -15,6 +15,8 @@ Everything on the public site that's still a placeholder, and what Vabrato needs
 | Terms of use (incl. the MLS data-use clause) | `/terms` | `apps/web/src/app/(site)/terms/page.tsx` |
 | Accessibility statement and contact | `/accessibility` | `apps/web/src/app/(site)/accessibility/page.tsx` |
 | Call/text consent wording on forms | Every lead form | `apps/web/src/components/forms/LeadForm.tsx` |
+| VOW Terms of Use (sold data; version stored with each acceptance) | `/vow-terms`, join and account (only while `vow_enabled` is on) | `apps/web/src/app/(account)/vow-terms/page.tsx`, `VOW_TERMS_VERSION` in `apps/web/src/member/join.ts` |
+| Account deletion wording (what's deleted within 45 days, what's kept) | `/my/account` | `apps/web/src/app/my/account/page.tsx` |
 
 ## From MLSListings
 

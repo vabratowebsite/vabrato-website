@@ -29,7 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
-| S5 | Membership portal | Next |
+| S5 | Membership portal | In progress: PR 1 accounts and sign-in (0015–0016, not yet on the hosted project) |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |
@@ -156,10 +156,10 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 - Hosted storage policies checked with `packages/db/test/hosted-storage-check.sql`
   (rolls itself back): same results as PGlite; `mls-photos` is not listable
   or writable by API roles.
-- **Open question (owners):** `profiles` lets every staff role (agent, VA, TC,
-  admin) read every profile, including clients on other agents' deals (0002,
-  "staff reads all"). Tests pin today's behavior. Options: keep it, or limit
-  agents/VA/TC to profiles on deals they can access (admin keeps all).
+- **Resolved in S5 (0016):** "staff reads all profiles" is replaced. Admin
+  sees everyone; agents see members assigned to them (`profiles.agent_id`,
+  default from `app_settings.default_agent_id`) and clients on their deals;
+  VA/TC see clients on deals they work; staff see staff. Tests updated.
 - No staff policy on the buyer tracker: agents can't see buyers' tracked
   properties yet (S5 decides).
 
