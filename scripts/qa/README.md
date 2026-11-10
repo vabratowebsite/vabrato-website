@@ -91,3 +91,13 @@ It needs apps/va running on :3000, built with the same Supabase env. For the loc
 - set `GOTRUE_SMTP_MAX_FREQUENCY=1s`, so repeated runs can email the same staff address.
 
 Uploads aren't covered locally, because the stack doesn't run Supabase Storage. Check them on the preview: upload a PDF and a photo, then download and delete them.
+
+`s5-seller-flow.mjs` covers the seller portal: the timeline, to-dos, wiring banner and calendar download; linking the deal to its listing in the console; listing views from a real browser visit (bots, headless browsers and cross-site posts aren't counted); open-house sign-in links on a tablet-sized screen; and listing activity. A second seller checks that one seller can't see another's deal.
+
+It needs apps/web started with `LISTING_VIEW_SECRET` set, and that secret's sha256 in the database:
+
+```sql
+insert into listing_view_keys (key_hash) values (encode(sha256(convert_to('<the secret>', 'UTF8')), 'hex'));
+```
+
+`SHOTS=/some/dir` saves screenshots of the seller pages.

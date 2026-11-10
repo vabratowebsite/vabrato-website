@@ -7,11 +7,10 @@ Current state: docs/STATUS.md.
 
 pnpm monorepo, one Supabase backend:
 
-- apps/web     — public site, member portal (/my) and the homes.sancarloslife.com
-                 listings section (host-based routing in src/lib/site.ts). Port 3003.
+- apps/web     — public site, member portal (/my: buyer and seller portals) and the
+                 homes.sancarloslife.com listings section (host-based routing in
+                 src/lib/site.ts). Port 3003.
 - apps/va      — internal transaction desk; becomes the agent console. Port 3000.
-- apps/seller  — seller portal prototype. Being retired: moves into apps/web /my/seller (S5).
-- apps/buyer   — buyer tracker prototype. Being retired: moves into apps/web /my/buyer (S5).
 - apps/mobile  — reserved for the Expo app (S7). Do not create before S7.
 - packages/db  — Supabase schema, migrations, generated types, shared queries
 - packages/ui  — shared components and design tokens
