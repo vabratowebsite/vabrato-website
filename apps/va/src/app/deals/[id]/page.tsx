@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Task, TaskPhase } from "@vabrato/db";
 import { OwnerChip, Panel, T } from "@vabrato/ui";
@@ -67,6 +68,11 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                     {m.member_role}
                   </span>
                 </span>
+                {m.member_role === "seller" && (
+                  <Link href={`/messages/${m.profile_id}`} className="text-xs" style={{ color: T.muted }}>
+                    Messages
+                  </Link>
+                )}
                 <form action={removeMemberAction.bind(null, deal.id, m.profile_id)}>
                   <button className="text-xs" style={{ color: T.red }}>
                     Remove
