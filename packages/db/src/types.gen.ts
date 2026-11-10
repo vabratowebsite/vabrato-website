@@ -501,6 +501,10 @@ export type Database = {
       }
       leads: {
         Row: {
+          profile_id: string | null
+          tour_confirmed_at: string | null
+          tour_confirmed_by: string | null
+          tour_status: Database["public"]["Enums"]["tour_status"] | null
           assigned_to: string | null
           city_slug: string | null
           consent_contact: boolean
@@ -518,6 +522,10 @@ export type Database = {
           status: string
         }
         Insert: {
+          profile_id?: string | null
+          tour_confirmed_at?: string | null
+          tour_confirmed_by?: string | null
+          tour_status?: Database["public"]["Enums"]["tour_status"] | null
           assigned_to?: string | null
           city_slug?: string | null
           consent_contact?: boolean
@@ -535,6 +543,10 @@ export type Database = {
           status?: string
         }
         Update: {
+          profile_id?: string | null
+          tour_confirmed_at?: string | null
+          tour_confirmed_by?: string | null
+          tour_status?: Database["public"]["Enums"]["tour_status"] | null
           assigned_to?: string | null
           city_slug?: string | null
           consent_contact?: boolean
@@ -560,6 +572,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      member_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          id: string
+          name: string
+          profile_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          id?: string
+          name: string
+          profile_id: string
+          size_bytes: number
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          profile_id?: string
+          size_bytes?: number
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: number
+          member_id: string
+          read_at: string | null
+          sender_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: never
+          member_id: string
+          read_at?: string | null
+          sender_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: never
+          member_id?: string
+          read_at?: string | null
+          sender_id?: string | null
+        }
+        Relationships: []
       }
       mls_agent_access: {
         Row: {
@@ -1070,6 +1142,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          buyer_agreement_on_file_at: string | null
           agent_id: string | null
           alerts_email_opt_in: boolean
           alerts_opt_in_at: string | null
@@ -1086,6 +1159,7 @@ export type Database = {
           vow_terms_version: string | null
         }
         Insert: {
+          buyer_agreement_on_file_at?: string | null
           agent_id?: string | null
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
@@ -1102,6 +1176,7 @@ export type Database = {
           vow_terms_version?: string | null
         }
         Update: {
+          buyer_agreement_on_file_at?: string | null
           agent_id?: string | null
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
@@ -1351,6 +1426,7 @@ export type Database = {
       }
       tracked_properties: {
         Row: {
+          listing_key: string | null
           address: string
           buyer_id: string
           created_at: string
@@ -1359,6 +1435,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          listing_key?: string | null
           address: string
           buyer_id?: string
           created_at?: string
@@ -1367,6 +1444,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          listing_key?: string | null
           address?: string
           buyer_id?: string
           created_at?: string
@@ -1512,7 +1590,20 @@ export type Database = {
         }[]
       }
       mark_alerts_seen: { Args: never; Returns: number }
+      mark_messages_read: { Args: { p_member: string }; Returns: number }
       mls_last_updated: { Args: never; Returns: string }
+      my_tour_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          listing_key: string
+          message: string
+          payload: Json
+          tour_confirmed_at: string
+          tour_status: Database["public"]["Enums"]["tour_status"]
+        }[]
+      }
       mls_sync_health: {
         Args: never
         Returns: {
@@ -1617,11 +1708,17 @@ export type Database = {
         }[]
       }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
+      set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
       set_member_role: {
         Args: { p_role: Database["public"]["Enums"]["user_role"] }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      set_tour_status: {
+        Args: { p_lead: string; p_status: Database["public"]["Enums"]["tour_status"] }
+        Returns: undefined
+      }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
+      storage_member_id: { Args: { object_name: string }; Returns: string }
       unsubscribe_alert_emails: { Args: { p_token: string }; Returns: boolean }
       update_my_profile: {
         Args: { p_full_name: string; p_phone: string | null }
@@ -1644,6 +1741,7 @@ export type Database = {
       receipt_source: "drive" | "dropbox" | "manual"
       seller_type: "normal" | "trust" | "successor_trustee" | "probate"
       task_phase: "after_ratification" | "closing_week" | "after_coe"
+      tour_status: "requested" | "confirmed" | "declined" | "completed" | "cancelled"
       user_role: "admin" | "agent" | "va" | "tc" | "seller" | "buyer" | "both"
     }
     CompositeTypes: {
@@ -2237,6 +2335,7 @@ export const Constants = {
       receipt_source: ["drive", "dropbox", "manual"],
       seller_type: ["normal", "trust", "successor_trustee", "probate"],
       task_phase: ["after_ratification", "closing_week", "after_coe"],
+      tour_status: ["requested", "confirmed", "declined", "completed", "cancelled"],
       user_role: ["admin", "agent", "va", "tc", "seller", "buyer", "both"],
     },
   },

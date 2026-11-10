@@ -230,12 +230,14 @@ describe("member isolation (SEC-2)", () => {
     it.each<[Who, string[], string[]]>([
       ["buyerA", [TRACK_A], ["event_a"]],
       ["buyerB", [TRACK_B], ["event_b"]],
-      // No staff policy exists on the tracker today: agents and admins see nothing.
-      ["agentA", [], []],
-      ["admin", [], []],
+      // 0019: staff who may see the member read the tracker (assigned agent, admin).
+      ["agentA", [TRACK_A], ["event_a"]], // buyerA's assigned agent
+      ["agentB", [], []],
+      ["va", [], []],
+      ["admin", [TRACK_A, TRACK_B].sort(), ["event_a", "event_b"]],
       ["sellerA", [], []],
       ["anon", [], []],
-    ])("%s sees only their own tracked properties and events", async (who, props, events) => {
+    ])("%s sees only the tracked properties and events they may see", async (who, props, events) => {
       expect(await see(who, `select id as k from tracked_properties`)).toEqual(props);
       expect(await see(who, `select kind as k from property_events`)).toEqual(events);
     });
@@ -245,6 +247,11 @@ describe("member isolation (SEC-2)", () => {
       expect(await affected("buyerB", `delete from tracked_properties where id = '${TRACK_A}' returning id`)).toBe(0);
       await rejects("buyerB", `insert into tracked_properties (buyer_id, address) values ('${U.buyerA}', 'x')`);
       await rejects("buyerA", `insert into property_events (tracked_property_id, kind) values ('${TRACK_A}', 'forged')`);
+    });
+
+    it("lets staff read but not change a member's tracker", async () => {
+      expect(await affected("agentA", `update tracked_properties set status = 'x' where id = '${TRACK_A}' returning id`)).toBe(0);
+      expect(await affected("admin", `delete from tracked_properties where id = '${TRACK_A}' returning id`)).toBe(0);
     });
   });
 
