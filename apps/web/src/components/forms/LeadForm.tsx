@@ -3,6 +3,7 @@
 import { useActionState, type ReactNode } from "react";
 import { submitLead, type LeadFormState } from "@/app/actions/leads";
 import type { LeadKind } from "@/lib/leads";
+import { SITE_URL } from "@/lib/org";
 import { TextField } from "./fields";
 import { Turnstile } from "./Turnstile";
 
@@ -75,7 +76,7 @@ export function LeadForm({
 
       <p className={`font-body text-caption ${muted}`}>
         We use your details only to answer this request. See our{" "}
-        <a href="/privacy" className="underline">
+        <a href={`${site === "sancarloslife" ? SITE_URL : ""}/privacy`} className="underline">
           privacy notice
         </a>
         .

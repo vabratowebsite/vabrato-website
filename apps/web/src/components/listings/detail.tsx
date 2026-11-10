@@ -106,7 +106,7 @@ export function PropertyDetails({ listing, typeLabel }: { listing: Listing; type
 }
 
 /** MLS-6: sold and price history are for signed-in members only; nothing is fetched here. */
-export function LockedHistory() {
+export function LockedHistory({ joinHref = "/join" }: { joinHref?: string }) {
   return (
     <section aria-labelledby="history-heading">
       <h2 id="history-heading" className="flex items-center gap-3 font-subhead text-subhead-lg text-ink">
@@ -114,7 +114,7 @@ export function LockedHistory() {
       </h2>
       <div className="mt-4 border border-line p-6 text-center">
         <p className="font-body text-body text-ink">Price changes and past sales are shown to members who accept the VOW Terms of Use.</p>
-        <a href="/join" className="mt-3 inline-block font-body text-body-sm font-medium text-navy underline">
+        <a href={joinHref} className="mt-3 inline-block font-body text-body-sm font-medium text-navy underline">
           Create a free account to see full history
         </a>
       </div>

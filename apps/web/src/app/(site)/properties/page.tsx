@@ -25,19 +25,13 @@ export default async function PropertiesPage() {
   const sold = showSold ? await ownSoldListings(12) : [];
   return (
     <div className="mx-auto max-w-site space-y-12 px-4 py-10 md:px-6">
-      <section aria-labelledby="for-sale">
+      <section aria-label="For sale">
         <SectionTitle as="h1" title="Our listings" eyebrow="Vabrato Real Estate Services" action={{ label: "Search all homes", href: "/search" }} />
-        <h2 id="for-sale" className="sr-only">
-          For sale
-        </h2>
         <ResultsGrid rows={forSale.rows} />
       </section>
       {sold.length > 0 && (
-        <section aria-labelledby="sold">
+        <section aria-label="Sold">
           <SectionTitle title="Sold properties" />
-          <h2 id="sold" className="sr-only">
-            Sold
-          </h2>
           <ul className="grid gap-4 md:grid-cols-2">
             {sold.map((s) => (
               <li key={s.listing_key}>
