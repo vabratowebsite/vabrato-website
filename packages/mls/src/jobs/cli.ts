@@ -11,6 +11,10 @@
 // Env: MLS_* (src/config.ts), DATABASE_URL, and for MLS_PHOTO_MODE=copy
 // SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. Output is counts only, never
 // records or credentials. Exits 1 when the run fails.
+//
+// Member alerts (S5): with ALERTS_ENABLED=true, a successful incremental or
+// reconcile run is followed by run_member_alerts() and a POST to the
+// notifications processor (NOTIFICATIONS_PROCESS_URL, NOTIFICATIONS_CRON_SECRET).
 
 import postgres from "postgres";
 import { mlsConfig } from "../config";
@@ -26,6 +30,10 @@ import {
   runIncremental,
   runPurge,
   runReconcile,
+  alertsEnabled,
+  pokeNotificationProcessor,
+  runMemberAlerts,
+  type AlertRunResult,
   type PhotoBucket,
   type RunResult,
   type Sql,
@@ -89,6 +97,7 @@ export async function main(argv: string[], env: Record<string, string | undefine
   };
 
   const results: RunResult[] = [];
+  let alerts: AlertRunResult | { error: string } | null = null;
   try {
     if (command === "purge") {
       if (!flags.has("--confirm")) {
@@ -103,6 +112,13 @@ export async function main(argv: string[], env: Record<string, string | undefine
       if (useLocal) results.push(await runReconcile(deps));
       results.push(await runIncremental(deps));
     }
+    if (command !== "purge" && alertsEnabled(env) && results.length && results.every((r) => r.status === "succeeded")) {
+      try {
+        alerts = await runMemberAlerts(sql, cfg.mode === "mock" ? FIXTURE_NOW : undefined);
+      } catch (e) {
+        alerts = { error: String((e as Error).message ?? e).split("\n")[0]!.slice(0, 200) };
+      }
+    }
   } finally {
     await close();
   }
@@ -110,8 +126,11 @@ export async function main(argv: string[], env: Record<string, string | undefine
   for (const r of results) {
     console.log(JSON.stringify({ kind: r.kind, status: r.status, highWaterMark: r.highWaterMark, counts: r.counts, error: r.error }));
   }
+  if (alerts) console.log(JSON.stringify({ kind: "alerts", ...alerts }));
   if (results.some((r) => r.status === "succeeded") && !useLocal) await revalidateSite(env);
-  return results.some((r) => r.status === "failed") ? 1 : 0;
+  if (alerts && !("error" in alerts) && ((alerts.instant_emails ?? 0) > 0 || (alerts.digest_emails ?? 0) > 0) && !useLocal) await pokeNotificationProcessor(env);
+  // A failed alert step fails the job, so Render's failure notification fires.
+  return results.some((r) => r.status === "failed") || (alerts !== null && "error" in alerts) ? 1 : 0;
 }
 
 /**

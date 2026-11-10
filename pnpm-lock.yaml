@@ -308,6 +308,9 @@ importers:
       '@vabrato/db':
         specifier: workspace:*
         version: link:../db
+      '@vabrato/lib':
+        specifier: workspace:*
+        version: link:../lib
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

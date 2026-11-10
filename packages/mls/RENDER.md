@@ -31,6 +31,9 @@ There is no purge job. Run `pnpm --filter @vabrato/mls sync purge --confirm` by 
 | `DATABASE_URL` | Supabase Postgres connection string (Session pooler, port 5432), using a dedicated role (see below) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | only for `MLS_PHOTO_MODE=copy` |
 | `MLS_REVALIDATE_URL`, `MLS_REVALIDATE_SECRET` | optional: the website's `/api/revalidate` URL and its `REVALIDATE_SECRET`, so changed or removed listings leave the page cache right after each run |
+| `ALERTS_ENABLED` | `true` to run member alerts after each successful run (S5). Leave unset until Resend is set up |
+| `NOTIFICATIONS_PROCESS_URL` | the agent console's `/api/notifications/process` URL, poked after alerts are queued |
+| `NOTIFICATIONS_CRON_SECRET` | that app's `CRON_SECRET` |
 | `NODE_VERSION` | `22` |
 
 ### Database role
@@ -44,7 +47,23 @@ grant select, insert, update, delete on
   mls_listings, mls_listing_vow, mls_listing_full, mls_price_events, mls_media,
   mls_open_houses, mls_offices, mls_members, mls_agent_access, mls_sync_runs to mls_sync;
 grant usage on all sequences in schema public to mls_sync;
+-- Member alerts (S5): one function each, no access to member tables.
+grant execute on function public.run_member_alerts(timestamptz) to mls_sync;
+grant execute on function public.purge_member_alert_data(boolean) to mls_sync;
 ```
+
+## Member alerts (S5)
+
+With `ALERTS_ENABLED=true`, every successful incremental or reconcile run is followed by:
+
+1. `select run_member_alerts()`. It matches new price events against saved searches and saved homes, records the "What changed" feed, and queues alert emails as `notifications` rows. Instant alerts go out once per run; daily digests go out once a day after 16:00 UTC. It also deletes alert data older than 90 days.
+2. A POST to `NOTIFICATIONS_PROCESS_URL`, so the emails go out right away. A failed POST is retried by the next run.
+
+A feed change therefore reaches the member within one sync interval (15 minutes) plus run time. That is the S5 "alert within 30 minutes" target, and `packages/mls/src/sync/alerts.e2e.test.ts` proves it on the mock feed.
+
+The alerts step logs `{"kind":"alerts", ...}` with counts only. If it fails, the job exits 1 so Render's failure notification fires.
+
+The first run only sets the alert cursor: the initial load never sends alerts. `purge` (MLS-9) and `purge --mock` also delete the alert feed and alert emails.
 
 ## Health and alerts
 

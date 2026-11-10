@@ -74,3 +74,10 @@ QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:5
 - `REVALIDATE_SECRET` set to the running server's secret: flags are read through Next's 15-minute cache, so the script calls `/api/revalidate` after flipping one.
 
 After applying a migration to the local database, run `notify pgrst, 'reload schema'`, or PostgREST keeps the old schema and the new tables return errors. Hosted Supabase does this automatically.
+
+`s5-alerts-flow.mjs` simulates a feed change in the local database: fictional rows, then `run_member_alerts()` as the sync job would run it. It then checks:
+- the bell count and the "What changed" feed (new price only, hidden address, broker line, MLS attribution);
+- the queued email payload;
+- unsubscribe from the confirm page and by one-click POST, and that a GET never unsubscribes.
+
+The full sync-to-email path, from mock feed to email, is the PGlite test `packages/mls/src/sync/alerts.e2e.test.ts`.

@@ -6,8 +6,10 @@ import {
   supabaseNotificationDeps,
 } from "@vabrato/lib";
 
-// Cron-callable sender: POST with `Authorization: Bearer $CRON_SECRET`.
-// Wire a Vercel cron (e.g. every 15 min) to this route once deployed.
+// Sender for scheduled seller notifications and buyer alert emails: POST with
+// `Authorization: Bearer $CRON_SECRET`. The MLS sync job on Render calls it
+// right after each run (packages/mls/RENDER.md). PUBLIC_SITE_URL sets the
+// links in emails (default https://vabrato.com).
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
@@ -26,7 +28,7 @@ export async function POST(request: Request) {
 
   const service = createServiceSupabase();
   const result = await processDueNotifications(
-    supabaseNotificationDeps(service, resendSender(apiKey, from)),
+    supabaseNotificationDeps(service, resendSender(apiKey, from), 50, process.env.PUBLIC_SITE_URL ?? "https://vabrato.com"),
   );
   return NextResponse.json(result);
 }

@@ -44,6 +44,74 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_deliveries: {
+        Row: {
+          created_at: string
+          emailed_at: string | null
+          id: number
+          kind: Database["public"]["Enums"]["alert_kind"]
+          listing_key: string
+          new_price: number | null
+          price_event_id: number
+          profile_id: string
+          saved_search_id: string | null
+          seen_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          emailed_at?: string | null
+          id?: never
+          kind: Database["public"]["Enums"]["alert_kind"]
+          listing_key: string
+          new_price?: number | null
+          price_event_id: number
+          profile_id: string
+          saved_search_id?: string | null
+          seen_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          emailed_at?: string | null
+          id?: never
+          kind?: Database["public"]["Enums"]["alert_kind"]
+          listing_key?: string
+          new_price?: number | null
+          price_event_id?: number
+          profile_id?: string
+          saved_search_id?: string | null
+          seen_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_deliveries_saved_search_id_fkey"
+            columns: ["saved_search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_state: {
+        Row: {
+          id: boolean
+          last_digest_on: string | null
+          last_price_event_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          last_digest_on?: string | null
+          last_price_event_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          last_digest_on?: string | null
+          last_price_event_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_profiles: {
         Row: {
           bio: string
@@ -908,6 +976,8 @@ export type Database = {
         Row: {
           created_at: string
           deal_id: string | null
+          dedupe_key: string | null
+          failure_reason: string | null
           id: string
           payload: Json
           recipient_email: string | null
@@ -920,6 +990,8 @@ export type Database = {
         Insert: {
           created_at?: string
           deal_id?: string | null
+          dedupe_key?: string | null
+          failure_reason?: string | null
           id?: string
           payload?: Json
           recipient_email?: string | null
@@ -932,6 +1004,8 @@ export type Database = {
         Update: {
           created_at?: string
           deal_id?: string | null
+          dedupe_key?: string | null
+          failure_reason?: string | null
           id?: string
           payload?: Json
           recipient_email?: string | null
@@ -999,6 +1073,7 @@ export type Database = {
           agent_id: string | null
           alerts_email_opt_in: boolean
           alerts_opt_in_at: string | null
+          alerts_unsubscribe_token: string
           created_at: string
           email: string
           full_name: string
@@ -1014,6 +1089,7 @@ export type Database = {
           agent_id?: string | null
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
+          alerts_unsubscribe_token?: string
           created_at?: string
           email: string
           full_name?: string
@@ -1029,6 +1105,7 @@ export type Database = {
           agent_id?: string | null
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
+          alerts_unsubscribe_token?: string
           created_at?: string
           email?: string
           full_name?: string
@@ -1434,6 +1511,7 @@ export type Database = {
           original_list_price: number
         }[]
       }
+      mark_alerts_seen: { Args: never; Returns: number }
       mls_last_updated: { Args: never; Returns: string }
       mls_sync_health: {
         Args: never
@@ -1501,7 +1579,9 @@ export type Database = {
           total_count: number
         }[]
       }
+      purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
       request_account_deletion: { Args: never; Returns: string }
+      run_member_alerts: { Args: { p_now?: string }; Returns: Json }
       search_sold_listings: {
         Args: {
           p_bbox?: number[]
@@ -1542,6 +1622,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
+      unsubscribe_alert_emails: { Args: { p_token: string }; Returns: boolean }
       update_my_profile: {
         Args: { p_full_name: string; p_phone: string | null }
         Returns: undefined
@@ -1549,6 +1630,7 @@ export type Database = {
     }
     Enums: {
       alert_frequency: "instant" | "daily" | "off"
+      alert_kind: "new_match" | "back_on_market" | "price_drop" | "price_change" | "status_change"
       city_kind: "city" | "unincorporated"
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
@@ -2141,6 +2223,7 @@ export const Constants = {
   public: {
     Enums: {
       alert_frequency: ["instant", "daily", "off"],
+      alert_kind: ["new_match", "back_on_market", "price_drop", "price_change", "status_change"],
       city_kind: ["city", "unincorporated"],
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],

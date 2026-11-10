@@ -29,7 +29,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S2 | Design system | Done 2026-11-09 |
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
-| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (0017, not yet on hosted; VOW built, off pending MLSListings) |
+| S5 | Membership portal | In progress: PR 1 accounts (merged, 0015–0016 on hosted); PR 2 saved homes, searches, VOW pages (merged, 0017 on hosted 2026-11-10; VOW built, off pending MLSListings); PR 3 alerts (0018, not yet on hosted) |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
 | S6 | Staff console & automations | Not started |
 | S7 | Mobile app | Not started |

@@ -2,6 +2,7 @@
 // fields only — no runtime AI, per CLAUDE.md. The processor is dependency-
 // injected so it unit-tests without Supabase or Resend.
 
+import { renderAlertEmail } from "./alert-emails";
 import type { Schedule } from "./schedule";
 
 export type MergeFields = Record<string, string>;
@@ -9,7 +10,18 @@ export type MergeFields = Record<string, string>;
 export interface RenderedEmail {
   subject: string;
   body: string;
+  /** Extra mail headers, e.g. List-Unsubscribe on alert emails. */
+  headers?: Record<string, string>;
 }
+
+export interface RenderContext {
+  /** Public site origin for links in emails. */
+  siteUrl: string;
+}
+
+/** Buyer alert emails: skipped (cancelled) if the member has since opted out. */
+export const ALERT_TEMPLATE_KEYS = ["buyer_alert_instant", "buyer_alert_digest"] as const;
+export const isAlertTemplate = (key: string) => (ALERT_TEMPLATE_KEYS as readonly string[]).includes(key);
 
 const WIRING_SAFETY =
   "Security reminder: Vabrato and escrow will NEVER email you wiring instructions. " +
@@ -71,12 +83,20 @@ const TEMPLATES: Record<string, (m: MergeFields) => RenderedEmail> = {
   }),
 };
 
-export function renderNotification(templateKey: string, merge: MergeFields): RenderedEmail {
+const ALERT_TEMPLATES: Record<string, (payload: unknown, ctx: RenderContext) => RenderedEmail> = {
+  buyer_alert_instant: (p, ctx) => renderAlertEmail("instant", p, ctx),
+  buyer_alert_digest: (p, ctx) => renderAlertEmail("digest", p, ctx),
+};
+
+export function renderNotification(templateKey: string, payload: unknown, ctx: RenderContext = { siteUrl: "https://vabrato.com" }): RenderedEmail {
+  const alert = ALERT_TEMPLATES[templateKey];
+  if (alert) return alert(payload, ctx);
   const template = TEMPLATES[templateKey];
   if (!template) throw new Error(`Unknown notification template: ${templateKey}`);
-  return template(merge);
+  return template((payload ?? {}) as MergeFields);
 }
 
+/** Seller (deal) templates; buyer alert templates are ALERT_TEMPLATE_KEYS. */
 export const NOTIFICATION_TEMPLATE_KEYS = Object.keys(TEMPLATES);
 
 /**
@@ -104,14 +124,17 @@ export function buildSellerNotificationRows(
 export interface DueNotification {
   id: string;
   template_key: string;
-  payload: MergeFields;
+  payload: unknown;
   recipientEmail: string | null;
+  /** The recipient has turned alert emails off (checked again at send time). */
+  alertsOptedOut?: boolean;
 }
 
 export interface OutboundEmail {
   to: string;
   subject: string;
   body: string;
+  headers?: Record<string, string>;
 }
 
 export interface NotificationDeps {
@@ -119,19 +142,31 @@ export interface NotificationDeps {
   send(email: OutboundEmail): Promise<{ error: string | null }>;
   markSent(id: string): Promise<void>;
   markFailed(id: string, reason: string): Promise<void>;
+  markCancelled?(id: string, reason: string): Promise<void>;
+  /** Site origin for links in emails (default https://vabrato.com). */
+  siteUrl?: string;
 }
 
 export interface ProcessResult {
   sent: number;
   failed: number;
+  cancelled?: number;
 }
 
 export async function processDueNotifications(deps: NotificationDeps): Promise<ProcessResult> {
   const due = await deps.fetchDue();
   let sent = 0;
   let failed = 0;
+  let cancelled = 0;
+  const ctx: RenderContext = { siteUrl: (deps.siteUrl ?? "https://vabrato.com").replace(/\/+$/, "") };
 
   for (const n of due) {
+    if (isAlertTemplate(n.template_key) && n.alertsOptedOut) {
+      if (deps.markCancelled) await deps.markCancelled(n.id, "recipient turned alert emails off");
+      else await deps.markFailed(n.id, "recipient turned alert emails off");
+      cancelled++;
+      continue;
+    }
     if (!n.recipientEmail) {
       await deps.markFailed(n.id, "no recipient email");
       failed++;
@@ -139,7 +174,7 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
     }
     let rendered: RenderedEmail;
     try {
-      rendered = renderNotification(n.template_key, n.payload);
+      rendered = renderNotification(n.template_key, n.payload, ctx);
     } catch (e) {
       await deps.markFailed(n.id, (e as Error).message);
       failed++;
@@ -149,6 +184,7 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
       to: n.recipientEmail,
       subject: rendered.subject,
       body: rendered.body,
+      ...(rendered.headers ? { headers: rendered.headers } : {}),
     });
     if (error) {
       await deps.markFailed(n.id, error);
@@ -159,7 +195,7 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
     }
   }
 
-  return { sent, failed };
+  return cancelled ? { sent, failed, cancelled } : { sent, failed };
 }
 
 /** Minimal Resend sender (REST, no SDK). `from` must be a verified domain. */
@@ -168,7 +204,7 @@ export function resendSender(apiKey: string, from: string) {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: email.to, subject: email.subject, text: email.body }),
+      body: JSON.stringify({ from, to: email.to, subject: email.subject, text: email.body, ...(email.headers ? { headers: email.headers } : {}) }),
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => "");

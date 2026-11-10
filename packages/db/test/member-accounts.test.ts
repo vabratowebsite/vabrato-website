@@ -183,7 +183,7 @@ describe("member accounts (0016)", () => {
 
   describe("SECURITY DEFINER hygiene (review item 6)", () => {
     // Definer functions anon may call on purpose (signed-out public pages, 0014).
-    const ANON_OK = new Set(["mls_last_updated", "public_own_sold"]);
+    const ANON_OK = new Set(["mls_last_updated", "public_own_sold", "unsubscribe_alert_emails"]);
 
     it("every definer function pins search_path and isn't executable by PUBLIC", async () => {
       const fns = await t.query<{ name: string; config: string[] | null; public_exec: boolean }>(`
