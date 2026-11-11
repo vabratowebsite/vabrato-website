@@ -109,7 +109,7 @@ describe("MLS RLS", () => {
 
     it("reads offices and feature flags", async () => {
       expect(await t.as("anon", null, (q) => keys(q, "mls_offices", "office_key"))).toEqual(["O-VABRA"]);
-      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
+      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["full_data_enabled", "public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
     });
 
     it.each(["mls_listing_vow", "mls_price_events", "mls_listing_full", "mls_members", "mls_agent_access", "mls_sync_runs"])(
@@ -184,12 +184,31 @@ describe("MLS RLS", () => {
   });
 
   describe("FULL data (MLS-7, ACC-1, ACC-2)", () => {
-    it("is readable by a verified active agent of our office", async () => {
+    // 0023: FULL also needs full_data_enabled (off until MLSListings confirms).
+    const withFull = <T>(fn: () => Promise<T>) =>
+      (async () => {
+        await t.query(`update feature_flags set enabled = true where key = 'full_data_enabled'`);
+        try {
+          return await fn();
+        } finally {
+          await t.query(`update feature_flags set enabled = false where key = 'full_data_enabled'`);
+        }
+      })();
+
+    it("stays locked for everyone, verified agents included, while full_data_enabled is off", async () => {
       await t.as("authenticated", U.agent, async (q) => {
+        expect(await keys(q, "mls_listing_full", "listing_key")).toEqual([]);
+        expect(await keys(q, "mls_members", "member_key")).toEqual([]);
+        expect(await q(`select public.has_full_mls_access() as f`)).toEqual([{ f: false }]);
+      });
+    });
+
+    it("is readable by a verified active agent of our office once the flag is on", async () => {
+      await withFull(() => t.as("authenticated", U.agent, async (q) => {
         expect(await keys(q, "mls_listing_full", "listing_key")).toEqual(["L-ACTIVE", "L-OWN-SOLD"]);
         expect(await keys(q, "mls_members", "member_key")).toEqual(["MB-1", "MB-2", "MB-3", "MB-4"]);
         expect(await keys(q, "mls_listing_vow", "listing_key")).toHaveLength(3);
-      });
+      }));
     });
 
     it.each([
@@ -198,20 +217,20 @@ describe("MLS RLS", () => {
       ["agent whose MLS membership is inactive", U.inactive],
       ["non-staff profile with a forged access row", U.forgedBuyer],
       ["admin who is not a verified agent", U.admin],
-    ])("is locked for an %s", async (_label, id) => {
-      await t.as("authenticated", id, async (q) => {
+    ])("is locked for an %s, even with the flag on", async (_label, id) => {
+      await withFull(() => t.as("authenticated", id, async (q) => {
         expect(await keys(q, "mls_listing_full", "listing_key")).toEqual([]);
         expect(await keys(q, "mls_members", "member_key")).toEqual([]);
-      });
+      }));
     });
 
     it("locks automatically when the nightly re-check deactivates the agent", async () => {
-      const seen = await t.as("authenticated", U.agent, async (q) => {
+      const seen = await withFull(() => t.as("authenticated", U.agent, async (q) => {
         await q(`set local role postgres`);
         await q(`update mls_agent_access set active = false where profile_id = $1`, [U.agent]);
         await q(`set local role authenticated`);
         return keys(q, "mls_listing_full", "listing_key");
-      });
+      }));
       expect(seen).toEqual([]);
     });
   });
@@ -268,6 +287,7 @@ describe("MLS RLS", () => {
   describe("feature flags", () => {
     it("start off", async () => {
       expect(await t.query(`select key, enabled from feature_flags order by key`)).toEqual([
+        { key: "full_data_enabled", enabled: false },
         { key: "public_sold", enabled: false },
         { key: "public_stats", enabled: false },
         { key: "site_scl_enabled", enabled: false },

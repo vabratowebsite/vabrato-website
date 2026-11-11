@@ -3,7 +3,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
 import { ConsoleShell } from "@/components/console-shell";
 import { inputCls, labelCls, mutedCls } from "@/components/ui";
-import { setAwayAction, setRoutingAction } from "@/lib/lead-actions";
+import { setAwayAction, setRoutingAction, setSyncLiveAction } from "@/lib/lead-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen } from "@/lib/today";
@@ -19,11 +19,13 @@ export default async function SettingsPage() {
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
   const supabase = await supabaseServer();
-  const [{ data: s }, { data: canManage }, { data: away }, { data: people }] = await Promise.all([
-    supabase.from("app_settings").select("lead_admin_id, backup_admin_id, lead_admin_away, lead_admin_away_until, lead_escalation_minutes, lead_flood_cap").maybeSingle(),
+  const [{ data: s }, { data: canManage }, { data: away }, { data: people }, { data: access }, { data: full }] = await Promise.all([
+    supabase.from("app_settings").select("lead_admin_id, backup_admin_id, lead_admin_away, lead_admin_away_until, lead_escalation_minutes, lead_flood_cap, mls_sync_live").maybeSingle(),
     supabase.rpc("can_manage_settings"),
     supabase.rpc("lead_admin_away_now"),
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
+    supabase.from("mls_agent_access").select("active, verified_at, member_key").eq("profile_id", profile.id).maybeSingle(),
+    supabase.rpc("has_full_mls_access"),
   ]);
   const name = (id: string | null | undefined) => (id ? ((people ?? []).find((p) => p.id === id)?.full_name || (people ?? []).find((p) => p.id === id)?.email || "Staff") : "Not set");
   const options = (people ?? []).map((p) => (
@@ -34,6 +36,17 @@ export default async function SettingsPage() {
 
   return (
     <ConsoleShell profile={profile} current="settings" eyebrow="Account" title="Settings">
+      <Panel title="Your MLS access">
+        <p className="font-body text-body-sm text-ink">
+          {access?.active
+            ? `Verified as an active MLSListings member of our office on ${fmtWhen(access.verified_at)}. Re-checked at every sign-in and nightly.`
+            : access
+              ? "Not active: the last check didn't find you as an active member of our office. Sign out and back in after MLSListings updates your record."
+              : "Not checked yet. It's checked when you sign in, once the console knows our MLS office ID."}
+        </p>
+        <p className={`${mutedCls} mt-2`}>{full ? "You can see FULL MLS fields in the console." : "FULL MLS fields are off for everyone until MLSListings confirms FULL access in writing; you see IDX data."}</p>
+      </Panel>
+
       <Panel title="Lead routing">
         <dl className="mb-6 grid gap-4 font-body text-body-sm text-ink sm:grid-cols-2">
           <div>
@@ -80,6 +93,17 @@ export default async function SettingsPage() {
           <p className={mutedCls}>Only the lead admin, the backup while the lead admin is away, or an admin can change routing.</p>
         )}
       </Panel>
+
+      {canManage && (
+        <Panel title="MLS feed alerts">
+          <p role="status" className="mb-4 font-body text-body-sm font-medium text-ink">
+            {s?.mls_sync_live ? "On: a failed or late sync alerts admins and the lead admin." : "Off: the feed isn't live yet, so failures don't alert anyone."}
+          </p>
+          <ActionForm action={setSyncLiveAction} submitLabel={s?.mls_sync_live ? "Turn feed alerts off" : "Turn feed alerts on (feed is live)"} secondary={Boolean(s?.mls_sync_live)}>
+            <input type="hidden" name="live" value={s?.mls_sync_live ? "false" : "true"} />
+          </ActionForm>
+        </Panel>
+      )}
 
       {canManage && (
         <Panel title="Away">

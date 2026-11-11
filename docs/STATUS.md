@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (0023, not yet on hosted) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -304,6 +304,25 @@ comes after S6, by decision; the console has no AI code.
   while the console tab is in the background. Today shows where new leads go
   and the median first reply. QA: `scripts/qa/s6-leads-ui.mjs` (agent sees
   only their own lead; axe clean at 1440 and 390 px).
+- **PR 3 (members, MLS sync, FULL access; migration 0023):**
+  - Members list (search, portal role, agent, saved, searches, pursuing),
+    member page (account, saved homes and searches, homes pursued, requests,
+    documents, deals), agent change by the acting lead admin (audited), and
+    the account deletion queue.
+  - MLS sync page: health, last 50 runs with counts or the sanitized error,
+    how to run a sync on Render. While `mls_sync_live` is on (Settings), a
+    failed or late sync alerts admins and the lead admin once per incident
+    (console and email) and once on recovery; a banner shows on every
+    console page meanwhile. Off until the live feed runs on Render.
+  - ACC-1: the console's sign-in callback calls `verify_agent_access()` with
+    `MLS_OFFICE_ID` (same rules as the sync job's check; a parity test
+    compares them). It never blocks sign-in; Settings shows the result.
+  - FULL data: `has_full_mls_access()` now also needs the
+    `full_data_enabled` flag, off until MLSListings confirms FULL access in
+    writing. Our listings shows IDX fields; private remarks and showing
+    instructions appear only for verified agents with the flag on.
+  - Console env adds `MLS_OFFICE_ID` (VABRA or VABRA-1, to confirm with
+    MLSListings).
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render

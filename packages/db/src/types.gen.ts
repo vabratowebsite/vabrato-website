@@ -1509,6 +1509,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_alert_state: {
+        Row: {
+          closed_at: string | null
+          id: boolean
+          incident_open: boolean
+          opened_at: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          id?: boolean
+          incident_open?: boolean
+          opened_at?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          id?: boolean
+          incident_open?: boolean
+          opened_at?: string | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           created_at: string
@@ -1750,6 +1771,7 @@ export type Database = {
       can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
       can_work_lead: { Args: { p_lead: string }; Returns: boolean }
+      check_sync_health: { Args: never; Returns: string }
       claim_due_notifications: {
         Args: { p_batch?: number }
         Returns: {
@@ -1972,10 +1994,12 @@ export type Database = {
         Returns: undefined
       }
       set_lead_status: { Args: { p_lead: string; p_reason?: string; p_status: string }; Returns: undefined }
+      set_member_agent: { Args: { p_agent: string; p_member: string }; Returns: undefined }
       set_member_role: {
         Args: { p_role: Database["public"]["Enums"]["user_role"] }
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      set_mls_sync_live: { Args: { p_live: boolean }; Returns: undefined }
       set_tour_status: {
         Args: { p_lead: string; p_status: Database["public"]["Enums"]["tour_status"] }
         Returns: undefined
@@ -1998,6 +2022,7 @@ export type Database = {
         Args: { p_full_name: string; p_phone: string | null }
         Returns: undefined
       }
+      verify_agent_access: { Args: { p_email: string; p_office: string; p_profile: string }; Returns: Json }
     }
     Enums: {
       alert_frequency: "instant" | "daily" | "off"

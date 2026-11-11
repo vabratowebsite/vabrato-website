@@ -119,3 +119,13 @@ export async function setAwayAction(_prev: ActionState, form: FormData): Promise
   revalidatePath("/");
   return { error: null, ok: "Saved." };
 }
+
+export async function setSyncLiveAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await staffClient();
+  const live = form.get("live") === "true";
+  const { error } = await supabase.rpc("set_mls_sync_live", { p_live: live });
+  if (error) return { error: friendly(error.message) };
+  revalidatePath("/settings");
+  revalidatePath("/mls");
+  return { error: null, ok: "Saved." };
+}
