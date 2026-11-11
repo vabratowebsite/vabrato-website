@@ -97,16 +97,24 @@ describe("processDueNotifications", () => {
   it("marks failed on send error and on missing recipient", async () => {
     const failing = deps([row], "smtp down");
     expect(await processDueNotifications(failing)).toEqual({ sent: 0, failed: 1 });
-    expect(failing.markFailed).toHaveBeenCalledWith("n1", "smtp down");
+    expect(failing.markFailed).toHaveBeenCalledWith("n1", "smtp down", false); // a send error may retry
 
     const noEmail = deps([{ ...row, recipientEmail: null }]);
     expect(await processDueNotifications(noEmail)).toEqual({ sent: 0, failed: 1 });
+    expect(noEmail.markFailed).toHaveBeenCalledWith("n1", "no recipient email", true); // retrying won't help
   });
 
   it("marks failed on unknown template without sending", async () => {
     const d = deps([{ ...row, template_key: "bogus" }]);
     expect(await processDueNotifications(d)).toEqual({ sent: 0, failed: 1 });
     expect(d.send).not.toHaveBeenCalled();
+    expect(d.markFailed).toHaveBeenCalledWith("n1", expect.stringMatching(/Unknown notification template/), true);
+  });
+
+  it("sends the notification id as Resend's idempotency key", async () => {
+    const d = deps([row]);
+    await processDueNotifications(d);
+    expect(d.send).toHaveBeenCalledWith(expect.objectContaining({ idempotencyKey: "n1" }));
   });
 
   it("does nothing when nothing is due", async () => {

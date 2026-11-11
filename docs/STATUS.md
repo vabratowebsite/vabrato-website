@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (0022, not yet on hosted) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -265,6 +265,36 @@ comes after S6, by decision; the console has no AI code.
   `/deals`. The old warm palette failed WCAG contrast on every console page;
   after the move, axe passes on all 11 pages at 1440 and 390 px.
   Before/after screenshots: `docs/screenshots/s6/restyle/`.
+- **PR 2a (lead routing and alerts, migration 0022):**
+  - Every lead goes to the lead admin (Mark), or to the backup (Viv) while
+    Mark is away (with an optional "until" time). Routing is empty on hosted
+    until Mark and Viv have accounts; until then leads stay unassigned, every
+    role admin is alerted, and role admins see all leads.
+  - Visibility: the acting lead admin sees every lead; everyone else sees only
+    leads assigned to them. Lead changes go through functions (reassign,
+    status, "replied", notes); nobody updates the table directly.
+  - Each lead and member message queues an in-console alert and an email in
+    the same transaction, then pokes the console's sender over pg_net. A
+    pg_cron job every minute re-pokes, escalates leads with no reply after
+    2 hours (setting), and flags email waiting over 2 minutes. More than 10
+    lead emails in an hour (setting) switch to a 15-minute digest. Retention
+    stays 24 months, now keeping leads linked to a member account.
+  - Sending claims rows (FOR UPDATE SKIP LOCKED), retries failed sends with
+    backoff up to 5 times, then fails and alerts admins; Resend gets the
+    notification id as Idempotency-Key. The sender's secret check is
+    constant-time.
+  - Emails are static templates with a first name at most: no contact
+    details, no message text.
+  - Done-when proof: `packages/lib/src/__tests__/lead-alert.e2e.test.ts`
+    (PGlite, every migration); local stack: a real contact-form lead reached
+    a fake Resend 374 ms after submit (`scripts/qa/s6-lead-alert.mjs`).
+  - **After 0022 is on hosted (your step):** in the Supabase SQL editor,
+    `select vault.create_secret('https://console.vabrato.com/api/notifications/process', 'console_process_url');`
+    and `select vault.create_secret('<the console CRON_SECRET>', 'console_cron_secret');`.
+    Until `console.vabrato.com` is connected, also store a Vercel Protection
+    Bypass for Automation secret as `console_bypass_secret` and use the
+    vercel.app URL. Console env: `CRON_SECRET`, `CONSOLE_URL`,
+    `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `NOTIFICATIONS_FROM`.
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render

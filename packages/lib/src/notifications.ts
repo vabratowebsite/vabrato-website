@@ -3,6 +3,7 @@
 // injected so it unit-tests without Supabase or Resend.
 
 import { renderAlertEmail } from "./alert-emails";
+import { isStaffTemplate, renderStaffEmail } from "./staff-emails";
 import type { Schedule } from "./schedule";
 
 export type MergeFields = Record<string, string>;
@@ -17,6 +18,8 @@ export interface RenderedEmail {
 export interface RenderContext {
   /** Public site origin for links in emails. */
   siteUrl: string;
+  /** Agent console origin for staff alerts (default https://console.vabrato.com). */
+  consoleUrl?: string;
 }
 
 /** Buyer alert emails: skipped (cancelled) if the member has since opted out. */
@@ -92,6 +95,7 @@ const ALERT_TEMPLATES: Record<string, (payload: unknown, ctx: RenderContext) => 
 export function renderNotification(templateKey: string, payload: unknown, ctx: RenderContext = { siteUrl: "https://vabrato.com" }): RenderedEmail {
   const alert = ALERT_TEMPLATES[templateKey];
   if (alert) return alert(payload, ctx);
+  if (isStaffTemplate(templateKey)) return renderStaffEmail(templateKey, payload, { siteUrl: ctx.siteUrl, consoleUrl: ctx.consoleUrl ?? "https://console.vabrato.com" });
   const template = TEMPLATES[templateKey];
   if (!template) throw new Error(`Unknown notification template: ${templateKey}`);
   return template((payload ?? {}) as MergeFields, ctx);
@@ -136,16 +140,24 @@ export interface OutboundEmail {
   subject: string;
   body: string;
   headers?: Record<string, string>;
+  /** Sent to Resend as Idempotency-Key (the notification id): a repeat send is dropped. */
+  idempotencyKey?: string;
 }
 
 export interface NotificationDeps {
   fetchDue(): Promise<DueNotification[]>;
   send(email: OutboundEmail): Promise<{ error: string | null }>;
   markSent(id: string): Promise<void>;
-  markFailed(id: string, reason: string): Promise<void>;
+  /**
+   * `permanent`: no recipient, unknown template or bad payload: retrying won't
+   * help. Otherwise (a send error) the store may retry later (0022 backoff).
+   */
+  markFailed(id: string, reason: string, permanent?: boolean): Promise<void>;
   markCancelled?(id: string, reason: string): Promise<void>;
   /** Site origin for links in emails (default https://vabrato.com). */
   siteUrl?: string;
+  /** Console origin for links in staff alerts (default https://console.vabrato.com). */
+  consoleUrl?: string;
 }
 
 export interface ProcessResult {
@@ -159,7 +171,10 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
   let sent = 0;
   let failed = 0;
   let cancelled = 0;
-  const ctx: RenderContext = { siteUrl: (deps.siteUrl ?? "https://vabrato.com").replace(/\/+$/, "") };
+  const ctx: RenderContext = {
+    siteUrl: (deps.siteUrl ?? "https://vabrato.com").replace(/\/+$/, ""),
+    consoleUrl: (deps.consoleUrl ?? "https://console.vabrato.com").replace(/\/+$/, ""),
+  };
 
   for (const n of due) {
     if (isAlertTemplate(n.template_key) && n.alertsOptedOut) {
@@ -169,7 +184,7 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
       continue;
     }
     if (!n.recipientEmail) {
-      await deps.markFailed(n.id, "no recipient email");
+      await deps.markFailed(n.id, "no recipient email", true);
       failed++;
       continue;
     }
@@ -177,7 +192,7 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
     try {
       rendered = renderNotification(n.template_key, n.payload, ctx);
     } catch (e) {
-      await deps.markFailed(n.id, (e as Error).message);
+      await deps.markFailed(n.id, (e as Error).message.slice(0, 500), true);
       failed++;
       continue;
     }
@@ -185,10 +200,11 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
       to: n.recipientEmail,
       subject: rendered.subject,
       body: rendered.body,
+      idempotencyKey: n.id,
       ...(rendered.headers ? { headers: rendered.headers } : {}),
     });
     if (error) {
-      await deps.markFailed(n.id, error);
+      await deps.markFailed(n.id, error, false);
       failed++;
     } else {
       await deps.markSent(n.id);
@@ -199,12 +215,21 @@ export async function processDueNotifications(deps: NotificationDeps): Promise<P
   return cancelled ? { sent, failed, cancelled } : { sent, failed };
 }
 
-/** Minimal Resend sender (REST, no SDK). `from` must be a verified domain. */
-export function resendSender(apiKey: string, from: string) {
+/**
+ * Minimal Resend sender (REST, no SDK). `from` must be a verified domain.
+ * `baseUrl` points at a fake Resend in local QA; `doFetch` is for tests.
+ */
+export function resendSender(apiKey: string, from: string, opts: { baseUrl?: string; doFetch?: typeof fetch } = {}) {
+  const url = `${(opts.baseUrl ?? "https://api.resend.com").replace(/\/+$/, "")}/emails`;
+  const doFetch = opts.doFetch ?? fetch;
   return async (email: OutboundEmail): Promise<{ error: string | null }> => {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await doFetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        ...(email.idempotencyKey ? { "Idempotency-Key": email.idempotencyKey } : {}),
+      },
       body: JSON.stringify({ from, to: email.to, subject: email.subject, text: email.body, ...(email.headers ? { headers: email.headers } : {}) }),
     });
     if (!res.ok) {

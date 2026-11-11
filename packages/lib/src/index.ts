@@ -10,5 +10,6 @@ export * from "./auth/actions";
 // NOTE: auth/middleware is Next-only — import from "@vabrato/lib/auth/middleware".
 export * from "./mls-legal";
 export * from "./alert-emails";
+export * from "./staff-emails";
 export * from "./property-schema";
 export * from "./timeline";
