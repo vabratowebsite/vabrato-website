@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { consoleNav, signedInAs } from "./nav";
 
 describe("console nav", () => {
-  it("lists the existing pages in Staff, Website, Transactions and Account groups", () => {
+  it("lists the existing pages in Staff, Website, Reports, Transactions and Account groups", () => {
     const nav = consoleNav("deals");
-    expect(nav.map((g) => g.label)).toEqual(["Staff", "Website", "Transactions", "Account"]);
+    expect(nav.map((g) => g.label)).toEqual(["Staff", "Website", "Reports", "Transactions", "Account"]);
     expect(nav.flatMap((g) => g.items.map((i) => i.href))).toEqual([
       "/",
       "/leads",
@@ -15,6 +15,9 @@ describe("console nav", () => {
       "/mls",
       "/content",
       "/featured",
+      "/reports",
+      "/stats",
+      "/cmas",
       "/deals",
       "/vendors",
       "/profile",

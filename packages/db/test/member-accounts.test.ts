@@ -185,7 +185,7 @@ describe("member accounts (0016)", () => {
     // Definer functions anon may call on purpose: signed-out public pages (0014),
     // unsubscribe by token (0018), listing views with the server key and
     // open-house sign-in by link (0021).
-    const ANON_OK = new Set(["mls_last_updated", "public_own_sold", "unsubscribe_alert_emails", "record_listing_view", "open_house_signin_info", "submit_open_house_signin"]);
+    const ANON_OK = new Set(["mls_last_updated", "public_own_sold", "unsubscribe_alert_emails", "record_listing_view", "open_house_signin_info", "submit_open_house_signin", "public_city_stats"]);
 
     it("every definer function pins search_path and isn't executable by PUBLIC", async () => {
       const fns = await t.query<{ name: string; config: string[] | null; public_exec: boolean }>(`

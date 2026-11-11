@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { BreadcrumbBar, Button, FAQAccordion, SectionTitle } from "@vabrato/ui/web";
+import { BreadcrumbBar, Button, FAQAccordion, SectionTitle, StatStrip } from "@vabrato/ui/web";
 import { JsonLd } from "@/components/JsonLd";
 import { MlsAttribution } from "@/components/MlsAttribution";
 import { ResultsGrid } from "@/components/search/results";
 import { cityFaq } from "@/lib/city-faq";
 import { cityGuide } from "@/lib/public/content";
-import { flagEnabled, listCities, mlsLastUpdated, searchListings } from "@/lib/public/listings";
+import { cityStatTiles } from "@/lib/city-stats";
+import { cityStats, flagEnabled, listCities, mlsLastUpdated, searchListings } from "@/lib/public/listings";
 import { officialSchoolLinks } from "@vabrato/lib";
 import { DEFAULT_FILTERS } from "@/lib/search-params";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata, placeJsonLd } from "@/lib/seo";
 
 // City page (SPEC <service_area>): live IDX listings, new this week, upcoming
 // open houses, nearby cities and a FAQ, so pages without a guide aren't thin.
-// Priority cities add a hand-written guide. Market stats stay hidden until
-// `public_stats` is on (MLS-10).
+// Priority cities add a hand-written guide. Market stats (aggregates from
+// public_city_stats, 0025) stay hidden until `public_stats` is on (MLS-10).
 export const revalidate = 900;
 
 type Props = { params: Promise<{ city: string }> };
@@ -44,12 +45,13 @@ export default async function CityPage({ params }: Props) {
   if (!found) notFound();
   const { city, cities } = found;
   const filters = { ...DEFAULT_FILTERS, city: [city.slug] };
-  const [listings, openHouses, guide, showStats, lastUpdated] = await Promise.all([
+  const [listings, openHouses, guide, showStats, lastUpdated, stats] = await Promise.all([
     searchListings(filters, { pageSize: 12 }),
     searchListings({ ...filters, tab: "open-houses" }, { pageSize: 6 }),
     cityGuide(city.slug),
     flagEnabled("public_stats"),
     mlsLastUpdated(),
+    cityStats(city.slug),
   ]);
   const newThisWeek = listings.rows.filter((r) => r.on_market_date && Date.now() - Date.parse(r.on_market_date) <= NEW_DAYS * 86_400_000);
   const nearby = cities.filter((c) => c.county === city.county && c.slug !== city.slug).slice(0, 8);
@@ -101,13 +103,13 @@ export default async function CityPage({ params }: Props) {
           </section>
         )}
 
-        {showStats && (
-          <section aria-labelledby="stats">
-            <h2 id="stats" className="font-subhead text-subhead-lg text-ink">
-              {city.name} market
-            </h2>
-            <p className="font-body text-body-sm text-muted">Market statistics are being prepared.</p>
-          </section>
+        {showStats && stats && stats.sold.count > 0 && (
+          <StatStrip
+            eyebrow="Live from MLSListings"
+            title={`${city.name} market, last ${stats.months} months`}
+            stats={cityStatTiles(stats)}
+            footnote={`From ${stats.sold.count} sale${stats.sold.count === 1 ? "" : "s"}. A dash means too few sales for a fair figure.`}
+          />
         )}
 
         {guide && guide.neighborhoods.length > 0 && (

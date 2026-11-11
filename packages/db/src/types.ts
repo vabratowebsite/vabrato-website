@@ -101,3 +101,45 @@ export type ContentTable = Enums["content_table"];
 export type RevisionStatus = Enums["revision_status"];
 export type ContentRevision = Tables["content_revisions"]["Row"];
 export type FeaturedListing = Tables["featured_listings"]["Row"];
+
+export type SellerReportSend = Tables["seller_report_sends"]["Row"];
+export type Cma = Tables["cmas"]["Row"];
+
+/** seller_weekly_report_data(deal, week) (0025): counts only, IDX listing fields. */
+export interface SellerWeeklyCounts {
+  views: number;
+  saves: number;
+  tour_requests: number;
+  open_house_signins: number;
+}
+export interface SellerWeeklyReportData {
+  deal_id: string;
+  address: string;
+  linked: boolean;
+  week_start: string;
+  week_end: string;
+  listing: { standard_status: string | null; list_price: number | null } | null;
+  week: SellerWeeklyCounts;
+  totals: SellerWeeklyCounts;
+  sellers: { first_name: string | null }[];
+  sent: { sent_at: string; sent_by: string | null; recipients: number } | null;
+}
+
+/** market_stats(city, months) / public_city_stats(city) (0025). Medians are null under 5 sales. */
+export interface MarketStats {
+  enabled?: boolean;
+  city: string;
+  city_name: string;
+  months: number;
+  since: string;
+  min_sales_for_medians: number;
+  sold: {
+    count: number;
+    median_price: number | null;
+    median_price_per_sqft: number | null;
+    median_days_on_market: number | null;
+    median_sale_to_list: number | null;
+  };
+  market: { active: number; pending: number; median_list_price: number | null; months_of_inventory: number | null };
+  by_month: { month: string; sold: number; median_price: number | null }[];
+}

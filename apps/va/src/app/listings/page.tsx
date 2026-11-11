@@ -1,6 +1,7 @@
 import { Panel, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
+import { MlsAttribution } from "@/components/mls-attribution";
 import { mutedCls } from "@/components/ui";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -20,7 +21,7 @@ export default async function OurListings() {
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
   const supabase = await supabaseServer();
-  const [{ data: listings }, { data: full }] = await Promise.all([
+  const [{ data: listings }, { data: full }, { data: lastUpdated }] = await Promise.all([
     supabase
       .from("mls_listings")
       .select("listing_key, standard_status, list_price, city, bedrooms_total, bathrooms_total, living_area, modification_ts, address_display, data, mls_open_houses(start_time)")
@@ -28,6 +29,7 @@ export default async function OurListings() {
       .order("modification_ts", { ascending: false })
       .limit(100),
     supabase.rpc("has_full_mls_access"),
+    supabase.rpc("mls_last_updated"),
   ]);
   const keys = (listings ?? []).map((l) => l.listing_key);
   const { data: fullRows } = full && keys.length ? await supabase.from("mls_listing_full").select("listing_key, data").in("listing_key", keys) : { data: [] };
@@ -88,6 +90,7 @@ export default async function OurListings() {
           <p className={mutedCls}>No listings of ours in the feed yet.</p>
         )}
       </Panel>
+      <MlsAttribution lastUpdated={(lastUpdated as string | null) ?? null} />
     </ConsoleShell>
   );
 }
