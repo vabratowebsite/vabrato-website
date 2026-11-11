@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AIConceptBadge, AIDraftLabel } from "./AILabels";
+import { OwnerChip, ownerTone } from "./OwnerChip";
 import { StatusLadder } from "./StatusLadder";
 import { Timeline } from "./Timeline";
 import { WiringBanner } from "./WiringBanner";
@@ -60,5 +61,15 @@ describe("AI labels", () => {
     expect(screen.getByText("AI draft")).toBeInTheDocument();
     expect(screen.getByText("AI draft · You send it")).toBeInTheDocument();
     expect(screen.getByText("AI concept · Light & warm")).toBeInTheDocument();
+  });
+});
+
+describe("OwnerChip", () => {
+  it("uses AA-checked pill tones, outline for unknown owners", () => {
+    expect(ownerTone("Mark")).toBe("navy");
+    expect(ownerTone("Seller")).toBe("gold");
+    expect(ownerTone("Someone new")).toBe("outline");
+    render(<OwnerChip owner="TC" />);
+    expect(screen.getByText("TC").className).toMatch(/bg-green-50 text-green/);
   });
 });

@@ -1,35 +1,23 @@
 "use client";
 
 import { useActionState } from "react";
-import { T } from "@vabrato/ui";
+import { btnPrimary, errorCls, inputCls, labelCls } from "@/components/ui";
 import { inviteSellerAction, type FormState } from "@/lib/actions";
 
 export function InviteForm({ dealId }: { dealId: string }) {
-  const action = inviteSellerAction.bind(null, dealId);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(action, {
-    error: null,
-  });
+  const [state, formAction, pending] = useActionState<FormState, FormData>(inviteSellerAction.bind(null, dealId), { error: null });
 
   return (
-    <form action={formAction} className="flex flex-wrap items-center gap-2">
-      <input
-        type="email"
-        name="email"
-        required
-        placeholder="seller@example.com"
-        className="min-w-52 flex-1 rounded-lg px-3 py-2 text-sm"
-        style={{ border: `1px solid ${T.line}`, background: T.surface }}
-      />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
-        style={{ background: T.ink, color: T.gold }}
-      >
+    <form action={formAction} className="flex flex-wrap items-end gap-3">
+      <label className={`${labelCls} min-w-52 flex-1`}>
+        Seller&apos;s email
+        <input type="email" name="email" required placeholder="seller@example.com" className={`${inputCls} mt-1`} />
+      </label>
+      <button type="submit" disabled={pending} className={btnPrimary}>
         {pending ? "Adding…" : "Give seller access"}
       </button>
       {state.error && (
-        <p className="w-full text-sm" style={{ color: T.red }}>
+        <p role="alert" className={`${errorCls} w-full`}>
           {state.error}
         </p>
       )}

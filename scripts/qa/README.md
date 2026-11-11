@@ -111,3 +111,11 @@ It needs the full fictional seed, apps/va on :3000 and `REVALIDATE_SECRET` (it t
 ```bash
 QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa REVALIDATE_SECRET=… node scripts/qa/s5-qa.mjs
 ```
+
+## Agent console (S6)
+
+`s6-console-shots.mjs` signs in to the console (apps/va on :3000) as staff with the email link, opens every console page, runs axe at 1440 and 390 px and saves screenshots. `--out <dir>` sets where they go; `--no-axe` skips axe. It picks a fictional deal and message thread from the database.
+
+```bash
+QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa node scripts/qa/s6-console-shots.mjs --out docs/screenshots/s6
+```

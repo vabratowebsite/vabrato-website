@@ -8,11 +8,7 @@ import { CalendarView } from "./calendar-view";
 
 export const dynamic = "force-dynamic";
 
-export default async function DealCalendarPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function DealCalendarPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
@@ -22,11 +18,7 @@ export default async function DealCalendarPage({
   const { deal, done, total } = result;
 
   const supabase = await supabaseServer();
-  const { data: tasks } = await supabase
-    .from("tasks")
-    .select("id, title, owner, due_date, done")
-    .eq("deal_id", id)
-    .order("due_date");
+  const { data: tasks } = await supabase.from("tasks").select("id, title, owner, due_date, done").eq("deal_id", id).order("due_date");
 
   return (
     <DealShell profile={profile} deal={deal} done={done} total={total} active="calendar">

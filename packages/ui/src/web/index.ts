@@ -43,6 +43,7 @@ export * from "./agent/ReviewCard";
 export * from "./portal/PortalShell";
 export * from "./portal/Panel";
 export * from "./portal/Pill";
+export * from "./portal/OwnerChip";
 export * from "./portal/KpiTile";
 export * from "./portal/StatusLadder";
 export * from "./portal/Timeline";

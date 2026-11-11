@@ -2,133 +2,108 @@
 
 import { useActionState, useMemo, useState } from "react";
 import type { Vendor } from "@vabrato/db";
-import { T } from "@vabrato/ui";
-import {
-  addVendorAction,
-  deleteVendorAction,
-  toggleVendorPreferredAction,
-  type FormState,
-} from "@/lib/actions";
-
-const inputStyle = { border: `1px solid ${T.line}`, background: T.surface };
+import { Panel, Pill, cx, focusLight } from "@vabrato/ui/web";
+import { btnPrimary, errorCls, inputCls, labelCls, linkAction, linkDanger, mutedCls } from "@/components/ui";
+import { addVendorAction, deleteVendorAction, toggleVendorPreferredAction, type FormState } from "@/lib/actions";
 
 export function VendorsView({ vendors }: { vendors: Vendor[] }) {
   const [role, setRole] = useState("All");
-  const [state, formAction, pending] = useActionState<FormState, FormData>(addVendorAction, {
-    error: null,
-  });
-
-  const roles = useMemo(
-    () => ["All", ...Array.from(new Set(vendors.map((v) => v.role))).sort()],
-    [vendors],
-  );
+  const [state, formAction, pending] = useActionState<FormState, FormData>(addVendorAction, { error: null });
+  const roles = useMemo(() => ["All", ...Array.from(new Set(vendors.map((v) => v.role))).sort()], [vendors]);
   const shown = role === "All" ? vendors : vendors.filter((v) => v.role === role);
 
   return (
-    <div className="space-y-5">
-      <section
-        className="rounded-2xl p-5"
-        style={{ background: T.surface, border: `1px solid ${T.line}` }}
-      >
-        <h3 className="mb-3 font-serif text-base">Add a vendor</h3>
-        <form action={formAction} className="grid gap-2 sm:grid-cols-5">
-          <input name="name" required placeholder="Name" className="rounded-lg px-3 py-2 text-sm" style={inputStyle} />
-          <input name="role" required placeholder="Role (e.g. Staging)" className="rounded-lg px-3 py-2 text-sm" style={inputStyle} />
-          <input name="phone" placeholder="Phone" className="rounded-lg px-3 py-2 text-sm" style={inputStyle} />
-          <input name="email" type="email" placeholder="Email" className="rounded-lg px-3 py-2 text-sm" style={inputStyle} />
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
-            style={{ background: T.ink, color: T.gold }}
-          >
-            {pending ? "Adding…" : "Add"}
-          </button>
-          <label className="flex items-center gap-2 text-xs sm:col-span-5" style={{ color: T.muted }}>
-            <input type="checkbox" name="preferred" /> Preferred vendor
+    <div className="space-y-6">
+      <Panel title="Add a vendor">
+        <form action={formAction} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label className={labelCls}>
+            Name
+            <input name="name" required className={`${inputCls} mt-1`} />
           </label>
+          <label className={labelCls}>
+            Role (for example, Staging)
+            <input name="role" required className={`${inputCls} mt-1`} />
+          </label>
+          <label className={labelCls}>
+            Phone (optional)
+            <input name="phone" type="tel" className={`${inputCls} mt-1`} />
+          </label>
+          <label className={labelCls}>
+            Email (optional)
+            <input name="email" type="email" className={`${inputCls} mt-1`} />
+          </label>
+          <label className="flex min-h-[44px] items-center gap-3 font-body text-body-sm text-ink sm:col-span-2 lg:col-span-4">
+            <input type="checkbox" name="preferred" className="h-5 w-5 accent-navy" /> Preferred vendor
+          </label>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <button type="submit" disabled={pending} className={btnPrimary}>
+              {pending ? "Adding…" : "Add vendor"}
+            </button>
+          </div>
           {state.error && (
-            <p className="text-sm sm:col-span-5" style={{ color: T.red }}>
+            <p role="alert" className={`${errorCls} sm:col-span-2 lg:col-span-4`}>
               {state.error}
             </p>
           )}
         </form>
-      </section>
+      </Panel>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs" style={{ color: T.muted }}>
-          Role
-        </span>
+      <fieldset className="flex flex-wrap items-center gap-2">
+        <legend className="mb-2 w-full font-body text-body-sm font-medium text-ink">Filter by role</legend>
         {roles.map((r) => (
           <button
             key={r}
+            type="button"
             onClick={() => setRole(r)}
-            className="rounded-full px-2.5 py-1 text-xs font-medium"
-            style={{
-              background: role === r ? T.ink : T.surface,
-              color: role === r ? T.gold : T.muted,
-              border: `1px solid ${role === r ? T.ink : T.line}`,
-            }}
+            aria-pressed={role === r}
+            className={cx("min-h-[44px] border px-4 font-body text-body-sm", role === r ? "border-navy bg-navy text-white" : "border-line bg-white text-navy", focusLight)}
           >
             {r}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       {shown.length === 0 ? (
-        <p className="text-sm" style={{ color: T.muted }}>
-          No vendors yet — add your first one above.
-        </p>
+        <p className={mutedCls}>No vendors yet. Add your first one above.</p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {shown.map((v) => (
-            <div
-              key={v.id}
-              className="rounded-2xl p-4"
-              style={{ background: T.surface, border: `1px solid ${T.line}` }}
-            >
+            <li key={v.id} className="border border-line bg-white p-5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 font-medium">
-                    {v.name}
-                    {v.preferred && <span style={{ color: T.gold }}>★</span>}
-                  </div>
-                  <div className="mt-0.5 text-xs" style={{ color: T.muted }}>
-                    {v.role}
-                  </div>
+                  <p className="font-body text-body font-medium text-ink">{v.name}</p>
+                  <p className={mutedCls}>{v.role}</p>
                 </div>
-                <form action={toggleVendorPreferredAction.bind(null, v.id, !v.preferred)}>
-                  <button
-                    className="shrink-0 rounded-full px-2 py-1 text-[11px] font-medium"
-                    style={{
-                      background: v.preferred ? `${T.gold}22` : T.lineSoft,
-                      color: v.preferred ? T.goldDeep : T.muted,
-                    }}
-                  >
-                    {v.preferred ? "Preferred" : "Prefer?"}
-                  </button>
-                </form>
+                {v.preferred && <Pill tone="gold">Preferred</Pill>}
               </div>
-              <div className="mt-3 space-y-1.5 text-xs" style={{ color: T.muted }}>
+              <div className="mt-3 space-y-1 font-body text-body-sm">
                 {v.phone && (
-                  <a href={`tel:${v.phone}`} className="block">
+                  <a href={`tel:${v.phone}`} className="block text-navy underline">
                     {v.phone}
                   </a>
                 )}
                 {v.email && (
-                  <a href={`mailto:${v.email}`} className="block truncate">
+                  <a href={`mailto:${v.email}`} className="block truncate text-navy underline">
                     {v.email}
                   </a>
                 )}
               </div>
-              <form action={deleteVendorAction.bind(null, v.id)} className="mt-3">
-                <button className="text-xs" style={{ color: T.red }}>
-                  Delete
-                </button>
-              </form>
-            </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <form action={toggleVendorPreferredAction.bind(null, v.id, !v.preferred)}>
+                  <button type="submit" className={linkAction}>
+                    {v.preferred ? "Unmark preferred" : "Mark preferred"}
+                    <span className="sr-only">: {v.name}</span>
+                  </button>
+                </form>
+                <form action={deleteVendorAction.bind(null, v.id)}>
+                  <button type="submit" className={linkDanger}>
+                    Delete<span className="sr-only"> {v.name}</span>
+                  </button>
+                </form>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

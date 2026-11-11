@@ -1,107 +1,116 @@
 import Link from "next/link";
-import { computeCoe } from "@vabrato/lib";
-import { Panel, T } from "@vabrato/ui";
+import { KpiTile, Panel, PanelAction, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
-import { fmtLong } from "@/lib/dates";
+import { ConsoleShell } from "@/components/console-shell";
+import { mutedCls } from "@/components/ui";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
+import { feedRows, fmtWhen, leadKindLabel, shortName, type SyncHealth, type SyncRun } from "@/lib/today";
 
+// Today (mockup 07): the console's home. KPIs, the newest leads, the MLS feed
+// and what runs automatically. Lead routing, first-reply times and the full
+// inbox arrive with S6 PR 2; until then leads are unassigned. No AI rows.
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+const TONE = { green: "text-green", red: "text-red", ink: "text-ink" } as const;
+
+export default async function Today() {
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
-
   const supabase = await supabaseServer();
-  const { data: deals } = await supabase
-    .from("deals")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const since30 = new Date(Date.now() - 30 * 86_400_000).toISOString();
 
-  const dealIds = (deals ?? []).map((d) => d.id);
-  const { data: taskRows } = dealIds.length
-    ? await supabase.from("tasks").select("deal_id, done").in("deal_id", dealIds)
-    : { data: [] };
-  const progress = new Map<string, { done: number; total: number }>();
-  for (const t of taskRows ?? []) {
-    const p = progress.get(t.deal_id) ?? { done: 0, total: 0 };
-    p.total += 1;
-    if (t.done) p.done += 1;
-    progress.set(t.deal_id, p);
-  }
+  const [newLeads, members, tours, openDeals, recent, health, runs] = await Promise.all([
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).in("role", ["buyer", "seller", "both"]),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("kind", "tour").gte("created_at", since30),
+    supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("leads").select("id, kind, name, email, site, status, created_at, assigned_to").order("created_at", { ascending: false }).limit(6),
+    supabase.rpc("mls_sync_health"),
+    supabase.from("mls_sync_runs").select("kind, status, finished_at, counts").order("started_at", { ascending: false }).limit(20),
+  ]);
+  const feed = feedRows((health.data?.[0] ?? null) as SyncHealth | null, (runs.data ?? []) as SyncRun[]);
+  const emailOn = Boolean(process.env.RESEND_API_KEY);
 
   return (
-    <div>
-      <Header profile={profile} />
-      <main className="mx-auto max-w-4xl p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <h1 className="font-serif text-xl">Transactions</h1>
-          <Link
-            href="/deals/new"
-            className="rounded-lg px-4 py-2 text-sm font-medium"
-            style={{ background: T.ink, color: T.gold }}
-          >
-            + New transaction
-          </Link>
-        </div>
+    <ConsoleShell profile={profile} current="today" title="Today">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiTile value={String(newLeads.count ?? 0)} label="New leads" />
+        <KpiTile value={String(members.count ?? 0)} label="Members" />
+        <KpiTile value={String(tours.count ?? 0)} label="Tour requests (30 days)" />
+        <KpiTile value={String(openDeals.count ?? 0)} label="Open deals" />
+      </div>
 
-        {!deals?.length ? (
-          <Panel title="No transactions yet">
-            <p className="text-sm" style={{ color: T.muted }}>
-              Start your first one — enter the ratification date and the desk builds the full
-              dated, owner-assigned task list.
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <Panel title="Newest leads">
+          {recent.data?.length ? (
+            <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Newest leads table">
+              <table className="w-full min-w-[480px] font-body text-body-sm text-ink">
+                <thead>
+                  <tr className="border-b border-line text-left text-label uppercase tracking-label text-muted">
+                    <th scope="col" className="py-2 pr-4 font-medium">Lead</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Source</th>
+                    <th scope="col" className="py-2 pr-4 font-medium">Received</th>
+                    <th scope="col" className="py-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recent.data.map((l) => (
+                    <tr key={l.id} className="border-b border-line last:border-b-0">
+                      <td className="py-2 pr-4">
+                        <span className="block font-medium">{shortName(l.name, l.email)}</span>
+                        <span className="text-caption text-muted">{leadKindLabel(l.kind)}</span>
+                      </td>
+                      <td className="py-2 pr-4">{l.site === "sancarloslife" ? "homes.sancarloslife.com" : "vabrato.com"}</td>
+                      <td className="py-2 pr-4">{fmtWhen(l.created_at)}</td>
+                      <td className="py-2">
+                        <Pill tone={l.status === "new" ? "red" : l.status === "assigned" ? "gold" : "outline"}>{l.status === "new" ? "New" : l.status === "assigned" ? "Assigned" : "Closed"}</Pill>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className={mutedCls}>No leads yet. Requests from vabrato.com forms appear here.</p>
+          )}
+          <p className={`${mutedCls} mt-4`}>Routing to Mark (or Viv when he&apos;s away) and new-lead alerts arrive in the next console update.</p>
+        </Panel>
+
+        <div className="space-y-6">
+          <Panel title="MLS feed">
+            <dl className="divide-y divide-line font-body text-body-sm">
+              {feed.map((r) => (
+                <div key={r.label} className="flex flex-wrap justify-between gap-2 py-2">
+                  <dt className="text-ink">{r.label}</dt>
+                  <dd className={`font-medium ${TONE[r.tone]}`}>{r.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+
+          <Panel title="Automations" action={<PanelAction href="/open-houses">Open houses</PanelAction>}>
+            <dl className="divide-y divide-line font-body text-body-sm">
+              <Row label="Email sending" value={emailOn ? "On" : "Off: RESEND_API_KEY not set"} ok={emailOn} />
+              <Row label="Seller timeline emails" value="Queued when a seller gets access" />
+              <Row label="New-listing and price alerts" value="After each MLS sync" />
+              <Row label="Open-house sign-in" value="Links per event" />
+            </dl>
+            <p className={`${mutedCls} mt-4`}>
+              Clients message you from their portal; see <Link href="/messages" className="text-navy underline">Messages</Link>.
             </p>
           </Panel>
-        ) : (
-          <ul className="space-y-3">
-            {deals.map((deal) => {
-              const p = progress.get(deal.id) ?? { done: 0, total: 0 };
-              const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
-              const coe = computeCoe(deal.ratification_date, deal.days_to_close);
-              return (
-                <li key={deal.id}>
-                  <Link
-                    href={`/deals/${deal.id}`}
-                    className="block rounded-2xl p-5 transition-shadow hover:shadow-md"
-                    style={{ background: T.surface, border: `1px solid ${T.line}` }}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="font-serif">{deal.address}</div>
-                        <div className="mt-0.5 text-xs" style={{ color: T.muted }}>
-                          {deal.seller_name ? `Seller ${deal.seller_name} · ` : ""}
-                          {deal.escrow_number ? `Escrow #${deal.escrow_number} · ` : ""}
-                          {deal.status}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6 text-sm">
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider" style={{ color: T.faint }}>
-                            COE
-                          </div>
-                          <div style={{ color: T.goldDeep }}>{fmtLong(coe)}</div>
-                        </div>
-                        <div className="w-28">
-                          <div className="mb-1 flex justify-between text-xs" style={{ color: T.muted }}>
-                            <span>
-                              {p.done}/{p.total}
-                            </span>
-                            <span>{pct}%</span>
-                          </div>
-                          <div className="h-2 overflow-hidden rounded-full" style={{ background: T.lineSoft }}>
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: T.gold }} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </main>
+        </div>
+      </div>
+    </ConsoleShell>
+  );
+}
+
+function Row({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
+  return (
+    <div className="flex flex-wrap justify-between gap-2 py-2">
+      <dt className="text-ink">{label}</dt>
+      <dd className={ok === undefined ? "text-ink" : ok ? "font-medium text-green" : "font-medium text-red"}>{value}</dd>
     </div>
   );
 }

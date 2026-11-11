@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | Not started |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -249,6 +249,40 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
   - At S9: Google OAuth privacy and terms links, then publish the OAuth app.
 - **Follow-ups:** regenerate `packages/db/src/types.gen.ts` from hosted. It
   was hand-edited for 0015–0021, and the tests and typecheck cover it.
+
+### S6 staff console (in progress)
+
+Plan v3 (approved 2026-11-11): PR 1 frame and Today; PR 2a lead routing and
+notification pipeline (pg_net + pg_cron); PR 2b leads UI; PR 3 members, MLS
+sync, ACC-1; PR 4 content editor and featured listings; PR 5 seller weekly
+report (live), market stats and CMAs (behind flags, off); PR 6 QA. S5b (AI)
+comes after S6, by decision; the console has no AI code.
+
+- **PR 1 (console frame):** apps/va moved to the web design system (preset,
+  tokens, Bodoni/Libre Baskerville/Roboto) on `PortalShell` (mockup 07).
+  Today page: new leads, members, tour requests (30 days), open deals, newest
+  leads, MLS feed health, automations. The deals list moved from `/` to
+  `/deals`. The old warm palette failed WCAG contrast on every console page;
+  after the move, axe passes on all 11 pages at 1440 and 390 px.
+  Before/after screenshots: `docs/screenshots/s6/restyle/`.
+- **Found while checking the plan (Step 0):**
+  - vabrato-console has Vercel Authentication on for every deployment except
+    custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render
+    can't reach `/api/notifications/process` until `console.vabrato.com` is
+    connected, or a Protection Bypass for Automation secret is stored.
+  - The website's Vercel project has only the two Supabase variables:
+    Turnstile, `LEAD_IP_SALT` (per-IP lead limit) and `REVALIDATE_SECRET`
+    aren't set in production. Only the honeypot and the per-email limit
+    protect the public forms today.
+  - Hosted has no admin or agent accounts yet; lead routing needs Mark and
+    Viv to sign in once.
+  - pg_net and pg_cron are available on the hosted project but not installed
+    (PR 2a installs them).
+- **Needs you for S6:** Resend (domain, `RESEND_API_KEY`,
+  `NOTIFICATIONS_FROM`); Turnstile keys, `LEAD_IP_SALT` and
+  `REVALIDATE_SECRET` on vabrato-website; `console.vabrato.com` DNS; Mark and
+  Viv sign in once; decisions on Viv's role, escalation time (2 h proposed),
+  lead retention (24 months today) and the lead flood cap (10/hour proposed).
 
 **Must ship before launch (S5 review item 17):** S6 notifications for new
 member messages (email and in-console) and for tour requests. Until then a

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { createBrowserSupabase, signInWithGoogle, signInWithMagicLink } from "@vabrato/lib";
-import { T } from "@vabrato/ui";
+import { Logo } from "@vabrato/ui/web";
+import { btnPrimary, btnSecondary, errorCls, inputCls, labelCls } from "@/components/ui";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -41,70 +42,51 @@ export function LoginForm() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center p-6">
-      <div className="mb-8 text-center">
-        <div className="font-serif text-2xl tracking-wide" style={{ color: T.goldDeep }}>
-          VABRATO
-        </div>
-        <div className="mt-1 text-[11px] uppercase tracking-widest" style={{ color: T.faint }}>
-          Transaction Desk
-        </div>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-12">
+      <div className="mb-8 flex flex-col items-center gap-3 text-center">
+        <Logo />
+        <h1 className="font-display text-display-sm uppercase text-navy">Agent console</h1>
+        <p className="font-body text-body-sm text-muted">For the Vabrato team. Clients sign in on vabrato.com.</p>
       </div>
 
-      <section
-        className="rounded-2xl p-6"
-        style={{ background: T.surface, border: `1px solid ${T.line}` }}
-      >
+      <section aria-label="Sign in" className="border border-line bg-white p-6">
         {status === "sent" ? (
-          <p className="text-sm" style={{ color: T.green }}>
-            Check your email — we sent a sign-in link to {email}.
+          <p role="status" className="font-body text-body text-green">
+            Check your email: we sent a sign-in link to {email}.
           </p>
         ) : (
           <>
-            <form onSubmit={sendLink} className="space-y-3">
-              <label className="block">
-                <span className="text-xs" style={{ color: T.muted }}>
-                  Work email
-                </span>
+            <form onSubmit={sendLink} className="space-y-4">
+              <label className={labelCls}>
+                Work email
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@vabrato.com"
-                  className="mt-1 w-full rounded-lg px-3 py-2 text-sm"
-                  style={{ border: `1px solid ${T.line}`, background: T.surface }}
+                  className={`${inputCls} mt-1`}
                 />
               </label>
-              <button
-                type="submit"
-                disabled={status === "sending"}
-                className="w-full rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-60"
-                style={{ background: T.ink, color: T.gold }}
-              >
+              <button type="submit" disabled={status === "sending"} className={`${btnPrimary} w-full`}>
                 {status === "sending" ? "Sending…" : "Email me a sign-in link"}
               </button>
             </form>
 
-            <div className="my-4 flex items-center gap-3">
-              <div className="h-px flex-1" style={{ background: T.line }} />
-              <span className="text-[11px] uppercase tracking-wider" style={{ color: T.faint }}>
-                or
-              </span>
-              <div className="h-px flex-1" style={{ background: T.line }} />
+            <div className="my-5 flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-line" />
+              <span className="font-body text-label uppercase tracking-label text-muted">or</span>
+              <span className="h-px flex-1 bg-line" />
             </div>
 
-            <button
-              onClick={google}
-              className="w-full rounded-lg px-4 py-2.5 text-sm font-medium"
-              style={{ border: `1px solid ${T.line}`, background: T.surface, color: T.text }}
-            >
+            <button type="button" onClick={google} className={`${btnSecondary} w-full`}>
               Continue with Google
             </button>
           </>
         )}
         {error && (
-          <p className="mt-3 text-sm" style={{ color: T.red }}>
+          <p role="alert" className={`${errorCls} mt-4`}>
             {error}
           </p>
         )}
