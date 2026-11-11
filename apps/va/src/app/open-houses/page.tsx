@@ -1,6 +1,7 @@
-import { Panel, T } from "@vabrato/ui";
+import { Panel } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
+import { ConsoleShell } from "@/components/console-shell";
+import { btnPrimary, mutedCls } from "@/components/ui";
 import { createSigninLinkAction } from "@/lib/listing-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -31,51 +32,44 @@ export default async function OpenHouses() {
   const tokenFor = new Map((links ?? []).map((l) => [l.open_house_key, l.token]));
 
   return (
-    <div>
-      <Header profile={profile} />
-      <main className="mx-auto max-w-4xl space-y-5 p-6">
-        <h1 className="font-serif text-xl">Open houses</h1>
-        <p className="text-sm" style={{ color: T.muted }}>
-          Upcoming open houses on our own listings. Create a sign-in link and open it on the tablet at the event. It
-          only accepts sign-ins on the day; visitors appear as leads.
-        </p>
-        {!events?.length ? (
-          <Panel title="No upcoming open houses">
-            <p className="text-sm" style={{ color: T.muted }}>
-              Open houses for our listings appear here once they&apos;re in the MLS.
-            </p>
-          </Panel>
-        ) : (
-          <ul className="space-y-3">
-            {events.map((e) => {
-              const listing = e.mls_listings as unknown as { city: string | null; data: { UnparsedAddress?: string } | null };
-              const token = tokenFor.get(e.open_house_key);
-              const url = token ? `${SITE}/open-house-sign-in/${token}` : null;
-              return (
-                <li key={e.open_house_key} className="rounded-lg p-4" style={{ background: T.surface, border: `1px solid ${T.line}` }}>
-                  <p className="text-sm font-medium">{listing.data?.UnparsedAddress ?? listing.city ?? e.listing_key}</p>
-                  <p className="text-xs" style={{ color: T.muted }}>
-                    {when(e.start_time)} · {e.listing_key}
+    <ConsoleShell profile={profile} current="open-houses" title="Open houses">
+      <p className={mutedCls}>
+        Upcoming open houses on our own listings. Create a sign-in link and open it on the tablet at the event. It only accepts sign-ins on the day; visitors appear as leads.
+      </p>
+      {!events?.length ? (
+        <Panel title="No upcoming open houses">
+          <p className={mutedCls}>Open houses for our listings appear here once they&apos;re in the MLS.</p>
+        </Panel>
+      ) : (
+        <ul className="space-y-3">
+          {events.map((e) => {
+            const listing = e.mls_listings as unknown as { city: string | null; data: { UnparsedAddress?: string } | null };
+            const token = tokenFor.get(e.open_house_key);
+            const url = token ? `${SITE}/open-house-sign-in/${token}` : null;
+            return (
+              <li key={e.open_house_key} className="border border-line bg-white p-5 font-body">
+                <p className="text-body font-medium text-ink">{listing.data?.UnparsedAddress ?? listing.city ?? e.listing_key}</p>
+                <p className="text-body-sm text-muted">
+                  {when(e.start_time)} · {e.listing_key}
+                </p>
+                {url ? (
+                  <p className="mt-2 break-all text-body-sm">
+                    <a href={url} className="text-navy underline">
+                      {url}
+                    </a>
                   </p>
-                  {url ? (
-                    <p className="mt-2 break-all text-sm">
-                      <a href={url} style={{ color: T.ink }} className="underline">
-                        {url}
-                      </a>
-                    </p>
-                  ) : (
-                    <form action={createSigninLinkAction.bind(null, e.open_house_key)} className="mt-2">
-                      <button type="submit" className="rounded-lg px-3 py-1.5 text-xs font-medium" style={{ background: T.ink, color: T.gold }}>
-                        Create sign-in link
-                      </button>
-                    </form>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </main>
-    </div>
+                ) : (
+                  <form action={createSigninLinkAction.bind(null, e.open_house_key)} className="mt-3">
+                    <button type="submit" className={btnPrimary}>
+                      Create sign-in link
+                    </button>
+                  </form>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </ConsoleShell>
   );
 }

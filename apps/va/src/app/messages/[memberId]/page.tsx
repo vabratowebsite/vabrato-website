@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Panel, T } from "@vabrato/ui";
+import { Panel, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
+import { ConsoleShell } from "@/components/console-shell";
+import { btnPrimary, btnSecondary, mutedCls } from "@/components/ui";
 import { setBuyerAgreementAction, setTourStatusAction } from "@/lib/member-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -32,80 +33,75 @@ export default async function MemberThread({ params }: Props) {
   await supabase.rpc("mark_messages_read", { p_member: memberId });
 
   return (
-    <div>
-      <Header profile={profile} />
-      <main className="mx-auto max-w-4xl space-y-5 p-6">
-        <Link href="/messages" className="text-sm" style={{ color: T.muted }}>
-          ← All messages
-        </Link>
-        <h1 className="font-serif text-xl">{member.full_name || member.email}</h1>
-        <p className="text-sm" style={{ color: T.red }}>
-          Never send wiring or payment instructions by message. Clients verify wiring by calling escrow.
-        </p>
+    <ConsoleShell profile={profile} current="messages" eyebrow="Member messages" title={member.full_name || member.email}>
+      <Link href="/messages" className="inline-flex min-h-[44px] items-center font-body text-body-sm text-navy underline">
+        ← All messages
+      </Link>
+      <p role="note" className="border border-red/40 bg-red-50 px-4 py-3 font-body text-body-sm text-red">
+        Never send wiring or payment instructions by message. Clients verify wiring by calling escrow.
+      </p>
 
-        <Panel title="Conversation">
-          <ol className="mb-4 space-y-3">
-            {(messages ?? []).map((m) => (
-              <li key={m.id} className="rounded-lg p-3 text-sm" style={{ background: m.sender_id === memberId ? T.canvas : T.surface, border: `1px solid ${T.line}` }}>
-                <p className="text-xs" style={{ color: T.muted }}>
-                  {m.sender_id === memberId ? member.full_name || "Client" : m.sender_id === profile.id ? "You" : "Vabrato team"} · {fmt(m.created_at)}
-                </p>
-                <p className="mt-1 whitespace-pre-wrap break-words">{m.body}</p>
-              </li>
-            ))}
-          </ol>
-          <ReplyForm memberId={memberId} />
-        </Panel>
+      <Panel title="Conversation">
+        <ol aria-label="Messages, oldest first" className="mb-6 space-y-3">
+          {(messages ?? []).map((m) => (
+            <li key={m.id} className={`border p-4 font-body text-body-sm ${m.sender_id === memberId ? "border-line bg-soft" : "border-navy bg-white"}`}>
+              <p className="text-caption text-muted">
+                {m.sender_id === memberId ? member.full_name || "Client" : m.sender_id === profile.id ? "You" : "Vabrato team"} · {fmt(m.created_at)}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap break-words text-ink">{m.body}</p>
+            </li>
+          ))}
+        </ol>
+        <ReplyForm memberId={memberId} />
+      </Panel>
 
-        <Panel title="Buyer agreement">
-          <form action={setBuyerAgreementAction.bind(null, memberId)} className="flex items-center gap-3 text-sm">
-            <span>{member.buyer_agreement_on_file_at ? `On file since ${fmt(member.buyer_agreement_on_file_at)}` : "Not on file"}</span>
-            <input type="hidden" name="onFile" value={member.buyer_agreement_on_file_at ? "false" : "true"} />
-            <button type="submit" className="rounded-lg px-3 py-1.5 text-xs font-medium" style={{ border: `1px solid ${T.line}` }}>
-              {member.buyer_agreement_on_file_at ? "Mark as not on file" : "Mark as on file"}
-            </button>
-          </form>
-        </Panel>
+      <Panel title="Buyer agreement">
+        <form action={setBuyerAgreementAction.bind(null, memberId)} className="flex flex-wrap items-center gap-4 font-body text-body-sm text-ink">
+          <span>{member.buyer_agreement_on_file_at ? `On file since ${fmt(member.buyer_agreement_on_file_at)}` : "Not on file"}</span>
+          <input type="hidden" name="onFile" value={member.buyer_agreement_on_file_at ? "false" : "true"} />
+          <button type="submit" className={btnSecondary}>
+            {member.buyer_agreement_on_file_at ? "Mark as not on file" : "Mark as on file"}
+          </button>
+        </form>
+      </Panel>
 
-        <Panel title="Tour requests">
-          {tours && tours.length ? (
-            <ul className="space-y-3 text-sm">
-              {tours.map((t) => {
-                const p = (t.payload ?? {}) as { tourDate?: string; tourMode?: string };
-                return (
-                  <li key={t.id} className="flex flex-wrap items-center justify-between gap-2">
-                    <span>
-                      {t.listing_key} · {p.tourDate ?? "any day"} {p.tourMode === "video" ? "(video)" : ""} · <strong>{t.tour_status}</strong>
+      <Panel title="Tour requests">
+        {tours && tours.length ? (
+          <ul className="divide-y divide-line font-body text-body-sm text-ink">
+            {tours.map((t) => {
+              const p = (t.payload ?? {}) as { tourDate?: string; tourMode?: string };
+              return (
+                <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <span className="flex flex-wrap items-center gap-2">
+                    {t.listing_key} · {p.tourDate ?? "any day"} {p.tourMode === "video" ? "(video)" : ""}
+                    <Pill tone={t.tour_status === "confirmed" ? "green" : t.tour_status === "requested" ? "gold" : "outline"}>{t.tour_status}</Pill>
+                  </span>
+                  {t.tour_status === "requested" && (
+                    <span className="flex gap-2">
+                      <form action={setTourStatusAction.bind(null, memberId)}>
+                        <input type="hidden" name="lead" value={t.id} />
+                        <input type="hidden" name="status" value="confirmed" />
+                        <button type="submit" className={btnPrimary}>
+                          Confirm
+                        </button>
+                      </form>
+                      <form action={setTourStatusAction.bind(null, memberId)}>
+                        <input type="hidden" name="lead" value={t.id} />
+                        <input type="hidden" name="status" value="declined" />
+                        <button type="submit" className={btnSecondary}>
+                          Decline
+                        </button>
+                      </form>
                     </span>
-                    {t.tour_status === "requested" && (
-                      <span className="flex gap-2">
-                        <form action={setTourStatusAction.bind(null, memberId)}>
-                          <input type="hidden" name="lead" value={t.id} />
-                          <input type="hidden" name="status" value="confirmed" />
-                          <button type="submit" className="rounded-lg px-3 py-1.5 text-xs font-medium" style={{ background: T.ink, color: T.gold }}>
-                            Confirm
-                          </button>
-                        </form>
-                        <form action={setTourStatusAction.bind(null, memberId)}>
-                          <input type="hidden" name="lead" value={t.id} />
-                          <input type="hidden" name="status" value="declined" />
-                          <button type="submit" className="rounded-lg px-3 py-1.5 text-xs font-medium" style={{ border: `1px solid ${T.line}` }}>
-                            Decline
-                          </button>
-                        </form>
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm" style={{ color: T.muted }}>
-              No tour requests from this client.
-            </p>
-          )}
-        </Panel>
-      </main>
-    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className={mutedCls}>No tour requests from this client.</p>
+        )}
+      </Panel>
+    </ConsoleShell>
   );
 }

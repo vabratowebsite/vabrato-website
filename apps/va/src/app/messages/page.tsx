@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { Panel, T } from "@vabrato/ui";
+import { Panel, cx, focusLight } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
+import { ConsoleShell } from "@/components/console-shell";
+import { mutedCls } from "@/components/ui";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 
-// Member messages (minimal inbox until the S6 console). Threads the signed-in
-// staff member may see: members assigned to them, clients on their deals,
-// everyone for admins (RLS).
+// Member messages. Threads the signed-in staff member may see: members
+// assigned to them, clients on their deals, everyone for admins (RLS).
 export const dynamic = "force-dynamic";
+
+const fmt = (iso: string) => new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export default async function MessagesInbox() {
   const { profile, isStaff } = await requireSignIn();
@@ -26,40 +28,32 @@ export default async function MessagesInbox() {
   const name = new Map((people ?? []).map((p) => [p.id, p.full_name || p.email]));
 
   return (
-    <div>
-      <Header profile={profile} />
-      <main className="mx-auto max-w-4xl p-6">
-        <h1 className="mb-5 font-serif text-xl">Member messages</h1>
-        {ids.length === 0 ? (
-          <Panel title="No messages yet">
-            <p className="text-sm" style={{ color: T.muted }}>
-              When clients message you from their portal, the conversations appear here.
-            </p>
-          </Panel>
-        ) : (
-          <ul className="space-y-3">
-            {ids.map((id) => {
-              const t = threads.get(id)!;
-              return (
-                <li key={id}>
-                  <Link href={`/messages/${id}`} className="block rounded-2xl p-4" style={{ background: T.surface, border: `1px solid ${T.line}` }}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{name.get(id) ?? "Member"}</span>
-                      <span className="text-xs" style={{ color: t.unread ? T.red : T.muted }}>
-                        {t.unread ? `${t.unread} unread · ` : ""}
-                        {new Date(t.last).toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-sm" style={{ color: T.muted }}>
-                      {t.preview}
-                    </p>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </main>
-    </div>
+    <ConsoleShell profile={profile} current="messages" title="Member messages">
+      {ids.length === 0 ? (
+        <Panel title="No messages yet">
+          <p className={mutedCls}>When clients message you from their portal, the conversations appear here.</p>
+        </Panel>
+      ) : (
+        <ul className="space-y-3">
+          {ids.map((id) => {
+            const t = threads.get(id)!;
+            return (
+              <li key={id}>
+                <Link href={`/messages/${id}`} className={cx("block border border-line bg-white p-4 hover:border-navy", focusLight)}>
+                  <span className="flex flex-wrap items-center justify-between gap-2 font-body">
+                    <span className="text-body font-medium text-navy underline">{name.get(id) ?? "Member"}</span>
+                    <span className={cx("text-caption", t.unread ? "font-medium text-red" : "text-muted")}>
+                      {t.unread ? `${t.unread} unread · ` : ""}
+                      {fmt(t.last)}
+                    </span>
+                  </span>
+                  <span className="mt-1 block truncate font-body text-body-sm text-muted">{t.preview}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </ConsoleShell>
   );
 }

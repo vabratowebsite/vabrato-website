@@ -1,5 +1,6 @@
+import { Panel } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
-import { Header } from "@/components/header";
+import { ConsoleShell } from "@/components/console-shell";
 import { requireSignIn } from "@/lib/staff";
 import { IntakeForm } from "./intake-form";
 
@@ -10,11 +11,10 @@ export default async function NewDealPage() {
   if (!isStaff) return <AccessDenied profile={profile} />;
 
   return (
-    <div>
-      <Header profile={profile} />
-      <main className="mx-auto max-w-2xl p-6">
+    <ConsoleShell profile={profile} current="deals" eyebrow="Transactions" title="New transaction">
+      <Panel title="Contract details">
         <IntakeForm />
-      </main>
-    </div>
+      </Panel>
+    </ConsoleShell>
   );
 }

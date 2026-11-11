@@ -1,58 +1,37 @@
 "use client";
 
 import { useActionState } from "react";
-import { T } from "@vabrato/ui";
+import { btnPrimary, errorCls, inputCls, labelCls } from "@/components/ui";
 import { addReceiptAction, type FormState } from "@/lib/actions";
 
-const inputStyle = { border: `1px solid ${T.line}`, background: T.surface };
-
 export function ReceiptForm({ dealId }: { dealId: string }) {
-  const action = addReceiptAction.bind(null, dealId);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(action, {
-    error: null,
-  });
+  const [state, formAction, pending] = useActionState<FormState, FormData>(addReceiptAction.bind(null, dealId), { error: null });
 
   return (
-    <form action={formAction} className="grid gap-2 sm:grid-cols-5">
-      <input
-        name="vendor"
-        required
-        placeholder="Vendor"
-        className="rounded-lg px-3 py-2 text-sm"
-        style={inputStyle}
-      />
-      <input
-        name="amount"
-        required
-        type="number"
-        step="0.01"
-        min="0.01"
-        placeholder="Amount"
-        className="rounded-lg px-3 py-2 text-sm"
-        style={inputStyle}
-      />
-      <input
-        name="category"
-        placeholder="Category"
-        className="rounded-lg px-3 py-2 text-sm"
-        style={inputStyle}
-      />
-      <input
-        name="receipt_date"
-        type="date"
-        className="rounded-lg px-3 py-2 text-sm"
-        style={inputStyle}
-      />
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-60"
-        style={{ background: T.ink, color: T.gold }}
-      >
-        {pending ? "Adding…" : "Add"}
-      </button>
+    <form action={formAction} className="grid gap-4 sm:grid-cols-2">
+      <label className={labelCls}>
+        Vendor
+        <input name="vendor" required className={`${inputCls} mt-1`} />
+      </label>
+      <label className={labelCls}>
+        Amount ($)
+        <input name="amount" required type="number" step="0.01" min="0.01" className={`${inputCls} mt-1`} />
+      </label>
+      <label className={labelCls}>
+        Category (optional)
+        <input name="category" className={`${inputCls} mt-1`} />
+      </label>
+      <label className={labelCls}>
+        Receipt date (optional)
+        <input name="receipt_date" type="date" className={`${inputCls} mt-1`} />
+      </label>
+      <div className="sm:col-span-2">
+        <button type="submit" disabled={pending} className={btnPrimary}>
+          {pending ? "Adding…" : "Add receipt"}
+        </button>
+      </div>
       {state.error && (
-        <p className="text-sm sm:col-span-5" style={{ color: T.red }}>
+        <p role="alert" className={`${errorCls} sm:col-span-2`}>
           {state.error}
         </p>
       )}
