@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet); PR 5 seller weekly report (live), market stats and CMAs (built, flags off) (merged, 0025 on hosted 2026-11-11; stats, CMA and public stats flags off) |
+| S6 | Staff console & automations | Built and QA'd 2026-11-11 (PRs #18–#24; 0022–0025 on hosted). Done-when ("every web lead reaches Mark within 1 minute") proven with a fake sender (262 ms locally, 248-check QA pass); not yet on hosted: blocked on Resend, the Vault secrets, `console.vabrato.com` and Mark's and Viv's accounts (see "To finish S6"). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -241,7 +241,7 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 - **Your steps (not blocking S6):**
   - Set `LISTING_VIEW_SECRET` on vabrato-website and add its hash to the
     database (the SQL is under "Seller portal setup" below).
-  - Once Mark has signed in on the website, set him as admin and default agent
+  - Once Mark has signed in on the website, make Mark's account admin and default agent
     (`app_settings.default_agent_id`). Confirm the SQL with Claude first.
   - Turn on Resend (domain verification, `RESEND_API_KEY`,
     `NOTIFICATIONS_FROM`). This also lifts the magic-link email cap.
@@ -250,7 +250,7 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 - **Follow-ups:** regenerate `packages/db/src/types.gen.ts` from hosted. It
   was hand-edited for 0015–0021, and the tests and typecheck cover it.
 
-### S6 staff console (in progress)
+### S6 staff console (built 2026-11-11; PRs #18–#24; done-when waits on Resend)
 
 Plan v3 (approved 2026-11-11): PR 1 frame and Today; PR 2a lead routing and
 notification pipeline (pg_net + pg_cron); PR 2b leads UI; PR 3 members, MLS
@@ -413,6 +413,46 @@ comes after S6, by decision; the console has no AI code.
     stats return nothing with the flag off; CMAs return nothing while off
     or to an unverified role admin; saved CMAs refuse MLS fields and are
     visible to their author only. Hosted has no sold (VOW) rows.
+- **PR 6 (QA pass, no migration):** `scripts/qa/s6-qa.mjs` signs in as
+  each kind of staff member on the local stack and runs axe (WCAG 2.0–2.2 A
+  and AA) at 1440 and 390 px on every console page. 248 checks, all
+  passing; report and screenshots in `docs/screenshots/s6/`.
+  - Lead admin (admin, MLS-verified): all 16 pages plus lead, member,
+    content revision, city guide editor, seller report and deal pages; sees
+    every lead, can approve and publish, can change routing.
+  - Backup (agent): with Mark not away, own leads only, Mark's lead is a
+    404, no publish button; with Mark away, sees Mark's lead and can
+    publish.
+  - Agent (not MLS-verified) and VA: every page loads, own leads only,
+    Mark's lead is a 404; the agent can't publish their own revision or
+    change routing; Settings shows MLS access isn't verified.
+  - A buyer who signs in to the console gets "No access".
+  - Timing: a website contact form reached Mark's alert email at the fake
+    Resend 262 ms after the lead was created (target: under a minute).
+- **S5 review item 17 is done:** new member messages alert the member's
+  agent (or the lead admin) in the console and by email, staff replies email
+  the member, and tour requests are leads, so they reach Mark the same way
+  (PR 2a).
+- **To finish S6 (your steps, in this order):**
+  1. Resend: verify vabrato.com, then set `RESEND_API_KEY` and
+     `NOTIFICATIONS_FROM` on vabrato-console.
+  2. Point `console.vabrato.com` at vabrato-console (custom domains skip
+     Vercel's login wall, which pg_net would otherwise hit), or store a
+     Protection Bypass for Automation secret as `console_bypass_secret`.
+  3. Console env: `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `CONSOLE_URL`,
+     `PUBLIC_SITE_URL`, `MLS_OFFICE_ID`, `WEB_REVALIDATE_URL`,
+     `REVALIDATE_SECRET`. Website env: `REVALIDATE_SECRET` (same value),
+     Turnstile keys, `LEAD_IP_SALT`.
+  4. Vault (Supabase SQL editor): the two `vault.create_secret` lines under
+     PR 2a above.
+  5. Mark and Viv sign in to the console once. Then I prepare the SQL for
+     their roles, lead routing (Mark lead admin, Viv backup) and agent
+     profile links, for you to confirm.
+  6. Send a test contact form on vabrato.com. When Mark's email arrives
+     within a minute, S6 is done.
+  - Still open, with defaults in place (change any time in Settings): Viv's
+    role (agent), escalation after 2 hours, lead retention 24 months, the
+    email cap of 10 leads an hour.
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render
@@ -426,15 +466,10 @@ comes after S6, by decision; the console has no AI code.
     Viv to sign in once.
   - pg_net and pg_cron are available on the hosted project but not installed
     (PR 2a installs them).
-- **Needs you for S6:** Resend (domain, `RESEND_API_KEY`,
-  `NOTIFICATIONS_FROM`); Turnstile keys, `LEAD_IP_SALT` and
-  `REVALIDATE_SECRET` on vabrato-website; `console.vabrato.com` DNS; Mark and
-  Viv sign in once; decisions on Viv's role, escalation time (2 h proposed),
-  lead retention (24 months today) and the lead flood cap (10/hour proposed).
 
-**Must ship before launch (S5 review item 17):** S6 notifications for new
-member messages (email and in-console) and for tour requests. Until then a
-member's message waits in the agent console's Messages page.
+**Must ship before launch (S5 review item 17):** done in S6 PR 2a (member
+message and tour-request alerts, in the console and by email). Email
+delivery itself waits on Resend (To finish S6, step 1).
 
 **Outstanding for launch (S9), not blocking S5.** Full list in [s4-content-checklist.md](s4-content-checklist.md):
 - MLSListings' official IDX icon and disclaimer (one file, `apps/web/src/lib/mls-legal.ts`);
@@ -516,7 +551,7 @@ with the code (timeline: 5 tests, now in packages/lib).
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 708 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
+Tests: 858 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
 apps/web and apps/va (`pnpm test`).
 
 ### Blocked / waiting
