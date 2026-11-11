@@ -1,9 +1,22 @@
 import type { UserRole } from "@vabrato/db";
 
 // Agent console navigation (mockup 07). Only pages that exist are listed;
-// later S6 PRs add Content, Reports and CMAs.
+// S6 PR 5 adds Reports and CMAs.
 
-export type ConsolePage = "today" | "leads" | "members" | "listings" | "mls" | "messages" | "open-houses" | "deals" | "vendors" | "settings";
+export type ConsolePage =
+  | "today"
+  | "leads"
+  | "members"
+  | "listings"
+  | "mls"
+  | "messages"
+  | "open-houses"
+  | "content"
+  | "featured"
+  | "deals"
+  | "vendors"
+  | "profile"
+  | "settings";
 
 export interface ConsoleNavGroup {
   label: string;
@@ -31,8 +44,9 @@ export function consoleNav(current: ConsolePage | null, counts: { unreadMessages
         item("mls", "MLS sync", "/mls"),
       ],
     },
+    { label: "Website", items: [item("content", "Content", "/content"), item("featured", "Featured listings", "/featured")] },
     { label: "Transactions", items: [item("deals", "Deals", "/deals"), item("vendors", "Vendors", "/vendors")] },
-    { label: "Account", items: [item("settings", "Settings", "/settings")] },
+    { label: "Account", items: [item("profile", "My profile", "/profile"), item("settings", "Settings", "/settings")] },
   ];
 }
 

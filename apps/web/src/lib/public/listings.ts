@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { toSearchArgs, type SearchFilters } from "../search-params";
 import { publicSupabase, publicWriteSupabase } from "./supabase";
@@ -49,6 +50,44 @@ export async function searchListings(
   if (error) throw new Error(`search_listings failed: ${error.message}`);
   const rows = z.array(SearchRowSchema).parse(data ?? []);
   return { rows, total: rows[0]?.total_count ?? 0 };
+}
+
+/**
+ * Listings staff pinned to the home page (0024 featured_listings), in their
+ * order. RLS returns only pins in their date window whose listing is visible
+ * at IDX level; listing_cards (security invoker) returns for-sale card data.
+ */
+export async function featuredPins(client?: Pick<SupabaseClient, "from" | "rpc">): Promise<SearchRow[]> {
+  // Best-effort: pins only reorder the home page. On any error (e.g. 0024 not
+  // applied yet, so no featured_listings table and no anon listing_cards) the
+  // home page falls back to our own listings instead of failing to render.
+  try {
+    const db = client ?? publicSupabase();
+    const { data: pins, error } = await db.from("featured_listings").select("listing_key").order("sort").order("created_at").limit(12);
+    if (error) throw new Error(`featured_listings failed: ${error.message}`);
+    const keys = (pins ?? []).map((p: { listing_key: string }) => p.listing_key);
+    if (keys.length === 0) return [];
+    const { data, error: cardErr } = await db.rpc("listing_cards", { p_keys: keys });
+    if (cardErr) throw new Error(`listing_cards failed: ${cardErr.message}`);
+    const byKey = new Map(z.array(SearchRowSchema).parse(data ?? []).map((r) => [r.listing_key, r]));
+    return keys.map((k: string) => byKey.get(k)).filter((r: SearchRow | undefined): r is SearchRow => Boolean(r));
+  } catch (e) {
+    console.error(`featured pins unavailable, showing our own listings: ${(e as Error).message}`);
+    return [];
+  }
+}
+
+/** Home page featured: pins first, then our own listings, then the newest others. */
+export function pickFeatured(pins: SearchRow[], own: SearchRow[], latest: SearchRow[], n = 3): SearchRow[] {
+  const seen = new Set<string>();
+  const out: SearchRow[] = [];
+  for (const r of [...pins, ...own, ...latest]) {
+    if (seen.has(r.listing_key)) continue;
+    seen.add(r.listing_key);
+    out.push(r);
+    if (out.length === n) break;
+  }
+  return out;
 }
 
 const ListingSchema = z.object({

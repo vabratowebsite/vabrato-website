@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BreadcrumbBar } from "@vabrato/ui/web";
 import { JsonLd } from "@/components/JsonLd";
-import { Markdown } from "@/components/Markdown";
+import { Markdown } from "@vabrato/ui/markdown";
 import { getPost } from "@/lib/public/content";
 import { articleJsonLd, breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
 

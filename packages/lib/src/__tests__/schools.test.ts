@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { officialSchoolLinks } from "./schools";
+import { officialSchoolLinks } from "../schools";
 
 describe("school links (review item 14)", () => {
   it("keeps official https sites and drops rating sites and bad URLs", () => {

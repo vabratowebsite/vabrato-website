@@ -9,6 +9,9 @@
     "typecheck": "tsc",
     "test": "vitest run"
   },
+  "dependencies": {
+    "react-markdown": "^9.0.1"
+  },
   "peerDependencies": {
     "react": ">=18"
   },
@@ -28,6 +31,7 @@
     ".": "./src/index.ts",
     "./web": "./src/web/index.ts",
     "./tokens.css": "./src/tokens/tokens.css",
-    "./tailwind-preset": "./src/tokens/tailwind-preset.ts"
+    "./tailwind-preset": "./src/tokens/tailwind-preset.ts",
+    "./markdown": "./src/markdown/index.ts"
   }
 }

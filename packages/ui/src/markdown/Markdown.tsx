@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 
-// Post bodies (Insights). Raw HTML is never rendered (skipHtml) and only
+// Post bodies (Insights on the website, and the console's preview, so
+// both render the same way). Raw HTML is never rendered (skipHtml) and only
 // basic elements are allowed; links open safely. Content is written by staff
 // in the S6 editor, but we treat it as untrusted text anyway.
 

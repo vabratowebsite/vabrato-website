@@ -136,8 +136,14 @@ describe("saved homes, saved searches and member MLS reads (0017)", () => {
       ]);
     });
 
-    it("is for signed-in members only", async () => {
-      await expect(as("anon", (q) => q(`select * from listing_cards(array['L-ACTIVE'])`))).rejects.toThrow(/permission denied/);
+    it("gives anon (home page featured pins, 0024) the same IDX for-sale cards and nothing else", async () => {
+      const rows = await as("anon", (q) =>
+        q<{ listing_key: string; street: string | null }>(`select listing_key, street from listing_cards(array['L-ACTIVE','L-HIDDEN','L-SOLD','L-GONE'])`),
+      );
+      expect(rows).toEqual([
+        { listing_key: "L-ACTIVE", street: "1 Fiction Rd" },
+        { listing_key: "L-HIDDEN", street: null },
+      ]);
     });
   });
 

@@ -263,6 +263,8 @@ export type Database = {
       }
       city_guides: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           city_slug: string
           faq: Json
           intro: string
@@ -273,6 +275,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           city_slug: string
           faq?: Json
           intro?: string
@@ -283,6 +287,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           city_slug?: string
           faq?: Json
           intro?: string
@@ -301,6 +307,51 @@ export type Database = {
             referencedColumns: ["slug"]
           },
         ]
+      }
+      content_revisions: {
+        Row: {
+          body: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          row_key: string | null
+          status: Database["public"]["Enums"]["revision_status"]
+          submitted_at: string | null
+          table_name: Database["public"]["Enums"]["content_table"]
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_key?: string | null
+          status?: Database["public"]["Enums"]["revision_status"]
+          submitted_at?: string | null
+          table_name: Database["public"]["Enums"]["content_table"]
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          row_key?: string | null
+          status?: Database["public"]["Enums"]["revision_status"]
+          submitted_at?: string | null
+          table_name?: Database["public"]["Enums"]["content_table"]
+          updated_at?: string
+        }
+        Relationships: []
       }
       deal_contingencies: {
         Row: {
@@ -496,6 +547,33 @@ export type Database = {
           enabled?: boolean
           key?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      featured_listings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          listing_key: string
+          sort: number
+          starts_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          listing_key: string
+          sort?: number
+          starts_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          listing_key?: string
+          sort?: number
+          starts_at?: string | null
         }
         Relationships: []
       }
@@ -1262,6 +1340,8 @@ export type Database = {
       }
       posts: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           body_md: string
           excerpt: string
           is_placeholder: boolean
@@ -1273,6 +1353,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           body_md?: string
           excerpt?: string
           is_placeholder?: boolean
@@ -1284,6 +1366,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           body_md?: string
           excerpt?: string
           is_placeholder?: boolean
@@ -1630,10 +1714,13 @@ export type Database = {
       }
       testimonials: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           author_display: string
           created_at: string
           id: string
           is_placeholder: boolean
+          permission_confirmed: boolean
           published: boolean
           quote: string
           role: string | null
@@ -1641,10 +1728,13 @@ export type Database = {
           source: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           author_display: string
           created_at?: string
           id?: string
           is_placeholder?: boolean
+          permission_confirmed?: boolean
           published?: boolean
           quote: string
           role?: string | null
@@ -1652,10 +1742,13 @@ export type Database = {
           source?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           author_display?: string
           created_at?: string
           id?: string
           is_placeholder?: boolean
+          permission_confirmed?: boolean
           published?: boolean
           quote?: string
           role?: string | null
@@ -1786,6 +1879,7 @@ export type Database = {
       }
       complete_notification: { Args: { p_id: string }; Returns: undefined }
       complete_onboarding: { Args: never; Returns: undefined }
+      content_body_ok: { Args: { p_body: Json; p_key: string; p_table: Database["public"]["Enums"]["content_table"] }; Returns: string }
       content_launch_blockers: {
         Args: never
         Returns: {
@@ -1903,13 +1997,16 @@ export type Database = {
           street: string
         }[]
       }
+      publish_content: { Args: { p_revision: string }; Returns: string }
       purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
       purge_old_leads: { Args: { p_months?: number }; Returns: number }
       reassign_lead: { Args: { p_agent: string; p_lead: string }; Returns: undefined }
       record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }
+      reject_content: { Args: { p_note: string; p_revision: string }; Returns: undefined }
       release_notification: { Args: { p_id: string; p_permanent?: boolean; p_reason: string }; Returns: string }
       request_account_deletion: { Args: never; Returns: string }
       run_member_alerts: { Args: { p_now?: string }; Returns: Json }
+      save_content_draft: { Args: { p_body: Json; p_key: string; p_revision: string; p_table: Database["public"]["Enums"]["content_table"] }; Returns: string }
       search_listings: {
         Args: {
           p_bbox?: number[]
@@ -2006,6 +2103,7 @@ export type Database = {
       }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
       storage_member_id: { Args: { object_name: string }; Returns: string }
+      submit_content: { Args: { p_revision: string }; Returns: undefined }
       submit_open_house_signin: {
         Args: {
           p_consent_contact: boolean
@@ -2017,6 +2115,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      unpublish_content: { Args: { p_key: string; p_table: Database["public"]["Enums"]["content_table"] }; Returns: undefined }
       unsubscribe_alert_emails: { Args: { p_token: string }; Returns: boolean }
       update_my_profile: {
         Args: { p_full_name: string; p_phone: string | null }
@@ -2028,6 +2127,7 @@ export type Database = {
       alert_frequency: "instant" | "daily" | "off"
       alert_kind: "new_match" | "back_on_market" | "price_drop" | "price_change" | "status_change"
       city_kind: "city" | "unincorporated"
+      content_table: "city_guides" | "posts" | "testimonials"
       deal_member_role: "seller" | "agent" | "va" | "tc"
       deal_status: "active" | "closed" | "cancelled"
       deletion_request_status: "pending" | "completed" | "cancelled"
@@ -2038,6 +2138,7 @@ export type Database = {
       notification_status: "scheduled" | "sent" | "cancelled" | "failed"
       post_kind: "insight" | "news" | "event" | "market_update"
       receipt_source: "drive" | "dropbox" | "manual"
+      revision_status: "draft" | "submitted" | "rejected" | "published"
       seller_type: "normal" | "trust" | "successor_trustee" | "probate"
       task_phase: "after_ratification" | "closing_week" | "after_coe"
       tour_status: "requested" | "confirmed" | "declined" | "completed" | "cancelled"
@@ -2622,6 +2723,7 @@ export const Constants = {
       alert_frequency: ["instant", "daily", "off"],
       alert_kind: ["new_match", "back_on_market", "price_drop", "price_change", "status_change"],
       city_kind: ["city", "unincorporated"],
+      content_table: ["city_guides", "posts", "testimonials"],
       deal_member_role: ["seller", "agent", "va", "tc"],
       deal_status: ["active", "closed", "cancelled"],
       deletion_request_status: ["pending", "completed", "cancelled"],
@@ -2632,6 +2734,7 @@ export const Constants = {
       notification_status: ["scheduled", "sent", "cancelled", "failed"],
       post_kind: ["insight", "news", "event", "market_update"],
       receipt_source: ["drive", "dropbox", "manual"],
+      revision_status: ["draft", "submitted", "rejected", "published"],
       seller_type: ["normal", "trust", "successor_trustee", "probate"],
       task_phase: ["after_ratification", "closing_week", "after_coe"],
       tour_status: ["requested", "confirmed", "declined", "completed", "cancelled"],

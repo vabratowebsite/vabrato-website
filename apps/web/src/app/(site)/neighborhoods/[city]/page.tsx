@@ -8,7 +8,7 @@ import { ResultsGrid } from "@/components/search/results";
 import { cityFaq } from "@/lib/city-faq";
 import { cityGuide } from "@/lib/public/content";
 import { flagEnabled, listCities, mlsLastUpdated, searchListings } from "@/lib/public/listings";
-import { officialSchoolLinks } from "@/lib/schools";
+import { officialSchoolLinks } from "@vabrato/lib";
 import { DEFAULT_FILTERS } from "@/lib/search-params";
 import { breadcrumbJsonLd, faqJsonLd, pageMetadata, placeJsonLd } from "@/lib/seo";
 

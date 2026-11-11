@@ -23,13 +23,13 @@ import { cityLine, formatPrice } from "@/lib/format";
 import { FEATURED_CITIES, HERO, HOME_FAQ, MEET, PORTAL_POINTS, TRANSFORM, WELCOME } from "@/lib/home-content";
 import { toCardProps } from "@/lib/listing-view";
 import { latestPosts, publishedTestimonials, publishedVideos } from "@/lib/public/content";
-import { flagEnabled, listCities, mlsLastUpdated, ownSoldListings, searchListings } from "@/lib/public/listings";
+import { featuredPins, flagEnabled, listCities, mlsLastUpdated, ownSoldListings, pickFeatured, searchListings } from "@/lib/public/listings";
 import { DEFAULT_FILTERS } from "@/lib/search-params";
 import { pageMetadata } from "@/lib/seo";
 
 // Home (mockup 01). Every section from today's vabrato.com plus search,
 // portal pitch, neighborhoods and FAQ. MLS-derived sections: featured
-// listings (IDX, MLS-1/2), sold properties (public_sold) and track record
+// listings (IDX, MLS-1/2; staff pins first, console /featured), sold properties (public_sold) and track record
 // (public_stats + public_sold) (MLS-10). Content sections render only when
 // something is published.
 export const revalidate = 900;
@@ -43,8 +43,9 @@ export const metadata = pageMetadata({
 const placeholderPhoto = (label: string, tint: "slate" | "steel" | "mauve" = "slate") => <ListingPhotoPlaceholder tint={tint} label={label} />;
 
 export default async function HomePage() {
-  const [cities, own, latest, showSold, showStats, posts, testimonials, videos, lastUpdated] = await Promise.all([
+  const [cities, pins, own, latest, showSold, showStats, posts, testimonials, videos, lastUpdated] = await Promise.all([
     listCities(),
+    featuredPins(),
     searchListings(DEFAULT_FILTERS, { pageSize: 3, ownOnly: true }),
     searchListings(DEFAULT_FILTERS, { pageSize: 6 }),
     flagEnabled("public_sold"),
@@ -56,8 +57,8 @@ export default async function HomePage() {
   ]);
   const sold = showSold ? await ownSoldListings(4) : [];
 
-  // Featured: our listings first, topped up with the newest others.
-  const featured = [...own.rows, ...latest.rows.filter((r) => !own.rows.some((o) => o.listing_key === r.listing_key))].slice(0, 3);
+  // Featured: staff pins first (S6), then our listings, then the newest others.
+  const featured = pickFeatured(pins, own.rows, latest.rows);
 
   const recentSales = sold.filter((s) => s.close_date && Date.parse(s.close_date) > Date.now() - 365 * 86_400_000);
   const trackRecord =

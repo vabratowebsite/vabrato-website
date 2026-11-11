@@ -24,6 +24,7 @@ const browser = await chromium.launch(process.env.CHROME ? { executablePath: pro
 const deal = sql(`select d.id from deals d where exists (select 1 from deal_members m where m.deal_id = d.id) order by d.created_at desc limit 1`);
 const member = sql(`select member_id from messages order by created_at desc limit 1`);
 const memberId = sql(`select id from profiles where role in ('buyer', 'seller', 'both') order by created_at desc limit 1`);
+const revision = sql(`select id from content_revisions order by updated_at desc limit 1`);
 const lead = sql(`select l.id from leads l join app_settings s on l.assigned_to = s.lead_admin_id order by l.created_at desc limit 1`);
 
 const PAGES = [
@@ -44,6 +45,12 @@ const PAGES = [
   ["messages", "/messages"],
   ["messages-thread", `/messages/${member}`],
   ["open-houses", "/open-houses"],
+  ["content", "/content"],
+  ["content-edit-guide", "/content/edit?table=city_guides&key=san-carlos"],
+  ["content-edit-post", "/content/edit?table=posts"],
+  ...(revision ? [["content-revision", `/content/${revision}`]] : []),
+  ["featured", "/featured"],
+  ["profile", "/profile"],
 ];
 
 async function shoot(page, name, path) {
