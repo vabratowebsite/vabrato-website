@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet); PR 5 seller weekly report (live), market stats and CMAs (built, flags off) (PR open; 0025 not on hosted yet) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet); PR 5 seller weekly report (live), market stats and CMAs (built, flags off) (merged, 0025 on hosted 2026-11-11; stats, CMA and public stats flags off) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -402,6 +402,17 @@ comes after S6, by decision; the console has no AI code.
     px); console tour now 26 pages, 87 checks.
   - Turning stats and CMAs on needs MLSListings' written OK on sold data and
     derivative statistics (with Noel), then the sold data in the feed.
+  - On hosted (2026-11-11): 0025 applied; advisors show nothing new beyond
+    the expected notices for the new functions (each checks the caller;
+    anon can call only `public_city_stats`, which returns nothing while
+    `public_stats` is off; `market_stats_compute` is callable by no one).
+    `packages/db/test/hosted-reports-check.sql` (rolled back, fictional cast
+    and sold rows) confirmed: only staff on the deal can see or send the
+    report; it sends once per week with no contact details; stats are off
+    by default, staff only, and withhold medians under 5 sales; public
+    stats return nothing with the flag off; CMAs return nothing while off
+    or to an unverified role admin; saved CMAs refuse MLS fields and are
+    visible to their author only. Hosted has no sold (VOW) rows.
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render
