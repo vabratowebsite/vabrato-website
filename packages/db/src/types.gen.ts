@@ -308,6 +308,36 @@ export type Database = {
           },
         ]
       }
+      cmas: {
+        Row: {
+          comp_keys: string[]
+          created_at: string
+          created_by: string
+          id: string
+          subject: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          comp_keys?: string[]
+          created_at?: string
+          created_by?: string
+          id?: string
+          subject?: Json
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          comp_keys?: string[]
+          created_at?: string
+          created_by?: string
+          id?: string
+          subject?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_revisions: {
         Row: {
           body: Json
@@ -1530,6 +1560,30 @@ export type Database = {
           },
         ]
       }
+      seller_report_sends: {
+        Row: {
+          deal_id: string
+          recipients: number
+          sent_at: string
+          sent_by: string | null
+          week_start: string
+        }
+        Insert: {
+          deal_id: string
+          recipients: number
+          sent_at?: string
+          sent_by?: string | null
+          week_start: string
+        }
+        Update: {
+          deal_id?: string
+          recipients?: number
+          sent_at?: string
+          sent_by?: string | null
+          week_start?: string
+        }
+        Relationships: []
+      }
       staff_audit: {
         Row: {
           action: string
@@ -1877,6 +1931,8 @@ export type Database = {
           template_key: string
         }[]
       }
+      cma_comps: { Args: { p_city_slugs?: string[]; p_keys?: string[]; p_limit?: number; p_max_beds?: number; p_max_sqft?: number; p_min_baths?: number; p_min_beds?: number; p_min_sqft?: number; p_months?: number; p_sub_types?: string[] }; Returns: { bathrooms_total: number | null; bedrooms_total: number | null; city: string | null; close_date: string | null; close_price: number | null; days_on_market: number | null; is_own_listing: boolean; list_office_name: string | null; list_price: number | null; listing_key: string; living_area: number | null; price_per_sqft: number | null; property_sub_type: string | null; street: string | null }[] }
+      cma_subject_ok: { Args: { s: Json }; Returns: boolean }
       complete_notification: { Args: { p_id: string }; Returns: undefined }
       complete_onboarding: { Args: never; Returns: undefined }
       content_body_ok: { Args: { p_body: Json; p_key: string; p_table: Database["public"]["Enums"]["content_table"] }; Returns: string }
@@ -1890,6 +1946,7 @@ export type Database = {
       flag_enabled: { Args: { p_key: string }; Returns: boolean }
       has_deal_access: { Args: { p_deal_id: string }; Returns: boolean }
       has_full_mls_access: { Args: never; Returns: boolean }
+      has_verified_mls_access: { Args: never; Returns: boolean }
       has_vow_access: { Args: never; Returns: boolean }
       is_acting_lead_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
@@ -1947,6 +2004,7 @@ export type Database = {
       mark_lead_replied: { Args: { p_lead: string }; Returns: undefined }
       mark_messages_read: { Args: { p_member: string }; Returns: number }
       mark_staff_notifications_read: { Args: { p_ids?: number[] }; Returns: number }
+      market_stats: { Args: { p_months?: number; p_slug: string }; Returns: Json }
       mls_last_updated: { Args: never; Returns: string }
       mls_sync_health: {
         Args: never
@@ -1983,6 +2041,7 @@ export type Database = {
         }[]
       }
       open_house_signin_link: { Args: { p_open_house_key: string }; Returns: string }
+      public_city_stats: { Args: { p_slug: string }; Returns: Json }
       public_own_sold: {
         Args: { p_limit?: number }
         Returns: {
@@ -2083,6 +2142,8 @@ export type Database = {
           total_count: number
         }[]
       }
+      seller_weekly_report_data: { Args: { p_deal: string; p_week_start?: string }; Returns: Json }
+      send_seller_weekly_report: { Args: { p_deal: string; p_week_start?: string }; Returns: number }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
       set_lead_admin_away: { Args: { p_away: boolean; p_until?: string }; Returns: undefined }

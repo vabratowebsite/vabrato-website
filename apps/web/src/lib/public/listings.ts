@@ -77,6 +77,34 @@ export async function featuredPins(client?: Pick<SupabaseClient, "from" | "rpc">
   }
 }
 
+export interface CityStats {
+  months: number;
+  sold: { count: number; median_price: number | null; median_days_on_market: number | null; median_sale_to_list: number | null };
+  market: { active: number; months_of_inventory: number | null };
+}
+
+const CityStatsSchema = z.object({
+  months: z.number(),
+  sold: z.object({ count: z.number(), median_price: numOrNull, median_days_on_market: numOrNull, median_sale_to_list: numOrNull }),
+  market: z.object({ active: z.number(), months_of_inventory: numOrNull }),
+});
+
+/**
+ * City market statistics (0025 public_city_stats): aggregates only, and
+ * nothing unless `public_stats` is on (MLS-10). Best-effort: any error
+ * returns null so the city page still renders.
+ */
+export async function cityStats(slug: string, client?: Pick<SupabaseClient, "rpc">): Promise<CityStats | null> {
+  try {
+    const { data, error } = await (client ?? publicSupabase()).rpc("public_city_stats", { p_slug: slug });
+    if (error) throw new Error(error.message);
+    return data ? CityStatsSchema.parse(data) : null;
+  } catch (e) {
+    console.error(`city stats unavailable for ${slug}: ${(e as Error).message}`);
+    return null;
+  }
+}
+
 /** Home page featured: pins first, then our own listings, then the newest others. */
 export function pickFeatured(pins: SearchRow[], own: SearchRow[], latest: SearchRow[], n = 3): SearchRow[] {
   const seen = new Set<string>();

@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet); PR 5 seller weekly report (live), market stats and CMAs (built, flags off) (PR open; 0025 not on hosted yet) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -373,6 +373,35 @@ comes after S6, by decision; the console has no AI code.
     rows only.
   - The website's home page falls back to our own listings if the pins
     can't be read (it failed to prerender before 0024 was on hosted).
+- **PR 5 (seller weekly report, market stats, CMAs; migration 0025):**
+  - Seller weekly report (live): Seller reports lists last week's numbers
+    for every active deal linked to its listing (views, saves, tour
+    requests, open-house sign-ins: the same counts as the seller's
+    performance page). Staff open one, see the exact email (static template;
+    an end-to-end test checks the preview equals what's sent) and press
+    Send. It goes to each seller on the deal once per deal per week, is
+    audited, and carries counts only (no lead details).
+  - Market stats (built, off): per city and period, homes sold, median sale
+    price, price per sq ft, sale-to-list, days on market, active and
+    pending counts and months of inventory, plus a by-month table. Computed
+    in the database; any median from fewer than 5 sales shows as a dash.
+    Staff only, behind `market_stats_enabled`.
+  - CMAs (built, off): verified agents (ACC-1, no FULL flag needed) search
+    recent sales, pick up to 12 comparables and save. A saved CMA keeps the
+    subject details and listing keys only (the database refuses other
+    fields); it is rebuilt from the feed when opened, so a sale that left
+    the feed shows as missing. Printable, with a price range from the
+    comparables' price per sq ft, "not an appraisal" and MLS attribution.
+    Behind `cma_enabled`.
+  - Website city pages: market stats (aggregates only) behind `public_stats`
+    (MLS-10, off). The read is best-effort, so the page renders even before
+    0025 is on hosted.
+  - MLS attribution (MLS-1) now shows on the console pages with MLS data:
+    Our listings, Market stats, CMAs.
+  - QA: `scripts/qa/s6-reports.mjs` (31 checks, axe clean at 1440 and 390
+    px); console tour now 26 pages, 87 checks.
+  - Turning stats and CMAs on needs MLSListings' written OK on sold data and
+    derivative statistics (with Noel), then the sold data in the feed.
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render

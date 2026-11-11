@@ -121,3 +121,40 @@ describe("processDueNotifications", () => {
     expect(await processDueNotifications(deps([]))).toEqual({ sent: 0, failed: 0 });
   });
 });
+
+describe("seller weekly report email (S6 PR 5)", () => {
+  const payload = {
+    sellerName: "Dana",
+    address: "501 W Fox Ct, Redwood City",
+    weekStart: "2026-10-26",
+    weekEnd: "2026-11-01",
+    views: "12",
+    saves: "1",
+    tourRequests: "0",
+    openHouseSignins: "3",
+    totalViews: "1204",
+    totalSaves: "9",
+    totalTourRequests: "2",
+    totalOpenHouseSignins: "14",
+    status: "Active",
+    listPrice: "2850000",
+  };
+
+  it("states the week's counts and totals from a static template", () => {
+    const email = renderNotification("seller_weekly_report", payload);
+    expect(email.subject).toBe("Your listing this week: 501 W Fox Ct, Redwood City (Oct 26 – Nov 1, 2026)");
+    expect(email.body).toContain("(Active, listed at $2,850,000)");
+    expect(email.body).toContain("- 12 views of the listing page");
+    expect(email.body).toContain("- 1 new save by home buyers");
+    expect(email.body).toContain("- 0 tour requests");
+    expect(email.body).toContain("- 3 open-house sign-ins");
+    expect(email.body).toContain("Since it was listed: 1,204 views, 9 saves, 2 tour requests and 14 open-house sign-ins.");
+    expect(email.body).toContain("https://vabrato.com/my/seller/performance");
+  });
+
+  it("copes with odd values without inventing numbers", () => {
+    const email = renderNotification("seller_weekly_report", { ...payload, views: "abc", listPrice: "", status: "" });
+    expect(email.body).toContain("- 0 views");
+    expect(email.body).not.toContain("listed at");
+  });
+});

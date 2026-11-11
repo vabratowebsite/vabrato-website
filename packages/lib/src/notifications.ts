@@ -32,7 +32,47 @@ const WIRING_SAFETY =
 
 const signoff = "\n\n— The Vabrato Team";
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Nov 2–8, 2026" or "Oct 26 – Nov 1, 2026" from two YYYY-MM-DD dates. */
+export function weekLabel(start: string, end: string): string {
+  const [ys, ms, ds] = start.split("-").map(Number) as [number, number, number];
+  const [ye, me, de] = end.split("-").map(Number) as [number, number, number];
+  if (!ys || !ye) return `${start} – ${end}`;
+  if (ys !== ye) return `${MONTHS[ms - 1]} ${ds}, ${ys} – ${MONTHS[me - 1]} ${de}, ${ye}`;
+  if (ms === me) return `${MONTHS[ms - 1]} ${ds}–${de}, ${ys}`;
+  return `${MONTHS[ms - 1]} ${ds} – ${MONTHS[me - 1]} ${de}, ${ys}`;
+}
+
+const STATUS_LABEL: Record<string, string> = { Active: "Active", ActiveUnderContract: "In contract", Pending: "Pending", Closed: "Sold" };
+const count = (v: string | undefined) => {
+  const n = Number(v ?? 0);
+  return Number.isFinite(n) && n >= 0 ? Math.round(n).toLocaleString("en-US") : "0";
+};
+const plural = (v: string | undefined, one: string, many: string) => `${count(v)} ${Number(v) === 1 ? one : many}`;
+
 const TEMPLATES: Record<string, (m: MergeFields, ctx: RenderContext) => RenderedEmail> = {
+  // Seller weekly report (S6 PR 5): the counts from the seller's listing
+  // performance page for one finished week. Reviewed and sent by staff.
+  seller_weekly_report: (m, ctx) => {
+    const price = Number(m.listPrice);
+    const listing = [STATUS_LABEL[m.status ?? ""] ?? "", Number.isFinite(price) && price > 0 ? `listed at $${Math.round(price).toLocaleString("en-US")}` : ""].filter(Boolean).join(", ");
+    return {
+      subject: `Your listing this week: ${m.address} (${weekLabel(m.weekStart ?? "", m.weekEnd ?? "")})`,
+      body:
+        `Hi${m.sellerName ? ` ${m.sellerName}` : ""},\n\n` +
+        `Here's how ${m.address} did on vabrato.com from ${weekLabel(m.weekStart ?? "", m.weekEnd ?? "")}${listing ? ` (${listing})` : ""}:\n\n` +
+        `- ${plural(m.views, "view", "views")} of the listing page\n` +
+        `- ${plural(m.saves, "new save", "new saves")} by home buyers\n` +
+        `- ${plural(m.tourRequests, "tour request", "tour requests")}\n` +
+        `- ${plural(m.openHouseSignins, "open-house sign-in", "open-house sign-ins")}\n\n` +
+        `Since it was listed: ${plural(m.totalViews, "view", "views")}, ${plural(m.totalSaves, "save", "saves")}, ` +
+        `${plural(m.totalTourRequests, "tour request", "tour requests")} and ${plural(m.totalOpenHouseSignins, "open-house sign-in", "open-house sign-ins")}.\n\n` +
+        `These count activity on our website only, not other sites or the MLS. See the week-by-week chart any time at ` +
+        `${ctx.siteUrl}/my/seller/performance (sign in with this email address). Questions? Send your agent a message from your portal.` +
+        signoff,
+    };
+  },
   seller_welcome: (m, ctx) => ({
     subject: `Your sale is underway — ${m.address}`,
     body:
