@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (0022, not yet on hosted) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
