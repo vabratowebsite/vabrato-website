@@ -194,18 +194,39 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          backup_admin_id: string | null
           default_agent_id: string | null
           id: boolean
+          lead_admin_away: boolean
+          lead_admin_away_until: string | null
+          lead_admin_id: string | null
+          lead_escalation_minutes: number
+          lead_flood_cap: number
+          mls_sync_live: boolean
           updated_at: string
         }
         Insert: {
+          backup_admin_id?: string | null
           default_agent_id?: string | null
           id?: boolean
+          lead_admin_away?: boolean
+          lead_admin_away_until?: string | null
+          lead_admin_id?: string | null
+          lead_escalation_minutes?: number
+          lead_flood_cap?: number
+          mls_sync_live?: boolean
           updated_at?: string
         }
         Update: {
+          backup_admin_id?: string | null
           default_agent_id?: string | null
           id?: boolean
+          lead_admin_away?: boolean
+          lead_admin_away_until?: string | null
+          lead_admin_id?: string | null
+          lead_escalation_minutes?: number
+          lead_flood_cap?: number
+          mls_sync_live?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -502,17 +523,40 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_notes: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          id: number
+          lead_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: number
+          lead_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: number
+          lead_id?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
-          profile_id: string | null
-          tour_confirmed_at: string | null
-          tour_confirmed_by: string | null
-          tour_status: Database["public"]["Enums"]["tour_status"] | null
           assigned_to: string | null
           city_slug: string | null
+          closed_reason: string | null
           consent_contact: boolean
           created_at: string
           email: string
+          escalated_at: string | null
+          first_reply_at: string | null
           id: string
           ip_hash: string | null
           kind: Database["public"]["Enums"]["lead_kind"]
@@ -521,19 +565,22 @@ export type Database = {
           name: string | null
           payload: Json
           phone: string | null
+          profile_id: string | null
           site: string
           status: string
+          tour_confirmed_at: string | null
+          tour_confirmed_by: string | null
+          tour_status: Database["public"]["Enums"]["tour_status"] | null
         }
         Insert: {
-          profile_id?: string | null
-          tour_confirmed_at?: string | null
-          tour_confirmed_by?: string | null
-          tour_status?: Database["public"]["Enums"]["tour_status"] | null
           assigned_to?: string | null
           city_slug?: string | null
+          closed_reason?: string | null
           consent_contact?: boolean
           created_at?: string
           email: string
+          escalated_at?: string | null
+          first_reply_at?: string | null
           id?: string
           ip_hash?: string | null
           kind: Database["public"]["Enums"]["lead_kind"]
@@ -542,19 +589,22 @@ export type Database = {
           name?: string | null
           payload?: Json
           phone?: string | null
+          profile_id?: string | null
           site?: string
           status?: string
-        }
-        Update: {
-          profile_id?: string | null
           tour_confirmed_at?: string | null
           tour_confirmed_by?: string | null
           tour_status?: Database["public"]["Enums"]["tour_status"] | null
+        }
+        Update: {
           assigned_to?: string | null
           city_slug?: string | null
+          closed_reason?: string | null
           consent_contact?: boolean
           created_at?: string
           email?: string
+          escalated_at?: string | null
+          first_reply_at?: string | null
           id?: string
           ip_hash?: string | null
           kind?: Database["public"]["Enums"]["lead_kind"]
@@ -563,8 +613,12 @@ export type Database = {
           name?: string | null
           payload?: Json
           phone?: string | null
+          profile_id?: string | null
           site?: string
           status?: string
+          tour_confirmed_at?: string | null
+          tour_confirmed_by?: string | null
+          tour_status?: Database["public"]["Enums"]["tour_status"] | null
         }
         Relationships: [
           {
@@ -1098,8 +1152,31 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_errors: {
+        Row: {
+          created_at: string
+          detail: string
+          id: number
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          detail: string
+          id?: number
+          source: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string
+          id?: number
+          source?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
+          attempts: number
+          claimed_at: string | null
           created_at: string
           deal_id: string | null
           dedupe_key: string | null
@@ -1114,6 +1191,8 @@ export type Database = {
           template_key: string
         }
         Insert: {
+          attempts?: number
+          claimed_at?: string | null
           created_at?: string
           deal_id?: string | null
           dedupe_key?: string | null
@@ -1128,6 +1207,8 @@ export type Database = {
           template_key: string
         }
         Update: {
+          attempts?: number
+          claimed_at?: string | null
           created_at?: string
           deal_id?: string | null
           dedupe_key?: string | null
@@ -1364,6 +1445,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      staff_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          detail: Json
+          id: number
+          ref_id: string | null
+          ref_table: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: number
+          ref_id?: string | null
+          ref_table?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: number
+          ref_id?: string | null
+          ref_table?: string | null
+        }
+        Relationships: []
+      }
+      staff_notifications: {
+        Row: {
+          created_at: string
+          id: number
+          kind: string
+          read_at: string | null
+          recipient_id: string
+          ref_id: string | null
+          ref_table: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          kind: string
+          read_at?: string | null
+          recipient_id: string
+          ref_id?: string | null
+          ref_table?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          kind?: string
+          read_at?: string | null
+          recipient_id?: string
+          ref_id?: string | null
+          ref_table?: string | null
+          title?: string
+        }
+        Relationships: []
       }
       tasks: {
         Row: {
@@ -1603,7 +1747,22 @@ export type Database = {
     }
     Functions: {
       accept_vow_terms: { Args: { p_version: string }; Returns: string }
+      can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
+      can_work_lead: { Args: { p_lead: string }; Returns: boolean }
+      claim_due_notifications: {
+        Args: { p_batch?: number }
+        Returns: {
+          alerts_email_opt_in: boolean
+          attempts: number
+          id: string
+          payload: Json
+          profile_email: string
+          recipient_email: string
+          template_key: string
+        }[]
+      }
+      complete_notification: { Args: { p_id: string }; Returns: undefined }
       complete_onboarding: { Args: never; Returns: undefined }
       content_launch_blockers: {
         Args: never
@@ -1616,8 +1775,11 @@ export type Database = {
       has_deal_access: { Args: { p_deal_id: string }; Returns: boolean }
       has_full_mls_access: { Args: never; Returns: boolean }
       has_vow_access: { Args: never; Returns: boolean }
+      is_acting_lead_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      lead_admin_away_now: { Args: never; Returns: boolean }
+      lead_routing_unset: { Args: never; Returns: boolean }
       listing_cards: {
         Args: { p_keys: string[] }
         Returns: {
@@ -1647,6 +1809,7 @@ export type Database = {
           total_count: number
         }[]
       }
+      listing_performance: { Args: { p_deal: string }; Returns: Json }
       listing_price_history: {
         Args: { p_key: string }
         Returns: {
@@ -1664,7 +1827,33 @@ export type Database = {
           original_list_price: number
         }[]
       }
-      listing_performance: { Args: { p_deal: string }; Returns: Json }
+      mark_alerts_seen: { Args: never; Returns: number }
+      mark_lead_replied: { Args: { p_lead: string }; Returns: undefined }
+      mark_messages_read: { Args: { p_member: string }; Returns: number }
+      mark_staff_notifications_read: { Args: { p_ids?: number[] }; Returns: number }
+      mls_last_updated: { Args: never; Returns: string }
+      mls_sync_health: {
+        Args: never
+        Returns: {
+          last_failure_at: string
+          last_status: Database["public"]["Enums"]["mls_sync_status"]
+          last_success_at: string
+          stale: boolean
+        }[]
+      }
+      my_tour_requests: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          listing_key: string
+          message: string
+          payload: Json
+          tour_confirmed_at: string
+          tour_status: Database["public"]["Enums"]["tour_status"]
+        }[]
+      }
+      notification_sweep: { Args: never; Returns: Json }
       open_house_signin_info: {
         Args: { p_token: string }
         Returns: {
@@ -1678,42 +1867,6 @@ export type Database = {
         }[]
       }
       open_house_signin_link: { Args: { p_open_house_key: string }; Returns: string }
-      record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }
-      submit_open_house_signin: {
-        Args: {
-          p_consent_contact: boolean
-          p_email: string
-          p_has_agent: string
-          p_name: string
-          p_phone: string
-          p_token: string
-        }
-        Returns: undefined
-      }
-      mark_alerts_seen: { Args: never; Returns: number }
-      mark_messages_read: { Args: { p_member: string }; Returns: number }
-      mls_last_updated: { Args: never; Returns: string }
-      my_tour_requests: {
-        Args: never
-        Returns: {
-          created_at: string
-          id: string
-          listing_key: string
-          message: string
-          payload: Json
-          tour_confirmed_at: string
-          tour_status: Database["public"]["Enums"]["tour_status"]
-        }[]
-      }
-      mls_sync_health: {
-        Args: never
-        Returns: {
-          last_failure_at: string
-          last_status: Database["public"]["Enums"]["mls_sync_status"]
-          last_success_at: string
-          stale: boolean
-        }[]
-      }
       public_own_sold: {
         Args: { p_limit?: number }
         Returns: {
@@ -1728,7 +1881,13 @@ export type Database = {
           street: string
         }[]
       }
+      purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
       purge_old_leads: { Args: { p_months?: number }; Returns: number }
+      reassign_lead: { Args: { p_agent: string; p_lead: string }; Returns: undefined }
+      record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }
+      release_notification: { Args: { p_id: string; p_permanent?: boolean; p_reason: string }; Returns: string }
+      request_account_deletion: { Args: never; Returns: string }
+      run_member_alerts: { Args: { p_now?: string }; Returns: Json }
       search_listings: {
         Args: {
           p_bbox?: number[]
@@ -1771,9 +1930,6 @@ export type Database = {
           total_count: number
         }[]
       }
-      purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
-      request_account_deletion: { Args: never; Returns: string }
-      run_member_alerts: { Args: { p_now?: string }; Returns: Json }
       search_sold_listings: {
         Args: {
           p_bbox?: number[]
@@ -1810,6 +1966,12 @@ export type Database = {
       }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
+      set_lead_admin_away: { Args: { p_away: boolean; p_until?: string }; Returns: undefined }
+      set_lead_routing: {
+        Args: { p_backup_admin: string; p_escalation_minutes?: number; p_flood_cap?: number; p_lead_admin: string }
+        Returns: undefined
+      }
+      set_lead_status: { Args: { p_lead: string; p_reason?: string; p_status: string }; Returns: undefined }
       set_member_role: {
         Args: { p_role: Database["public"]["Enums"]["user_role"] }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1820,6 +1982,17 @@ export type Database = {
       }
       storage_deal_id: { Args: { object_name: string }; Returns: string }
       storage_member_id: { Args: { object_name: string }; Returns: string }
+      submit_open_house_signin: {
+        Args: {
+          p_consent_contact: boolean
+          p_email: string
+          p_has_agent: string
+          p_name: string
+          p_phone: string
+          p_token: string
+        }
+        Returns: undefined
+      }
       unsubscribe_alert_emails: { Args: { p_token: string }; Returns: boolean }
       update_my_profile: {
         Args: { p_full_name: string; p_phone: string | null }

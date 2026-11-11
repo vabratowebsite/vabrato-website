@@ -92,3 +92,7 @@ export type ListingPerformance =
       totals: Omit<ListingPerformanceWeek, "week_start">;
       weeks: ListingPerformanceWeek[];
     };
+
+export type LeadNote = Tables["lead_notes"]["Row"];
+export type StaffNotification = Tables["staff_notifications"]["Row"];
+export type StaffAudit = Tables["staff_audit"]["Row"];

@@ -119,3 +119,7 @@ QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:5
 ```bash
 QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa node scripts/qa/s6-console-shots.mjs --out docs/screenshots/s6
 ```
+
+`s6-lead-alert.mjs` checks the 1-minute lead path on the local stack: a real lead from `/contact` is routed to the lead admin, queued with an in-console alert, and sent by the console's `/api/notifications/process` to a fake Resend. On hosted, pg_net calls that endpoint right after the insert; locally the script calls it. It also checks a member message alert.
+
+It needs migration 0022 applied, the staff account set as lead admin (`update app_settings set lead_admin_id = …`), and apps/va started with `CRON_SECRET`, `RESEND_API_KEY` (any value), `RESEND_BASE_URL=http://127.0.0.1:4010` and `CONSOLE_URL`. The fake Resend is a tiny Node server that appends each `POST /emails` body, its arrival time and its `Idempotency-Key` to a JSON-lines file; pass that file as `RESEND_LOG`.

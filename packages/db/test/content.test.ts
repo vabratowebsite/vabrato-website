@@ -143,13 +143,13 @@ describe("0014 content, leads and public MLS API", () => {
       );
     });
 
-    it("lets staff read leads and admins assign them", async () => {
+    it("routes leads (S6): with no routing set, agents see none of them and nobody updates them directly", async () => {
       const rows = await user(U.agent, async (q) => {
         await insert(q, "staffcheck@example.test");
         return q(`select email from leads where email = 'staffcheck@example.test'`);
       });
-      expect(rows).toHaveLength(1);
-      expect(await user(U.agent, (q) => q(`update leads set status = 'closed' returning id`))).toEqual([]);
+      expect(rows).toEqual([]); // not assigned to this agent (0022: lead admin all, others their own)
+      await expect(user(U.agent, (q) => q(`update leads set status = 'closed' returning id`))).rejects.toThrow(/permission denied/);
     });
 
     it("ignores attempts to pre-assign or pre-close a lead", async () => {
