@@ -448,8 +448,15 @@ comes after S6, by decision; the console has no AI code.
   5. Mark and Viv sign in to the console once. Then I prepare the SQL for
      their roles, lead routing (Mark lead admin, Viv backup) and agent
      profile links, for you to confirm.
-  6. Send a test contact form on vabrato.com. When Mark's email arrives
-     within a minute, S6 is done.
+  6. Send a test contact form on vabrato.com. When the lead admin's email
+     arrives within a minute, S6 is done.
+  - **Interim routing (2026-11-11, your request):** Rachanee's account is
+    admin and lead admin on hosted, so every new-lead alert (console and
+    email) goes to Rachanee until Mark signs in and step 5 moves routing to
+    Mark. Checked with a rolled-back test lead: assigned to Rachanee, console
+    alert raised, `staff_new_lead` email queued to Rachanee's address, due at
+    once. That account now opens the console rather than the /my portal
+    (one role per login); switching back is one SQL line.
   - Still open, with defaults in place (change any time in Settings): Viv's
     role (agent), escalation after 2 hours, lead retention 24 months, the
     email cap of 10 leads an hour.
