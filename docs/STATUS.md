@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -295,6 +295,15 @@ comes after S6, by decision; the console has no AI code.
     Bypass for Automation secret as `console_bypass_secret` and use the
     vercel.app URL. Console env: `CRON_SECRET`, `CONSOLE_URL`,
     `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `NOTIFICATIONS_FROM`.
+- **PR 2b (leads screens, no migration):** Leads inbox (new / mine / all
+  open / closed, kind and site filters), lead page (contact, request, notes,
+  "I've replied", close or reopen, reassign for the acting lead admin, how
+  fast the alert email went out), Settings (lead admin, backup, escalation
+  time, email cap, away with an optional end time), and an alert bell that
+  polls every 20 seconds and, with permission, shows a desktop notification
+  while the console tab is in the background. Today shows where new leads go
+  and the median first reply. QA: `scripts/qa/s6-leads-ui.mjs` (agent sees
+  only their own lead; axe clean at 1440 and 390 px).
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render

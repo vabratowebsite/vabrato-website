@@ -23,9 +23,12 @@ const browser = await chromium.launch(process.env.CHROME ? { executablePath: pro
 
 const deal = sql(`select d.id from deals d where exists (select 1 from deal_members m where m.deal_id = d.id) order by d.created_at desc limit 1`);
 const member = sql(`select member_id from messages order by created_at desc limit 1`);
+const lead = sql(`select l.id from leads l join app_settings s on l.assigned_to = s.lead_admin_id order by l.created_at desc limit 1`);
 
 const PAGES = [
   ["today", "/"],
+  ...(lead ? [["leads", "/leads?view=all"], ["lead", `/leads/${lead}`]] : []),
+  ["settings", "/settings"],
   ["deals", "/deals"],
   ["deal-new", "/deals/new"],
   ["deal", `/deals/${deal}`],

@@ -3,6 +3,7 @@ import type { Profile } from "@vabrato/db";
 import { PortalShell, cx, focusDark } from "@vabrato/ui/web";
 import { signOutAction } from "@/lib/actions";
 import { consoleNav, signedInAs, type ConsolePage } from "@/lib/nav";
+import { NotificationBell } from "./notification-bell";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Agent console frame (mockup 07): navy sidebar with Staff / Transactions
@@ -24,8 +25,8 @@ export async function ConsoleShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const unread = await unreadMemberMessages();
-  const nav = consoleNav(current, { unreadMessages: current === "messages" ? 0 : unread }).map((g) => ({
+  const [unread, newLeads] = await Promise.all([unreadMemberMessages(), newLeadCount()]);
+  const nav = consoleNav(current, { unreadMessages: current === "messages" ? 0 : unread, newLeads }).map((g) => ({
     label: g.label,
     items: g.items.map(({ label, href, count, current: isCurrent }) => ({ label, href, current: isCurrent, ...(count ? { count } : {}) })),
   }));
@@ -42,7 +43,12 @@ export async function ConsoleShell({
         nav={nav}
         eyebrow={eyebrow}
         title={title}
-        topRight={topRight}
+        topRight={
+          <>
+            {topRight}
+            <NotificationBell />
+          </>
+        }
         sidebarFooter={
           <div className="space-y-3">
             <p>
@@ -70,4 +76,11 @@ async function unreadMemberMessages(): Promise<number> {
   const supabase = await supabaseServer();
   const { data } = await supabase.from("messages").select("member_id, sender_id").is("read_at", null).limit(500);
   return (data ?? []).filter((m) => m.sender_id === m.member_id).length;
+}
+
+/** New leads this person can see (RLS: all for the acting lead admin, else their own). */
+async function newLeadCount(): Promise<number> {
+  const supabase = await supabaseServer();
+  const { count } = await supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new");
+  return count ?? 0;
 }

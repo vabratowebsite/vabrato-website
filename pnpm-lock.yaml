@@ -29,6 +29,9 @@ importers:
 
   apps/va:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.62.0
+        version: 5.107.1(@types/react@19.2.17)(react@19.2.7)
       '@vabrato/db':
         specifier: workspace:*
         version: link:../../packages/db
