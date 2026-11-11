@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (PR open; 0024 not on hosted yet) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (merged, 0024 on hosted 2026-11-11; no pins, revisions or photos yet) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -362,6 +362,17 @@ comes after S6, by decision; the console has no AI code.
     `WEB_REVALIDATE_URL`, `REVALIDATE_SECRET` (same as the website's).
   - QA: `scripts/qa/s6-content.mjs` (36 checks, axe clean at 1440 and 390
     px on every new page); the console tour now covers 22 pages.
+  - On hosted (2026-11-11): 0024 applied; advisors show nothing new beyond
+    the expected notices for the five signed-in content functions (each
+    checks the caller itself). `packages/db/test/hosted-content-check.sql`
+    (rolled back, fictional cast) confirmed: an agent drafts and submits but
+    can't publish; Mark publishes; nobody writes the content tables directly,
+    role admins included; photos upload only to the uploader's own folder,
+    members can't upload, the public can't list the bucket; the public sees
+    a pin only for a for-sale listing; anon `listing_cards` returns for-sale
+    rows only.
+  - The website's home page falls back to our own listings if the pins
+    can't be read (it failed to prerender before 0024 was on hosted).
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render
