@@ -10,6 +10,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.62.0",
     "@vabrato/db": "workspace:*",
     "@vabrato/lib": "workspace:*",
     "@vabrato/ui": "workspace:*",

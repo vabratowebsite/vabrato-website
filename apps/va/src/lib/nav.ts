@@ -1,17 +1,16 @@
 import type { UserRole } from "@vabrato/db";
 
 // Agent console navigation (mockup 07). Only pages that exist are listed;
-// later S6 PRs add Leads, Members, Our listings, MLS sync, Content, Reports
-// and CMAs.
+// later S6 PRs add Members, Our listings, MLS sync, Content, Reports and CMAs.
 
-export type ConsolePage = "today" | "messages" | "open-houses" | "deals" | "vendors";
+export type ConsolePage = "today" | "leads" | "messages" | "open-houses" | "deals" | "vendors" | "settings";
 
 export interface ConsoleNavGroup {
   label: string;
   items: { key: ConsolePage; label: string; href: string; count?: number; current: boolean }[];
 }
 
-export function consoleNav(current: ConsolePage | null, counts: { unreadMessages?: number } = {}): ConsoleNavGroup[] {
+export function consoleNav(current: ConsolePage | null, counts: { unreadMessages?: number; newLeads?: number } = {}): ConsoleNavGroup[] {
   const item = (key: ConsolePage, label: string, href: string, count?: number) => ({
     key,
     label,
@@ -22,9 +21,15 @@ export function consoleNav(current: ConsolePage | null, counts: { unreadMessages
   return [
     {
       label: "Staff",
-      items: [item("today", "Today", "/"), item("messages", "Messages", "/messages", counts.unreadMessages), item("open-houses", "Open houses", "/open-houses")],
+      items: [
+        item("today", "Today", "/"),
+        item("leads", "Leads", "/leads", counts.newLeads),
+        item("messages", "Messages", "/messages", counts.unreadMessages),
+        item("open-houses", "Open houses", "/open-houses"),
+      ],
     },
     { label: "Transactions", items: [item("deals", "Deals", "/deals"), item("vendors", "Vendors", "/vendors")] },
+    { label: "Account", items: [item("settings", "Settings", "/settings")] },
   ];
 }
 

@@ -4,9 +4,13 @@ import { consoleNav, signedInAs } from "./nav";
 describe("console nav", () => {
   it("lists the existing pages in Staff and Transactions groups", () => {
     const nav = consoleNav("deals");
-    expect(nav.map((g) => g.label)).toEqual(["Staff", "Transactions"]);
-    expect(nav.flatMap((g) => g.items.map((i) => i.href))).toEqual(["/", "/messages", "/open-houses", "/deals", "/vendors"]);
+    expect(nav.map((g) => g.label)).toEqual(["Staff", "Transactions", "Account"]);
+    expect(nav.flatMap((g) => g.items.map((i) => i.href))).toEqual(["/", "/leads", "/messages", "/open-houses", "/deals", "/vendors", "/settings"]);
     expect(nav.flatMap((g) => g.items).filter((i) => i.current).map((i) => i.key)).toEqual(["deals"]);
+  });
+
+  it("badges new leads", () => {
+    expect(consoleNav("today", { newLeads: 4 }).flatMap((g) => g.items).find((i) => i.key === "leads")?.count).toBe(4);
   });
 
   it("badges unread messages only when there are some", () => {
