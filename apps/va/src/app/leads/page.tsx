@@ -38,7 +38,7 @@ export default async function LeadsInbox({ searchParams }: { searchParams: Promi
   return (
     <ConsoleShell profile={profile} current="leads" title="Leads">
       <p className={mutedCls}>
-        {acting ? "You see every lead (lead admin)." : "You see leads assigned to you. Mark, or Viv while he's away, sees and routes all leads."}
+        {acting ? "You see every lead (lead admin)." : "You see leads assigned to you. Mark, or Viv while Mark is away, sees and routes all leads."}
       </p>
 
       <nav aria-label="Lead views" className="flex flex-wrap gap-2">

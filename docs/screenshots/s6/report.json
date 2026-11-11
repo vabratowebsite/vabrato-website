@@ -1,0 +1,776 @@
+{
+  "at": "2026-11-11T06:21:32.177Z",
+  "leadToSenderMs": 262,
+  "pages": [
+    {
+      "who": "lead-admin",
+      "name": "today",
+      "path": "/",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "leads",
+      "path": "/leads?view=all",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "members",
+      "path": "/members",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "messages",
+      "path": "/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "listings",
+      "path": "/listings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "open-houses",
+      "path": "/open-houses",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "mls",
+      "path": "/mls",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "content",
+      "path": "/content",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "featured",
+      "path": "/featured",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "reports",
+      "path": "/reports",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "stats",
+      "path": "/stats",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "cmas",
+      "path": "/cmas",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "deals",
+      "path": "/deals",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "vendors",
+      "path": "/vendors",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "profile",
+      "path": "/profile",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "settings",
+      "path": "/settings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "lead",
+      "path": "/leads/055707f1-8103-4ea5-bba9-912bd3ac0b19",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "member",
+      "path": "/members/d5c31c8d-8cc1-4254-adaa-a47652266a31",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "content-revision",
+      "path": "/content/a108552b-e5a4-4700-bdc6-5c3e007c7592",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "content-edit",
+      "path": "/content/edit?table=city_guides&key=san-carlos",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "report",
+      "path": "/reports/55edbe10-c5ca-44d0-a283-88049addcbe7",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "lead-admin",
+      "name": "deal",
+      "path": "/deals/55edbe10-c5ca-44d0-a283-88049addcbe7",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "today",
+      "path": "/",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "leads",
+      "path": "/leads?view=all",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "members",
+      "path": "/members",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "messages",
+      "path": "/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "listings",
+      "path": "/listings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "open-houses",
+      "path": "/open-houses",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "mls",
+      "path": "/mls",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "content",
+      "path": "/content",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "featured",
+      "path": "/featured",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "reports",
+      "path": "/reports",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "stats",
+      "path": "/stats",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "cmas",
+      "path": "/cmas",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "deals",
+      "path": "/deals",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "vendors",
+      "path": "/vendors",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "profile",
+      "path": "/profile",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "settings",
+      "path": "/settings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup",
+      "name": "marks-lead",
+      "path": "/leads/055707f1-8103-4ea5-bba9-912bd3ac0b19",
+      "status": 404,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup-away",
+      "name": "leads",
+      "path": "/leads?view=all",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "backup-away",
+      "name": "marks-lead",
+      "path": "/leads/055707f1-8103-4ea5-bba9-912bd3ac0b19",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "today",
+      "path": "/",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "leads",
+      "path": "/leads?view=all",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "members",
+      "path": "/members",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "messages",
+      "path": "/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "listings",
+      "path": "/listings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "open-houses",
+      "path": "/open-houses",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "mls",
+      "path": "/mls",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "content",
+      "path": "/content",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "featured",
+      "path": "/featured",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "reports",
+      "path": "/reports",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "stats",
+      "path": "/stats",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "cmas",
+      "path": "/cmas",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "deals",
+      "path": "/deals",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "vendors",
+      "path": "/vendors",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "profile",
+      "path": "/profile",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "settings",
+      "path": "/settings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "marks-lead",
+      "path": "/leads/055707f1-8103-4ea5-bba9-912bd3ac0b19",
+      "status": 404,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "agent",
+      "name": "own-lead",
+      "path": "/leads/d556db5a-4974-4379-8112-3204819da1ed",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "today",
+      "path": "/",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "leads",
+      "path": "/leads?view=all",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "members",
+      "path": "/members",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "messages",
+      "path": "/messages",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "listings",
+      "path": "/listings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "open-houses",
+      "path": "/open-houses",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "mls",
+      "path": "/mls",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "content",
+      "path": "/content",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "featured",
+      "path": "/featured",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "reports",
+      "path": "/reports",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "stats",
+      "path": "/stats",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "cmas",
+      "path": "/cmas",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "deals",
+      "path": "/deals",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "vendors",
+      "path": "/vendors",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "profile",
+      "path": "/profile",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "settings",
+      "path": "/settings",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "va",
+      "name": "marks-lead",
+      "path": "/leads/055707f1-8103-4ea5-bba9-912bd3ac0b19",
+      "status": 404,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    },
+    {
+      "who": "member",
+      "name": "console",
+      "path": "/",
+      "status": 200,
+      "violations": {
+        "390": [],
+        "1440": []
+      }
+    }
+  ]
+}
