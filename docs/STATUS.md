@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off) |
+| S6 | Staff console & automations | In progress (plan v3 approved 2026-11-11): PR 1 console frame and Today (merged); PR 2a lead routing and notification pipeline (merged, 0022 on hosted 2026-11-11: pg_net and pg_cron installed, minute sweep and daily purge scheduled; email waits for Vault secrets and Resend); PR 2b leads inbox, lead page, routing and away settings, alert bell (merged); PR 3 members, MLS sync page and alerts, ACC-1 at sign-in, Our listings (merged, 0023 on hosted 2026-11-11; feed alerts and FULL data off); PR 4 content editor with approval, agent profiles and photos, featured listings (PR open; 0024 not on hosted yet) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -323,6 +323,45 @@ comes after S6, by decision; the console has no AI code.
     instructions appear only for verified agents with the flag on.
   - Console env adds `MLS_OFFICE_ID` (VABRA or VABRA-1, to confirm with
     MLSListings).
+- **PR 4 (content with approval, agent photos, featured listings; migration
+  0024):**
+  - City guides, Insights posts and testimonials change only through
+    revisions: anyone on staff drafts and sends for approval; only the acting
+    lead admin (Mark, or Viv while Mark is away) publishes, sends back with a
+    note, or takes a page down (audited). Direct writes to those tables are
+    gone, role admins included. The website keeps the published version
+    until a new one is approved. Publishing writes only to a fixed list of
+    tables.
+  - A testimonial needs its source and the client's permission (checkbox) to
+    be published. Placeholders are marked as replaced when published.
+  - Fair Housing (FH-1): a deterministic phrase check
+    (`packages/lib/src/fair-housing.ts`) runs when a revision is sent, again
+    when it's published, and when an agent saves their profile. "Must
+    change" phrases (who a home suits, who lives somewhere, safety or
+    "exclusive" areas, school-quality claims) block; "check" words (church,
+    families, schools) are shown to the author and to Mark. School links in
+    city guides must be official https sites; rating sites are refused.
+  - Post previews use the website's own Markdown renderer (moved to
+    `@vabrato/ui/markdown`): no raw HTML, no images, https/mailto/same-site
+    links only.
+  - My profile: agents edit their own bio, title and contact details
+    directly (no approval) and upload a photo to the public `agent-photos`
+    bucket, in their own folder only. The upload is checked by its first
+    bytes (JPEG, PNG or WebP, 5 MB; an SVG renamed .png is refused). The
+    About and team pages show the photo. Mark links logins to profiles and
+    publishes them (SQL for now:
+    `update agent_profiles set profile_id = '<profile id>' where slug = '<slug>';`).
+  - Featured listings: staff pin for-sale listings with an order and
+    optional first/last day (Pacific). The home page shows live pins first,
+    then our own listings, then the newest others; a pin disappears when the
+    listing leaves the market. Anon may now call `listing_cards` (IDX
+    for-sale rows only) for the pinned cards.
+  - After a publish, a pin or a profile change, the console calls the
+    website's `/api/revalidate` (3 tries); otherwise the website catches up
+    within 15 minutes and the console says so. Console env:
+    `WEB_REVALIDATE_URL`, `REVALIDATE_SECRET` (same as the website's).
+  - QA: `scripts/qa/s6-content.mjs` (36 checks, axe clean at 1440 and 390
+    px on every new page); the console tour now covers 22 pages.
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render

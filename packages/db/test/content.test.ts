@@ -100,10 +100,18 @@ describe("0014 content, leads and public MLS API", () => {
       expect(seen).toEqual([]);
     });
 
-    it.each(CONTENT)("%s: only admins write", async (table) => {
+    // 0024: city guides, posts and testimonials change only through the
+    // review RPCs (content-review.test.ts); not even a role admin writes them.
+    it.each(CONTENT)("%s: no direct writes from the public, members or other agents", async (table) => {
       await expect(anon((q) => q(`delete from ${table}`))).rejects.toThrow(/permission denied/);
-      expect(await user(U.buyer, (q) => q(`delete from ${table} returning 1`))).toEqual([]);
-      expect(await user(U.agent2, (q) => q(`delete from ${table} returning 1`))).toEqual([]);
+      const reviewed = ["city_guides", "posts", "testimonials"].includes(table);
+      if (reviewed) {
+        await expect(user(U.buyer, (q) => q(`delete from ${table}`))).rejects.toThrow(/permission denied/);
+        await expect(user(U.admin, (q) => q(`delete from ${table}`))).rejects.toThrow(/permission denied/);
+      } else {
+        expect(await user(U.buyer, (q) => q(`delete from ${table} returning 1`))).toEqual([]);
+        expect(await user(U.agent2, (q) => q(`delete from ${table} returning 1`))).toEqual([]);
+      }
     });
 
     it("lets an agent edit their own profile content but not publish it or anyone else's", async () => {

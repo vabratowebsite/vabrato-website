@@ -51,6 +51,36 @@ export async function searchListings(
   return { rows, total: rows[0]?.total_count ?? 0 };
 }
 
+/**
+ * Listings staff pinned to the home page (0024 featured_listings), in their
+ * order. RLS returns only pins in their date window whose listing is visible
+ * at IDX level; listing_cards (security invoker) returns for-sale card data.
+ */
+export async function featuredPins(): Promise<SearchRow[]> {
+  const db = publicSupabase();
+  const { data: pins, error } = await db.from("featured_listings").select("listing_key").order("sort").order("created_at").limit(12);
+  if (error) throw new Error(`featured_listings failed: ${error.message}`);
+  const keys = (pins ?? []).map((p) => p.listing_key);
+  if (keys.length === 0) return [];
+  const { data, error: cardErr } = await db.rpc("listing_cards", { p_keys: keys });
+  if (cardErr) throw new Error(`listing_cards failed: ${cardErr.message}`);
+  const byKey = new Map(z.array(SearchRowSchema).parse(data ?? []).map((r) => [r.listing_key, r]));
+  return keys.map((k) => byKey.get(k)).filter((r): r is SearchRow => Boolean(r));
+}
+
+/** Home page featured: pins first, then our own listings, then the newest others. */
+export function pickFeatured(pins: SearchRow[], own: SearchRow[], latest: SearchRow[], n = 3): SearchRow[] {
+  const seen = new Set<string>();
+  const out: SearchRow[] = [];
+  for (const r of [...pins, ...own, ...latest]) {
+    if (seen.has(r.listing_key)) continue;
+    seen.add(r.listing_key);
+    out.push(r);
+    if (out.length === n) break;
+  }
+  return out;
+}
+
 const ListingSchema = z.object({
   listing_key: z.string(),
   listing_id: z.string().nullable(),

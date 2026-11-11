@@ -13,3 +13,6 @@ export * from "./alert-emails";
 export * from "./staff-emails";
 export * from "./property-schema";
 export * from "./timeline";
+export * from "./fair-housing";
+export * from "./schools";
+export * from "./agent-photo";

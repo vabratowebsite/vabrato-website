@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AgentHero, FAQAccordion, ListingPhotoPlaceholder, SectionTitle, SkillList, VideoThumb } from "@vabrato/ui/web";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { SelectField, TextArea } from "@/components/forms/fields";
+import { AgentPhoto } from "@/components/AgentPhoto";
 import { JsonLd } from "@/components/JsonLd";
 import { MlsAttribution } from "@/components/MlsAttribution";
 import { ResultsGrid } from "@/components/search/results";
@@ -39,7 +40,7 @@ export default async function AgentPage({ params }: Props) {
   return (
     <>
       <AgentHero
-        photo={<ListingPhotoPlaceholder tint="steel" label={`${agent.display_name} photo (placeholder)`} />}
+        photo={<AgentPhoto name={agent.display_name} path={agent.photo_path} eager />}
         firstName={first ?? agent.display_name}
         lastName={rest.join(" ")}
         title={agent.title}

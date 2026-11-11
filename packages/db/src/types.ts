@@ -96,3 +96,8 @@ export type ListingPerformance =
 export type LeadNote = Tables["lead_notes"]["Row"];
 export type StaffNotification = Tables["staff_notifications"]["Row"];
 export type StaffAudit = Tables["staff_audit"]["Row"];
+
+export type ContentTable = Enums["content_table"];
+export type RevisionStatus = Enums["revision_status"];
+export type ContentRevision = Tables["content_revisions"]["Row"];
+export type FeaturedListing = Tables["featured_listings"]["Row"];

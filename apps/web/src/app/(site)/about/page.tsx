@@ -1,4 +1,5 @@
-import { ListingPhotoPlaceholder, SectionTitle } from "@vabrato/ui/web";
+import { SectionTitle } from "@vabrato/ui/web";
+import { AgentPhoto } from "@/components/AgentPhoto";
 import { JsonLd } from "@/components/JsonLd";
 import { listAgents } from "@/lib/public/content";
 import { breadcrumbJsonLd, pageMetadata } from "@/lib/seo";
@@ -29,7 +30,7 @@ export default async function AboutPage() {
               <li key={a.slug}>
                 <a href={`/team/${a.slug}`} className="group block">
                   <div className="aspect-[4/5] overflow-hidden bg-soft">
-                    <ListingPhotoPlaceholder tint="steel" label={`${a.display_name} photo (placeholder)`} />
+                    <AgentPhoto name={a.display_name} path={a.photo_path} />
                   </div>
                   <p className="mt-3 font-subhead text-subhead-md text-ink group-hover:underline">{a.display_name}</p>
                   <p className="font-body text-body-sm text-muted">

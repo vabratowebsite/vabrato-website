@@ -10,6 +10,7 @@ import { btnPrimary, btnSecondary, errorCls, okCls } from "./ui";
 export function ActionForm({
   action,
   submitLabel,
+  submitAriaLabel,
   pendingLabel = "Saving…",
   secondary,
   resetOnOk,
@@ -18,6 +19,8 @@ export function ActionForm({
 }: {
   action: (prev: ActionState, form: FormData) => Promise<ActionState>;
   submitLabel: string;
+  /** Fuller name when the visible label repeats in a list ("Unpin 123 Main St"). */
+  submitAriaLabel?: string;
   pendingLabel?: string;
   secondary?: boolean;
   resetOnOk?: boolean;
@@ -33,7 +36,7 @@ export function ActionForm({
     <form ref={ref} action={formAction} className={className}>
       {children}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={pending} className={secondary ? btnSecondary : btnPrimary}>
+        <button type="submit" disabled={pending} aria-label={submitAriaLabel} className={secondary ? btnSecondary : btnPrimary}>
           {pending ? pendingLabel : submitLabel}
         </button>
         {state.error && (
