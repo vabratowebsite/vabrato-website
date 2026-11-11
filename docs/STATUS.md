@@ -445,9 +445,11 @@ comes after S6, by decision; the console has no AI code.
      Turnstile keys, `LEAD_IP_SALT`.
   4. Vault (Supabase SQL editor): the two `vault.create_secret` lines under
      PR 2a above.
-  5. Mark and Viv sign in to the console once. Then I prepare the SQL for
-     their roles, lead routing (Mark lead admin, Viv backup) and agent
-     profile links, for you to confirm.
+  5. Mark, Viv, Cedrick and Shermaine each sign in to the console once (it
+     creates their account; they see "No access" until a role is set). Then
+     I set the roles decided on 2026-11-11 (Decisions below), move lead
+     routing to Mark (lead admin) with Viv as backup, and link the agent
+     profiles, after you confirm.
   6. Send a test contact form on vabrato.com. When the lead admin's email
      arrives within a minute, S6 is done.
   - **Interim routing (2026-11-11, your request):** Rachanee's account is
@@ -457,9 +459,9 @@ comes after S6, by decision; the console has no AI code.
     alert raised, `staff_new_lead` email queued to Rachanee's address, due at
     once. That account now opens the console rather than the /my portal
     (one role per login); switching back is one SQL line.
-  - Still open, with defaults in place (change any time in Settings): Viv's
-    role (agent), escalation after 2 hours, lead retention 24 months, the
-    email cap of 10 leads an hour.
+  - Still open, with defaults in place (change any time in Settings):
+    escalation after 2 hours, lead retention 24 months, the email cap of 10
+    leads an hour. Viv's role is decided (admin, Decisions).
 - **Found while checking the plan (Step 0):**
   - vabrato-console has Vercel Authentication on for every deployment except
     custom domains, and no custom domain yet. pg_net (S6 PR 2a) and Render
@@ -523,6 +525,16 @@ with the code (timeline: 5 tests, now in packages/lib).
   no-runtime-AI rule (CLAUDE.md hard rule, SPEC AI-1 to AI-9). Buyer email
   parsing stays deterministic and automatic client notifications stay static
   templates. New segment S5b (Member AI assistant, Ask Vabrato).
+
+- **2026-11-11 — Staff roles (Rachanee):** Mark admin (and lead admin once
+  signed in); Rachanee admin (owner, setup; lead admin until Mark signs in);
+  Viv admin (and backup); Cedrick VA; Shermaine agent. Admin means every
+  deal, member record and message thread, the feature flags (including the
+  MLS-10 switches), Settings and lead routing, the deletion queue and every
+  agent profile. It doesn't add leads or publishing (those follow the
+  acting lead admin) or MLS data (ACC-1). Admins also get the in-console
+  delivery and MLS-sync alerts, and every new lead whenever routing is
+  unset. Applied per person after their first sign-in.
 
 ## Where things stand
 
