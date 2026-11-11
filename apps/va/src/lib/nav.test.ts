@@ -5,7 +5,7 @@ describe("console nav", () => {
   it("lists the existing pages in Staff and Transactions groups", () => {
     const nav = consoleNav("deals");
     expect(nav.map((g) => g.label)).toEqual(["Staff", "Transactions", "Account"]);
-    expect(nav.flatMap((g) => g.items.map((i) => i.href))).toEqual(["/", "/leads", "/messages", "/open-houses", "/deals", "/vendors", "/settings"]);
+    expect(nav.flatMap((g) => g.items.map((i) => i.href))).toEqual(["/", "/leads", "/members", "/messages", "/listings", "/open-houses", "/mls", "/deals", "/vendors", "/settings"]);
     expect(nav.flatMap((g) => g.items).filter((i) => i.current).map((i) => i.key)).toEqual(["deals"]);
   });
 

@@ -25,7 +25,7 @@ export async function ConsoleShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [unread, newLeads] = await Promise.all([unreadMemberMessages(), newLeadCount()]);
+  const [unread, newLeads, syncDown] = await Promise.all([unreadMemberMessages(), newLeadCount(), syncIncidentOpen()]);
   const nav = consoleNav(current, { unreadMessages: current === "messages" ? 0 : unread, newLeads }).map((g) => ({
     label: g.label,
     items: g.items.map(({ label, href, count, current: isCurrent }) => ({ label, href, current: isCurrent, ...(count ? { count } : {}) })),
@@ -64,6 +64,14 @@ export async function ConsoleShell({
         }
       >
         <div id="main" tabIndex={-1} className="space-y-6 outline-none">
+          {syncDown && current !== "mls" && (
+            <p role="note" className="border border-red/40 bg-red-50 px-4 py-3 font-body text-body-sm text-red">
+              The MLS sync is failing or late. Listing changes may not be on the site.{" "}
+              <a href="/mls" className="underline">
+                MLS sync
+              </a>
+            </p>
+          )}
           {children}
         </div>
       </PortalShell>
@@ -83,4 +91,14 @@ async function newLeadCount(): Promise<number> {
   const supabase = await supabaseServer();
   const { count } = await supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new");
   return count ?? 0;
+}
+
+/** True while the feed is live and a sync incident is open (0023). */
+async function syncIncidentOpen(): Promise<boolean> {
+  const supabase = await supabaseServer();
+  const [{ data: st }, { data: s }] = await Promise.all([
+    supabase.from("sync_alert_state").select("incident_open").maybeSingle(),
+    supabase.from("app_settings").select("mls_sync_live").maybeSingle(),
+  ]);
+  return Boolean(st?.incident_open && s?.mls_sync_live);
 }

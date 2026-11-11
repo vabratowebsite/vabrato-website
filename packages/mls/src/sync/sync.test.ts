@@ -210,6 +210,8 @@ describe("nightly reconcile", () => {
     expect((await verifyAgentAccess(store, { profileId: riley, email: "riley@example.test", officeId: "VABRA" })).verified).toBe(false);
 
     const fullRows = () => t.as("authenticated", avery, (q) => q(`select listing_key from mls_listing_full`));
+    expect(await fullRows()).toEqual([]); // 0023: off until full_data_enabled
+    await t.query(`update feature_flags set enabled = true where key = 'full_data_enabled'`);
     expect(await fullRows()).toHaveLength(ELIGIBLE_KEYS.length);
 
     feed.update("Member", "MB-0001", { MemberStatus: "Inactive" });
@@ -228,6 +230,29 @@ describe("nightly reconcile", () => {
     const r = await runReconcile(deps);
     expect(r.counts).toMatchObject({ membersRemoved: 1, accessLocked: 1 });
     expect(await t.as("authenticated", jordan, (q) => q(`select 1 from mls_members`))).toEqual([]);
+  });
+});
+
+describe("ACC-1 parity: verify_agent_access (SQL, console sign-in) matches verifyAgentAccess (TS)", () => {
+  it("gives the same access rows for the same members and emails", async () => {
+    const run = async (useSql: boolean) => {
+      const { t, deps, feed, store } = await setup();
+      await runReconcile(deps);
+      const ids = ["40000000-0000-4000-8000-0000000000a1", "40000000-0000-4000-8000-0000000000a2", "40000000-0000-4000-8000-0000000000a3"];
+      const emails = ["Avery@Example.test", "riley@example.test", "nobody@example.test"];
+      for (let i = 0; i < ids.length; i++) await createUser(t, ids[i]!, { role: "agent", email: emails[i]! });
+      const verify = async (i: number, office = "VABRA") =>
+        useSql
+          ? (await t.query<{ r: { verified: boolean; member_key: string | null } }>(`select verify_agent_access($1, $2, $3) as r`, [ids[i], emails[i], office]))[0]!.r
+          : await verifyAgentAccess(store, { profileId: ids[i]!, email: emails[i]!, officeId: office }).then((r) => ({ verified: r.verified, member_key: r.memberKey }));
+      const results = [await verify(0), await verify(1), await verify(2), await verify(0, "EXRG")];
+      feed.update("Member", "MB-0001", { MemberStatus: "Inactive" });
+      await runReconcile(deps);
+      results.push(await verify(0));
+      const rows = await t.query(`select profile_id, member_key, active from mls_agent_access order by profile_id`);
+      return { results, rows };
+    };
+    expect(await run(true)).toEqual(await run(false));
   });
 });
 
