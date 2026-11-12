@@ -45,6 +45,24 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "Drafts a quote or appointment request to a vendor for a transaction, from what you say you need. You add access details, approve and send it yourself.",
     where: { href: "/deals", label: "Deals" },
   },
+  {
+    flag: "ai_staff_daily_briefing",
+    name: "Daily briefing",
+    what: "On the Today page: what needs your attention, from your own records (tasks due, deadlines and closings coming up, leads waiting for a reply, members waiting for an answer), with a link to each. Written when you ask; nothing is saved.",
+    where: { href: "/", label: "Today" },
+  },
+  {
+    flag: "ai_staff_member_summary",
+    name: "Member activity summary",
+    what: "On a member's page: what they've been looking at and asking about, what they seem to be looking for, and next steps. It reads their saved homes, searches, tour requests and last 10 messages; nothing is saved.",
+    where: { href: "/members", label: "Members" },
+  },
+  {
+    flag: "ai_staff_data_questions",
+    name: "Questions about your work",
+    what: "On this page: ask in plain words about your own transactions, tasks, leads and messages, and get an answer with links to the records it's based on.",
+    where: { href: "/assistant", label: "Assistant" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";

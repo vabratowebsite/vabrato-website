@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 (daily briefing, member activity summary, questions about your work; 0029) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -675,6 +675,46 @@ document checks, receipts, calendar drafts).
   - **Not in this PR:** sending from the console through Resend, follow-ups
     for a whole open house at once, call notes to to-dos (PR 7), drafts for
     members (S5b).
+- **PR 4 (briefing, member summary, questions; migration 0029 = three
+  switches, not yet on hosted):**
+  - **Daily briefing** (Today, "Write my briefing"): what needs attention
+    first and what's coming this week, from the person's own records:
+    overdue and next-7-day tasks, contingency removals and closings in 14
+    days, leads waiting for a first reply, tour requests, members waiting
+    for an answer. On demand only; nothing is emailed or stored (owner
+    decision 2026-11-12).
+  - **Member activity summary** (member page, "Summarize activity"): what
+    they've been looking at and asking about, what they seem to be looking
+    for, and next steps, from their saved homes (public listing facts),
+    searches, tour requests, homes they're pursuing and their last 10 portal
+    messages (owner decision 2026-11-12; phone numbers and emails blanked).
+    Describes homes, never the member; a summary with steering wording
+    isn't shown.
+  - **Questions about your work** (/assistant, "Ask about your work"):
+    plain questions about your own transactions, tasks, leads and messages,
+    answered with links to the records used; says so when the records can't
+    answer (for example market data).
+  - **How it's built:** our code reads the person's records under their own
+    row-level security (an agent sees their own work; the lead admin and
+    admins see more), numbers each record (D1, T4, L3…), computes the
+    numbers, and sends only that, with typed text as data and contact
+    details blanked. Never sent: emails, phone numbers, the sale price,
+    escrow numbers, message text (except the member summary's last 10),
+    documents. The answer cites records by number and our code turns them
+    into links; a number the assistant made up gets no link. Nothing is
+    stored; the usage log keeps metadata only.
+  - **Tests:** 10 for the record snapshot, 10 for the features (through the
+    pipeline with a scripted model: injected text stays data, made-up refs
+    dropped, steering questions and answers refused, wiring answers not
+    shown, member messages capped at 10 and redacted). Browser QA
+    `scripts/qa/s6b-summaries.mjs`: 28 checks pass on the local stack with
+    the fake Claude, including that an agent's briefing only covers their
+    own transaction and lead; the PR 2 (64) and PR 3 (42) scripts still
+    pass. Screenshots in `docs/screenshots/s6b-summaries/`.
+  - **After merge:** apply 0029 (three switch rows) on your OK, then
+    `packages/db/test/hosted-summaries-check.sql` (rolls back).
+  - **Not in this PR:** a morning email of the briefing, stored briefings,
+    questions about MLS market data (market updates come in PR 5).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

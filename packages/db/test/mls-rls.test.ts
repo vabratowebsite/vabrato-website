@@ -109,7 +109,7 @@ describe("MLS RLS", () => {
 
     it("reads offices and feature flags", async () => {
       expect(await t.as("anon", null, (q) => keys(q, "mls_offices", "office_key"))).toEqual(["O-VABRA"]);
-      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["ai_enabled", "ai_staff_contract_reader", "ai_staff_escrow_update", "ai_staff_lead_reply", "ai_staff_open_house_followup", "ai_staff_vendor_request", "cma_enabled", "full_data_enabled", "market_stats_enabled", "public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
+      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["ai_enabled", "ai_staff_contract_reader", "ai_staff_daily_briefing", "ai_staff_data_questions", "ai_staff_escrow_update", "ai_staff_lead_reply", "ai_staff_member_summary", "ai_staff_open_house_followup", "ai_staff_vendor_request", "cma_enabled", "full_data_enabled", "market_stats_enabled", "public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
     });
 
     it.each(["mls_listing_vow", "mls_price_events", "mls_listing_full", "mls_members", "mls_agent_access", "mls_sync_runs"])(
@@ -289,8 +289,11 @@ describe("MLS RLS", () => {
       expect(await t.query(`select key, enabled from feature_flags order by key`)).toEqual([
         { key: "ai_enabled", enabled: false },
         { key: "ai_staff_contract_reader", enabled: false },
+        { key: "ai_staff_daily_briefing", enabled: false },
+        { key: "ai_staff_data_questions", enabled: false },
         { key: "ai_staff_escrow_update", enabled: false },
         { key: "ai_staff_lead_reply", enabled: false },
+        { key: "ai_staff_member_summary", enabled: false },
         { key: "ai_staff_open_house_followup", enabled: false },
         { key: "ai_staff_vendor_request", enabled: false },
         { key: "cma_enabled", enabled: false },

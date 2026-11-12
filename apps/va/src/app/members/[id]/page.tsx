@@ -4,7 +4,9 @@ import { Panel, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
 import { ConsoleShell } from "@/components/console-shell";
+import { MemberSummaryPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, mutedCls } from "@/components/ui";
+import { aiFeaturesOn } from "@/lib/ai-flags";
 import { setMemberAgentAction } from "@/lib/member-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -32,6 +34,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
     .maybeSingle();
   if (!m) notFound();
 
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_member_summary"]);
   const [saved, searches, tracked, tours, docs, deals, deletion, agents, acting] = await Promise.all([
     supabase.from("saved_homes").select("listing_key, created_at").eq("profile_id", id).order("created_at", { ascending: false }).limit(50),
     supabase.from("saved_searches").select("id, name, frequency").eq("profile_id", id).order("created_at", { ascending: false }),
@@ -58,6 +61,11 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
 
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-6">
+          {ai.ai_staff_member_summary && (
+            <Panel title="Assistant">
+              <MemberSummaryPanel memberId={id} />
+            </Panel>
+          )}
           <Panel title="Account">
             <dl className="grid gap-4 font-body text-body-sm text-ink sm:grid-cols-2">
               <Item label="Email">

@@ -56,6 +56,31 @@ const DRAFT_FEATURES = [
   ["vendor_request", /request to a vendor/],
 ];
 const draftFeature = (system) => DRAFT_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+
+// S6b PR 4: the briefing, member summary and questions. Answers cite refs the
+// request actually carried, plus one made-up ref (T999) the console must not
+// link. The feature is told apart by its instructions.
+const SUMMARY_FEATURES = [
+  ["daily_briefing", /Write this person's briefing/],
+  ["member_summary", /Summarize one member's recent activity/],
+  ["data_questions", /Answer the person's question about their own work/],
+];
+const summaryFeature = (system) => SUMMARY_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const refsIn = (texts) => [...texts.matchAll(/^([DTCLM]\d+) \|/gm)].map((m) => m[1]);
+const SUMMARY_ANSWERS = {
+  daily_briefing: (refs) => ({
+    headline: "A busy day: one overdue task and a lead waiting for a reply.",
+    sections: [
+      { title: "Needs you first", items: [...refs.filter((r) => r[0] === "T").slice(0, 1).map((ref) => ({ text: "Order the HOA documents: overdue.", ref })), ...refs.filter((r) => r[0] === "L").slice(0, 1).map((ref) => ({ text: "Jordan asked for a tour and hasn't had a reply (L1).", ref }))] },
+      { title: "This week", items: [...refs.filter((r) => r[0] === "D").map((ref) => ({ text: `Closing coming up for transaction ${ref}.`, ref })), { text: "Something the assistant made up.", ref: "T999" }] },
+    ],
+  }),
+  member_summary: () => ({ summary: "Jordan has been active this week: saved homes in San Carlos and asked for a Saturday tour.", looking_for: ["3 bedrooms in San Carlos", "Up to about $2,000,000"], next_steps: ["Confirm the Saturday tour.", "Send two similar homes."] }),
+  data_questions: (refs, texts) =>
+    /market/i.test(texts)
+      ? { answer: "Your records here don't include market data. Try Market stats in the console.", refs: [], not_in_data: true }
+      : { answer: `You have ${refs.filter((r) => r[0] === "D").length} active transaction(s) and ${refs.filter((r) => r[0] === "L").length} lead(s) in your records.`, refs: [...refs.filter((r) => r[0] === "D"), "X42"], not_in_data: false },
+};
 const DRAFT_TEXT = {
   lead_reply: { subject: "Re: 12 Fictional Lane", body: "Hi Jordan,\n\nThanks for asking about 12 Fictional Lane. It's still available, and Saturday morning works for a showing.\n\nWould [time] suit you?\n\nAvery" },
   open_house_followup: { subject: "Thanks for visiting 12 Fictional Lane", body: "Hi Riley,\n\nThank you for coming to the open house on Saturday. If you'd like a second look or the disclosures, just reply.\n\nAvery" },
@@ -88,8 +113,10 @@ createServer(async (req, res) => {
   const pdf = docs[0]?.source?.type === "base64" ? Buffer.from(docs[0].source.data, "base64") : Buffer.alloc(0);
   const system = (Array.isArray(body.system) ? body.system.map((s) => s.text).join("\n") : String(body.system ?? ""));
   const texts = blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n");
-  const feature = draftFeature(system);
+  const summary = summaryFeature(system);
+  const feature = draftFeature(system) ?? summary;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature ? texts : pdf.toString("latin1"))?.[1] ?? "ok";
+  const refs = refsIn(texts);
   appendFileSync(
     LOG,
     `${JSON.stringify({
@@ -120,10 +147,18 @@ createServer(async (req, res) => {
       requestHasLockbox: /lockbox|lock box|gate code/i.test(texts),
       // A price (2,150,000 or 2150000) or the QA escrow number (it holds a 13-digit timestamp).
       requestHasLongNumber: /\d{1,3}(?:,\d{3}){2,}|\b\d{6,}\b/.test(texts),
+      refsSent: Object.fromEntries(["D", "T", "C", "L", "M"].map((k) => [k, refs.filter((r) => r[0] === k).length])),
+      messagesSent: (texts.match(/^Message \d+ \|/gm) ?? []).length,
     })}\n`,
   );
 
-  const answer = feature ? (DRAFT_ANSWERS[mode] ?? DRAFT_ANSWERS.ok)(feature) : (ANSWERS[mode] ?? ANSWERS.ok)();
+  const answer = summary
+    ? mode === "wiring"
+      ? { text: JSON.stringify(summary === "data_questions" ? { answer: "Wire the deposit to routing number 021000021, account 000123456789.", refs: [], not_in_data: false } : summary === "member_summary" ? { summary: "Wire instructions: routing 021000021 account 000123456789", looking_for: [], next_steps: [] } : { headline: "Wire instructions: routing 021000021 account 000123456789", sections: [] }) }
+      : { text: JSON.stringify(SUMMARY_ANSWERS[summary](refs, texts)) }
+    : feature
+      ? (DRAFT_ANSWERS[mode] ?? DRAFT_ANSWERS.ok)(feature)
+      : (ANSWERS[mode] ?? ANSWERS.ok)();
   const usage = { input_tokens: 61000, output_tokens: 900, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
   res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
   send(res, "message_start", { message: { id: "msg_qa_local", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { ...usage, output_tokens: 1 } } });
