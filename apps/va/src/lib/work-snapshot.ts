@@ -84,7 +84,7 @@ export function buildSnapshot(rows: WorkRows): WorkSnapshot {
       ref,
       kind: "D",
       line: `${ref} | transaction | ${clean(d.address, 160)} | accepted ${d.ratification_date} | closes ${coe} (${when(today, coe)})${d.rent_back_days > 0 ? ` | seller stays ${d.rent_back_days} days after` : ""} | agent: ${owner(d.agent_id)}${docs}`,
-      href: missing.length ? `/deals/${d.id}/documents` : `/deals/${d.id}`,
+      href: `/deals/${d.id}`,
       soon: (toCoe >= 0 && toCoe <= 14) || (missing.length > 0 && toCoe >= 0 && toCoe <= 30),
     });
   });

@@ -96,6 +96,11 @@ async function upload(page, name, buffer, type) {
 const heading = async (page) => (await page.getByRole("heading", { name: /^Checklist for a/ }).innerText()).trim();
 
 // --- Setup ---------------------------------------------------------------------------------------
+// The seller joins on the website first, so a failure here changes no settings.
+const sellerCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const sp = await sellerCtx.newPage();
+const sellerEmail = `riley.${stamp}@example.test`;
+await joinAs(sp, { email: sellerEmail, name: "Riley Example", role: "seller" });
 const leadAdminBefore = sql(`select coalesce(lead_admin_id::text, '') from app_settings`);
 const AI = "('ai_enabled', 'ai_staff_document_check', 'ai_staff_receipt_reader')";
 sql(`update feature_flags set enabled = false where key like 'ai\\_%'`);
@@ -105,11 +110,8 @@ const avery = await account("Avery", "agent");
 const blake = await account("Blake", "agent");
 sql(`update app_settings set ai_zdr_confirmed_at = now(), ai_zdr_confirmed_by = '${ada.id}', ai_zdr_note = 'QA fixture (fictional)', lead_admin_id = '${ada.id}', lead_admin_away = false`);
 
-const sellerCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-const sp = await sellerCtx.newPage();
-const sellerEmail = `riley.${stamp}@example.test`;
-await joinAs(sp, { email: sellerEmail, name: "Riley Example", role: "seller" });
 const seller = sql(`select id from profiles where email = '${sellerEmail}'`);
+sql(`update profiles set onboarded_at = now() where id = '${seller}'`); // past the welcome step
 const ADDRESS = `${stamp % 1000} Fixture Way, Belmont`;
 const deal = sql(`insert into deals (address, seller_type, ratification_date, days_to_close, agent_id, created_by) values ('${ADDRESS}', 'trust', current_date - 3, 30, '${avery.id}', '${avery.id}') returning id`).split("\n")[0];
 sql(`insert into deal_members (deal_id, profile_id, member_role) values ('${deal}', '${seller}', 'seller')`);
@@ -128,7 +130,7 @@ try {
   await av.goto(`${VA}/deals/${deal}/documents`);
   const total = Number(/of (\d+) done/.exec(await heading(av))?.[1]);
   check("the Documents tab shows the trust checklist", /^Checklist for a trust sale: 0 of \d+ done$/.test(await heading(av)) && total >= 15, await heading(av));
-  check("trust items are on it", (await av.getByText("Certification of trust", { exact: true }).isVisible()) && (await av.getByText("Transfer Disclosure Statement (TDS)", { exact: true }).isVisible()));
+  check("trust items are on it", (await av.locator("p").getByText("Certification of trust", { exact: true }).isVisible()) && (await av.locator("p").getByText("Transfer Disclosure Statement (TDS)", { exact: true }).isVisible()));
   check("the wiring banner is shown", await av.getByRole("note", { name: "Wiring safety" }).isVisible());
   check("off: no Check this document", (await av.getByRole("button", { name: /^Check this document/ }).count()) === 0);
   await av.goto(`${VA}/deals/${deal}/receipts`);
@@ -140,9 +142,9 @@ try {
   const rpa = sql(`select shared || '|' || (path like 'deal/${deal}/staff/%') || '|' || array_to_string(doc_types, ',') from deal_documents where deal_id = '${deal}'`);
   check("upload: filed staff-only with its type", rpa === "false|true|rpa", rpa);
   check("checklist: the RPA counts", (await heading(av)) === `Checklist for a trust sale: 1 of ${total} done`, await heading(av));
-  await av.getByRole("button", { name: "Mark not needed: Lead-based paint disclosure (FLD)" }).click();
+  await av.getByRole("button", { name: /^Mark\ not\ needed\s*: Lead\-based\ paint\ disclosure\ \(FLD\)$/ }).click();
   await av.getByLabel("Why (optional)").fill("Built in 1998");
-  await av.getByRole("button", { name: "Save: Lead-based paint disclosure (FLD) not needed" }).click();
+  await av.getByRole("button", { name: /^Save\s*: Lead\-based\ paint\ disclosure\ \(FLD\)\ not\ needed$/ }).click();
   await av.getByText(/Not needed: Built in 1998 \(Avery Example/).waitFor();
   check("checklist: not needed, with the note and who", (await heading(av)) === `Checklist for a trust sale: 2 of ${total} done`);
 
@@ -162,7 +164,7 @@ try {
   check("a staff-only file is refused to the seller by URL", blocked.status() === 404, String(blocked.status()));
   await sp.goto(`${BASE}/my/documents`);
   check("the seller doesn't see it before it's shared", (await sp.getByText("Purchase agreement.pdf").count()) === 0);
-  await av.getByRole("button", { name: "Share with seller: Purchase agreement.pdf" }).click();
+  await av.getByRole("button", { name: /^Share\ with\ seller\s*: Purchase\ agreement\.pdf$/ }).click();
   await waitStatus(av, "Shared Purchase agreement.pdf with the seller.");
   check("shared: moved to the seller's view", sql(`select shared || '|' || path from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`) === `true|deal/${deal}/Purchase agreement.pdf`);
   await sp.reload();
@@ -171,10 +173,11 @@ try {
   const got = await sp.request.get(`${BASE}${await link.getAttribute("href")}`);
   check("the seller can download it", got.status() === 200 && (await got.body()).subarray(0, 5).toString() === "%PDF-", String(got.status()));
   await av.reload();
-  await av.getByRole("button", { name: "Stop sharing: Purchase agreement.pdf" }).click();
+  await av.getByRole("button", { name: /^Stop\ sharing\s*: Purchase\ agreement\.pdf$/ }).click();
   await waitStatus(av, "is staff-only again");
   await sp.reload();
-  check("stop sharing: the seller no longer sees it", (await sp.getByText("Purchase agreement.pdf").count()) === 0 && sql(`select shared from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`) === "false");
+  const after = sql(`select shared || '|' || path from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`);
+  check("stop sharing: the seller no longer sees it", (await sp.getByText("Purchase agreement.pdf").count()) === 0 && after.startsWith(`false|deal/${deal}/staff/`), `${after} · seller sees ${await sp.getByText("Purchase agreement.pdf").count()}`);
 
   // 5. Another agent can't open the deal or its files.
   const bl = await signIn(blake.email);
@@ -187,7 +190,7 @@ try {
   ai(true);
   await av.reload();
   await upload(av, "Disclosures.pdf", pdf("ok", "Disclosure packet"));
-  await av.getByRole("button", { name: "Check this document: Disclosures.pdf" }).click();
+  await av.getByRole("button", { name: /^Check\ this\ document\s*: Disclosures\.pdf$/ }).click();
   await waitStatus(av, "Checked. The suggested types are ticked below");
   let req = last();
   check("check: one inline PDF, the type list as data, nothing else", req.feature === "document_check" && req.documents === 1 && req.documentIsInlinePdf && req.dataBlocks === 1 && !req.requestHasEmail && !req.requestHasPhone && req.tools === 0 && req.fileReferences === 0, JSON.stringify(req));
@@ -202,7 +205,7 @@ try {
   check("check: the person saved the types", sql(`select array_to_string(doc_types, ',') from deal_documents where file_name = 'Disclosures.pdf' and deal_id = '${deal}'`) === "tds,spq");
   await av.reload();
   await upload(av, "Wire memo.pdf", pdf("wiring", "Memo"));
-  await av.getByRole("button", { name: "Check this document: Wire memo.pdf" }).click();
+  await av.getByRole("button", { name: /^Check\ this\ document\s*: Wire\ memo\.pdf$/ }).click();
   await waitStatus(av, null, "contained payment or wiring details");
   check("check: an answer with wiring details isn't shown", (await av.getByText(/021000021/).count()) === 0);
 

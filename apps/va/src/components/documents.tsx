@@ -268,9 +268,9 @@ export function DocItem({ dealId, source, id, name, href, meta, types, shared, c
               ))}
             </ul>
           ) : (
-            <p className={`${mutedCls} mt-1`}>Nothing to look at found.</p>
+            <p className="mt-1 font-body text-body-sm text-ink">Nothing to look at found.</p>
           )}
-          <p className={`${mutedCls} mt-2`}>Written by the assistant: it can be wrong, so check the document. Nothing from this check is saved.</p>
+          <p className="mt-2 font-body text-body-sm text-ink">Written by the assistant: it can be wrong, so check the document. Nothing from this check is saved.</p>
         </section>
       )}
       {editing && <TypesEditor key={editing.join(",")} initial={editing} saveLabel={source === "unfiled" ? "File it" : "Save types"} onSave={save} onCancel={() => setEditing(null)} />}

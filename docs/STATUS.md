@@ -863,7 +863,7 @@ document checks, receipts, calendar drafts).
     the seller reads shared files, never the staff folder), 9 checklist
     tests, 18 for the console (file checks, paths, what each feature sends,
     a document that tries to give the assistant orders, the briefing).
-    Browser QA `scripts/qa/s6b-documents.mjs`: QA_RESULT.
+    Browser QA `scripts/qa/s6b-documents.mjs`: 38 checks pass on the local stack with the fake Claude (incl. the seller seeing a shared file in `/my/documents` and not after "Stop sharing", another agent getting a 404, axe at 1440 and 390 px); the PR 2–6 scripts still pass (64, 42, 28, 34, 24). Screenshots in `docs/screenshots/s6b-documents/`.
   - **After merge:** apply 0032 on your OK, then
     `packages/db/test/hosted-documents-check.sql` (rolled back; passes
     locally).

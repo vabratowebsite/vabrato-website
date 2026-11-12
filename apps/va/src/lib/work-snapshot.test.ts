@@ -47,11 +47,11 @@ describe("the work snapshot", () => {
     expect(line("M1")).toMatch(/Dana \| waiting since 2026-03-19 \(1 day ago\) \| 2 unread/);
   });
 
-  it("missing documents (S6b PR 7a): counted by our code, linked to the Documents tab, in the briefing within 30 days of closing", () => {
+  it("missing documents (S6b PR 7a): counted by our code, on the deal's line, in the briefing within 30 days of closing", () => {
     const s = buildSnapshot(rows({ missingDocs: { [DEAL]: ["Agency disclosure (AD)", "Preliminary title report"] } }));
     const d1 = s.items.find((i) => i.ref === "D1")!;
     expect(d1.line).toMatch(/\| documents missing: 2 \(Agency disclosure \(AD\); Preliminary title report\)$/);
-    expect(d1.href).toBe(`/deals/${DEAL}/documents`);
+    expect(d1.href).toBe(`/deals/${DEAL}`);
     expect(d1.soon).toBe(true);
     expect(s.stats).toContain("Active transactions with documents missing from their checklist: 1.");
     const later = buildSnapshot(rows({ today: "2026-02-20", deals: [{ ...rows().deals[0]!, ratification_date: "2026-02-20", days_to_close: 60 }], missingDocs: { [DEAL]: ["Agency disclosure (AD)"] } }));
