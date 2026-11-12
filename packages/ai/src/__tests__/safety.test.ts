@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { costMicros } from "../models";
+import { costMicros, pdfPageLimit } from "../models";
 import { fairHousingBlocks, linkHosts, paymentInstructionMatches, removeForeignLinks, removeForeignLinksDeep, wrapData } from "../safety";
 import { INJECTIONS } from "./injections";
 
@@ -78,5 +78,10 @@ describe("Fair Housing and cost helpers", () => {
     expect(costMicros("claude-opus-5-5", usage)).toBe(4_000_000 + 2_000_000 + 200_000);
     expect(costMicros("claude-opus-4-8", usage)).toBe(5_000_000 + 2_500_000 + 500_000);
     expect(costMicros("some-future-model", usage)).toBe(costMicros("claude-opus-4-8", usage));
+  });
+
+  it("PDF page limit: 600 for the 1M-context models we use, the lower of model and fallback, 100 if unknown", () => {
+    expect(pdfPageLimit()).toBe(600);
+    expect(pdfPageLimit("claude-opus-5-5", "some-200k-model")).toBe(100);
   });
 });

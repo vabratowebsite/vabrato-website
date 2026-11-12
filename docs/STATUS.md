@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a (deal documents, seller-type checklist, document check, receipt reader; 0032) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -505,19 +505,28 @@ document checks, receipts, calendar drafts).
      confirmed by a person before the schedule engine builds the timeline.
   3. Drafts: client emails (e.g. a weekly escrow update from the deal's
      tasks), lead replies, open-house follow-ups, vendor requests. (Call
-     notes to to-dos moved to PR 7, owner decision 2026-11-12.)
+     notes to to-dos moved to PR 8, owner decision 2026-11-12.)
   4. Daily briefing, member activity summary, plain questions about the
      console's data.
   5. Listing launch kit and printable listing and buyer presentations.
   6. Market update (through Mark's content approval; public only with
      `public_stats`) and CMA write-up, on test data behind the sold-data
      switches. (Split from 5, owner decision 2026-11-12.)
-  7. Document checks: missing documents by seller type, inspection report
-     to repair request, what changed in a counter-offer, receipts.
+  7. Document checks, split in two (owner decision 2026-11-12):
+     - 7a: a Documents tab on each deal (staff-only until shared with the
+       seller), the seller-type checklist with what's missing (also on
+       Today and in the briefing; the seller's own uploads count once
+       tagged), "Check this document", and the receipt reader.
+     - 7b: inspection report to repair items, then a contractor bid list or
+       a draft repair request/response letter (the agent chooses); what
+       changed in a counter-offer or addendum; "Check unchecked documents"
+       with the number of calls shown and a confirmation.
   8. Appointment drafts (calendar file first; Google Calendar once that
      connection is built), and call notes to to-dos and a follow-up draft.
   9. QA: screens, accessibility, and an optional live test run against the
      real model (costs money; only with approval).
+  After S6b, a separate integrations PR: Google sign-in for Calendar and
+  Drive, plus Dropbox (receipt import from a folder).
 - **PR 1 (foundations, migration 0026):**
   - `packages/ai` is the only code that calls the model (ESLint and a guard
     test enforce it; nothing on public pages or in client components may
@@ -675,7 +684,7 @@ document checks, receipts, calendar drafts).
     scheduled. Everything rolled back: no drafts, test accounts, leads,
     deals, vendors or queued emails left, every AI switch off.
   - **Not in this PR:** sending from the console through Resend, follow-ups
-    for a whole open house at once, call notes to to-dos (PR 7), drafts for
+    for a whole open house at once, call notes to to-dos (PR 8), drafts for
     members (S5b).
 - **PR 4 (briefing, member summary, questions; migration 0029 = three
   switches, merged as #32):**
@@ -802,6 +811,137 @@ document checks, receipts, calendar drafts).
     off, as are `market_stats_enabled`, `cma_enabled` and `public_stats`.
   - **Not in this PR:** scheduled or emailed market updates, any price
     suggestion.
+- **PR 7a (deal documents, checklist, document check, receipt reader;
+  migration 0032, not yet on hosted; amended after owner review
+  2026-11-13):**
+  - **Documents tab** on each deal (with the wiring banner):
+    - Staff upload PDFs, JPGs or PNGs (20 MB at most, checked by content).
+      Files go from the browser straight to storage, never through a server
+      action.
+    - Uploads go to a staff-only folder (`deal/{id}/staff/`) until someone
+      uses "Share with seller" (owner decision 2026-11-12). It asks first:
+      "Never share wiring or bank instructions here."
+    - "Stop sharing" fails safe: the seller's copy is removed and confirmed
+      gone before the file is recorded as staff-only; otherwise nothing
+      changes and it says the seller can still see it.
+    - Files open through 60-second signed links. Storage keys use a
+      cleaned-up name; the list shows the name as uploaded.
+    - Files in the deal's folder without a record show under "Not filed
+      yet"; top-level ones say "The seller can see this".
+    - Share, stop sharing and delete are written to `staff_audit`.
+    - Until 0032 is applied, the tab shows only "Documents aren't set up
+      yet": no uploader, Share or file list. Today and the briefing skip
+      missing documents.
+  - **Checklist** for the deal's seller type, in code
+    (`packages/lib/src/deal-documents.ts`). It's a **draft for Mark's
+    review**; rows marked (confirm) are new or changed on 2026-11-13.
+    - Required, every sale:
+      - purchase agreement (RPA)
+      - agency disclosure (AD)
+      - Statewide Buyer and Seller Advisory (SBSA)
+      - Agent Visual Inspection Disclosure (AVID)
+      - Natural Hazard Disclosure (NHD)
+      - water-conserving fixtures and carbon monoxide notice (WCMD,
+        confirm)
+      - preliminary title report
+      - contingency removal (CR)
+      - verification of property condition (VP)
+    - By seller type:
+      - Standard: Transfer Disclosure Statement (TDS); Seller Property
+        Questionnaire (SPQ, confirm).
+      - Trust: TDS or Exempt Seller Disclosure (ESD) (confirm); SPQ
+        (confirm); certification of trust; Trust Advisory (TA, confirm).
+      - Successor trustee: TDS or ESD (confirm); SPQ or ESD (confirm);
+        certification of trust; the settlor's death certificate; TA
+        (confirm).
+      - Probate: ESD in place of TDS and SPQ (confirm); Letters
+        Testamentary or Letters of Administration; Probate Advisory (PA);
+        probate purchase agreement addendum (PAPA, confirm); probate
+        listing addendum (PLA, confirm).
+    - If they apply (listed separately):
+      - counter offers and addenda
+      - water heater and smoke detector statement (WHSD, confirm)
+      - lead-based paint disclosure (FLD, if built before 1978)
+      - home and pest inspection reports
+      - probate court confirmation or IAEA notice
+    - Also if they apply, flagged for Mark to keep or drop (confirm):
+      - listing agreement (RLA)
+      - Seller's Advisory (SA)
+      - Fair Housing advisory (FHDA)
+      - PRBS
+      - Wire Fraud Advisory (WFA)
+      - SFLS
+      - seller withholding (FIRPTA / CA 593)
+      - HOA documents
+      - county advisory
+    - Counting:
+      - "N of M done" counts required items, plus an if-applies item once
+        it's on file or marked not needed.
+      - "Missing" counts required items only.
+      - Either/or items are satisfied by either document.
+      - A file counts once its type is set (a combined packet can be
+        several types). "On file" means filed, not signed or complete; the
+        panel says so.
+      - The seller's own portal uploads count once staff tag them for the
+        deal (owner decision 2026-11-12).
+  - **Missing documents** on Today (a panel per sale, no AI) and in the
+    daily briefing (each deal's missing items; within 30 days of closing it
+    is in the briefing). Our code counts them.
+  - **Check this document** (switch `ai_staff_document_check`):
+    - It sends that one file, the seller type and the list of document
+      types.
+    - It suggests which types the file is (unknown ones dropped), whether
+      it's signed, and up to 10 things to look at with pages (missing
+      initials, blanks, dates that don't match).
+    - The person saves the types; the issues are shown, not stored.
+      Answers with wiring details are refused.
+    - PDFs over the model's page limit are stopped with "Split this file".
+      The limit is 600 pages for both our models, per Anthropic's PDF page
+      read on 2026-11-13; it's in `packages/ai/src/models.ts`. An API "too
+      large" error gives the same message.
+    - The Documents and Receipts pages allow 300 seconds.
+  - **Receipt reader** (switch `ai_staff_receipt_reader`):
+    - On Receipts (now with the wiring banner), a receipt file can be
+      attached, also with the assistant off.
+    - "Read it" fills vendor (80 characters at most), total, date and a
+      category for the person to check before adding.
+    - Anything with 8 or more digits in a row (a card or account number) is
+      dropped.
+    - Adding a receipt checks its file is still there ("Upload the receipt
+      again" if the tidy-up removed it).
+    - The file stays with the receipt (deleted with it); unsaved uploads
+      are tidied after an hour.
+  - **Database:** 0032 adds:
+    - the two switches;
+    - `deal_documents`, `deal_member_document_types` and
+      `deal_checklist_marks` (staff with deal access only; the seller sees
+      none of them);
+    - path allowlist: a file is either `deal/{id}/{file}` (shared) or
+      `deal/{id}/staff/{file}` (not), nothing else;
+    - a storage read allowlist: the seller reads only files directly in
+      `deal/{id}/`, staff with deal access read everything under it;
+    - `log_deal_document_action` for the audit log.
+  - **Tests:**
+    - 16 database tests (`deal-documents.test.ts`), including a third
+      folder, `Staff/` and deeper paths refused to the seller, and the
+      audit function.
+    - 11 checklist tests (either/or and if-applies rules); 22 console tests
+      (file checks, paths, page counts, original names, what each feature
+      sends, a document that tries to give the assistant orders, receipt
+      digit runs, missing documents before 0032, the briefing); PDF limit
+      and "too large" tests in `packages/ai`.
+    - Browser QA `scripts/qa/s6b-documents.mjs`: 47 checks pass on the
+      local stack with the fake Claude. Includes "not set up yet" with the
+      table hidden, sharing with the seller and back, stop sharing refused
+      safely when the seller's copy can't be removed, the audit rows,
+      another agent getting a 404, and axe at 1440 and 390 px.
+    - The PR 2–6 scripts still pass (64, 42, 28, 34, 24). Screenshots are
+      in `docs/screenshots/s6b-documents/`.
+  - **After merge:** apply 0032 on your OK, then
+    `packages/db/test/hosted-documents-check.sql` (rolled back; passes
+    locally).
+  - **Not in this PR:** inspection reports and counter-offers (7b);
+    Drive/Dropbox import (integrations PR after S6b).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches
@@ -927,8 +1067,9 @@ apps/web and apps/va (`pnpm test`).
   CLAUDE.md). Needs: Postmark vs SendGrid Inbound Parse decision + a deployed
   webhook URL. Writes to `inbound_emails` / `property_events` (service-role
   only — schema is ready).
-- Integrations: Google Calendar sync, Google Drive / Dropbox receipt import
-  (va only), AI OCR for receipts (va only, behind a flag).
+- Integrations (a separate PR after S6b, owner decision 2026-11-12): Google
+  Calendar sync, Google Drive / Dropbox receipt import (va only). The AI
+  receipt reader is S6b PR 7a.
 - Seller/buyer notification recipients beyond sellers; deal_vendors linking UI.
 
 ## Environment (local values are NOT in git)

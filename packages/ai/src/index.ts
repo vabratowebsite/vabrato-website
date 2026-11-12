@@ -7,5 +7,5 @@ export { ModelError, type Citation, type Effort, type ModelClient, type ModelPar
 export { anthropicClient } from "./anthropic";
 export { supabaseAiStore, type AiStore, type FinishInfo } from "./store";
 export { listingForAi, stripNeverSend } from "./listing-fields";
-export { FALLBACK_MODEL, MODEL, costMicros, type Usage } from "./models";
+export { FALLBACK_MODEL, MODEL, costMicros, pdfPageLimit, type Usage } from "./models";
 export { fairHousingBlocks, paymentInstructionMatches, removeForeignLinks, wrapData } from "./safety";

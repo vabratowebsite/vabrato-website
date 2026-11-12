@@ -5,6 +5,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { BriefingPanel } from "@/components/summary-panels";
 import { mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
+import { loadMissing } from "@/lib/documents";
 import { fmtDuration, medianDuration } from "@/lib/leads";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -37,6 +38,8 @@ export default async function Today() {
     supabase.rpc("lead_admin_away_now"),
     supabase.from("notifications").select("created_at, sent_at").eq("template_key", "staff_new_lead").gte("created_at", since30).limit(500),
   ]);
+  const { data: activeDeals } = await supabase.from("deals").select("id, address, seller_type").eq("status", "active").order("ratification_date").limit(100);
+  const missingDocs = await loadMissing(supabase, activeDeals ?? []);
   const medianReply = medianDuration((replies.data ?? []).map((r) => ({ start: r.created_at, end: r.first_reply_at })));
   const medianMail = medianDuration((mails.data ?? []).map((m) => ({ start: m.created_at, end: m.sent_at })));
   const routedTo = routing.data ? (away.data ? (routing.data.backup_admin_id ?? routing.data.lead_admin_id) : (routing.data.lead_admin_id ?? routing.data.backup_admin_id)) : null;
@@ -56,6 +59,24 @@ export default async function Today() {
       {ai.ai_staff_daily_briefing && (
         <Panel title="Your briefing">
           <BriefingPanel />
+        </Panel>
+      )}
+
+      {missingDocs.length > 0 && (
+        <Panel title={`Missing documents (${missingDocs.length} ${missingDocs.length === 1 ? "sale" : "sales"})`}>
+          <ul className="divide-y divide-line font-body text-body-sm text-ink">
+            {missingDocs.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                <Link href={`/deals/${d.id}/documents`} className="font-medium text-navy underline">
+                  {d.address}
+                </Link>
+                <span className="text-muted">
+                  {d.missing.length} of {d.total} missing: {d.missing.slice(0, 3).join(", ")}
+                  {d.missing.length > 3 ? ", …" : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
         </Panel>
       )}
 

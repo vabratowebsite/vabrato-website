@@ -1,5 +1,6 @@
 import type { InputPart } from "@vabrato/ai";
 import { computeCoe, type SupabaseDb } from "@vabrato/lib";
+import { loadMissing } from "./documents";
 import { firstName } from "./draft-kinds";
 import { redactContacts } from "./drafts";
 
@@ -12,7 +13,7 @@ import { redactContacts } from "./drafts";
 // Each record gets a ref the model may cite (D1, T4, C2, L3, M2) and our
 // code turns refs back into links, so the model never writes a link.
 // Never included: email addresses, phone numbers, prices, escrow numbers,
-// message text, documents.
+// message text, document contents (only which checklist items are missing).
 
 export type RefKind = "D" | "T" | "C" | "L" | "M";
 
@@ -44,6 +45,8 @@ export interface WorkRows {
   threads: { member_id: string; name: string | null; waiting_since: string; unread: number }[];
   /** Staff names by id, for owners. */
   people: Record<string, string | null>;
+  /** Missing checklist documents by deal id (labels), computed by our code (S6b PR 7a). */
+  missingDocs?: Record<string, string[]>;
 }
 
 const DAY = 86_400_000;
@@ -75,12 +78,14 @@ export function buildSnapshot(rows: WorkRows): WorkSnapshot {
     dealRef.set(d.id, ref);
     const coe = computeCoe(d.ratification_date, d.days_to_close);
     const toCoe = days(today, coe);
+    const missing = rows.missingDocs?.[d.id] ?? [];
+    const docs = missing.length ? ` | documents missing: ${missing.length} (${missing.slice(0, 5).join("; ")}${missing.length > 5 ? "; …" : ""})` : "";
     items.push({
       ref,
       kind: "D",
-      line: `${ref} | transaction | ${clean(d.address, 160)} | accepted ${d.ratification_date} | closes ${coe} (${when(today, coe)})${d.rent_back_days > 0 ? ` | seller stays ${d.rent_back_days} days after` : ""} | agent: ${owner(d.agent_id)}`,
+      line: `${ref} | transaction | ${clean(d.address, 160)} | accepted ${d.ratification_date} | closes ${coe} (${when(today, coe)})${d.rent_back_days > 0 ? ` | seller stays ${d.rent_back_days} days after` : ""} | agent: ${owner(d.agent_id)}${docs}`,
       href: `/deals/${d.id}`,
-      soon: toCoe >= 0 && toCoe <= 14,
+      soon: (toCoe >= 0 && toCoe <= 14) || (missing.length > 0 && toCoe >= 0 && toCoe <= 30),
     });
   });
 
@@ -151,6 +156,7 @@ export function buildSnapshot(rows: WorkRows): WorkSnapshot {
     `Open tasks due in the next 30 days or overdue: ${items.filter((i) => i.kind === "T").length}; overdue: ${rows.tasks.filter((t) => !t.done && dealRef.has(t.deal_id) && t.due_date < today).length}.`,
     `Leads in the last 90 days: ${leads.length}${rows.leads.length > CAPS.leads ? ` (first ${CAPS.leads} shown)` : ""}${byKind ? ` (${byKind})` : ""}; with no reply yet: ${noReply.length}; median time to first reply: ${median === null ? "no replies yet" : fmtDuration(median)}.`,
     `Member message threads waiting for a reply: ${rows.threads.length}.`,
+    ...(rows.missingDocs ? [`Active transactions with documents missing from their checklist: ${deals.filter((d) => (rows.missingDocs?.[d.id] ?? []).length > 0).length}.`] : []),
   ];
   return { today, items, stats, links: Object.fromEntries(items.map((i) => [i.ref, i.href])) };
 }
@@ -185,7 +191,7 @@ export async function loadWork(supabase: SupabaseDb, today: string): Promise<Wor
   const horizon = new Date(Date.parse(`${today}T00:00:00Z`) + 30 * DAY).toISOString().slice(0, 10);
   const since = new Date(Date.parse(`${today}T00:00:00Z`) - 90 * DAY).toISOString();
   const [{ data: deals }, { data: leads }, { data: messages }] = await Promise.all([
-    supabase.from("deals").select("id, address, ratification_date, days_to_close, rent_back_days, agent_id").eq("status", "active").order("ratification_date").limit(CAPS.deals + 1),
+    supabase.from("deals").select("id, address, seller_type, ratification_date, days_to_close, rent_back_days, agent_id").eq("status", "active").order("ratification_date").limit(CAPS.deals + 1),
     supabase.from("leads").select("id, kind, name, status, created_at, first_reply_at, assigned_to, tour_status, listing_key").gte("created_at", since).order("created_at", { ascending: false }).limit(CAPS.leads + 1),
     supabase.from("messages").select("member_id, sender_id, created_at, read_at").order("created_at", { ascending: false }).limit(500),
   ]);
@@ -201,6 +207,7 @@ export async function loadWork(supabase: SupabaseDb, today: string): Promise<Wor
   const personIds = [...new Set([...(deals ?? []).map((d) => d.agent_id), ...(leads ?? []).map((l) => l.assigned_to), ...waiting.map(([id]) => id)].filter((x): x is string => Boolean(x)))];
   const { data: people } = personIds.length ? await supabase.from("profiles").select("id, full_name").in("id", personIds) : { data: [] };
   const names = Object.fromEntries((people ?? []).map((p) => [p.id, p.full_name]));
+  const missing = await loadMissing(supabase, (deals ?? []).slice(0, CAPS.deals));
 
   return {
     today,
@@ -210,6 +217,7 @@ export async function loadWork(supabase: SupabaseDb, today: string): Promise<Wor
     leads: leads ?? [],
     threads: waiting.map(([member_id, t]) => ({ member_id, name: names[member_id] ?? null, waiting_since: t.since, unread: t.unread })),
     people: names,
+    missingDocs: Object.fromEntries(missing.map((m) => [m.id, m.missing])),
   };
 }
 

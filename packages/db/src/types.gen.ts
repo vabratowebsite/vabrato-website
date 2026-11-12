@@ -561,6 +561,45 @@ export type Database = {
         }
         Relationships: []
       }
+      deal_checklist_marks: {
+        Row: {
+          deal_id: string
+          item_key: string
+          marked_at: string
+          marked_by: string | null
+          note: string | null
+        }
+        Insert: {
+          deal_id: string
+          item_key: string
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+        }
+        Update: {
+          deal_id?: string
+          item_key?: string
+          marked_at?: string
+          marked_by?: string | null
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_checklist_marks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_checklist_marks_marked_by_fkey"
+            columns: ["marked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_contingencies: {
         Row: {
           deal_id: string
@@ -592,6 +631,109 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_documents: {
+        Row: {
+          content_type: string
+          created_at: string
+          deal_id: string
+          doc_types: string[]
+          file_name: string
+          id: string
+          path: string
+          shared: boolean
+          size_bytes: number
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          deal_id: string
+          doc_types?: string[]
+          file_name: string
+          id?: string
+          path: string
+          shared?: boolean
+          size_bytes: number
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          deal_id?: string
+          doc_types?: string[]
+          file_name?: string
+          id?: string
+          path?: string
+          shared?: boolean
+          size_bytes?: number
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_documents_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deal_member_document_types: {
+        Row: {
+          deal_id: string
+          doc_types: string[]
+          member_document_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          deal_id: string
+          doc_types?: string[]
+          member_document_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          deal_id?: string
+          doc_types?: string[]
+          member_document_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_member_document_types_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_member_document_types_member_document_id_fkey"
+            columns: ["member_document_id"]
+            isOneToOne: false
+            referencedRelation: "member_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_member_document_types_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2135,6 +2277,10 @@ export type Database = {
       has_vow_access: { Args: never; Returns: boolean }
       is_acting_lead_admin: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_deal_seller_document: {
+        Args: { p_deal: string; p_document: string }
+        Returns: boolean
+      }
       is_staff: { Args: never; Returns: boolean }
       lead_admin_away_now: { Args: never; Returns: boolean }
       lead_routing_unset: { Args: never; Returns: boolean }
@@ -2184,6 +2330,10 @@ export type Database = {
           cumulative_days_on_market: number
           original_list_price: number
         }[]
+      }
+      log_deal_document_action: {
+        Args: { p_action: string; p_deal: string; p_document: string; p_file: string }
+        Returns: undefined
       }
       mark_alerts_seen: { Args: never; Returns: number }
       mark_lead_replied: { Args: { p_lead: string }; Returns: undefined }
@@ -2370,6 +2520,7 @@ export type Database = {
         Args: { p_full_name: string; p_phone: string | null }
         Returns: undefined
       }
+      valid_doc_types: { Args: { p: string[] }; Returns: boolean }
       verify_agent_access: { Args: { p_email: string; p_office: string; p_profile: string }; Returns: Json }
     }
     Enums: {

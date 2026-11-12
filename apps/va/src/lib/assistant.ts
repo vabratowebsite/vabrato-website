@@ -87,6 +87,18 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "On a CMA: a plain-language summary of the comparable sales and our range, for the homeowner. A comparison of recent sales, never an appraisal or the assistant's own value.",
     where: { href: "/cmas", label: "CMAs" },
   },
+  {
+    flag: "ai_staff_document_check",
+    name: "Document check",
+    what: "On a transaction's Documents tab: sends one file to the assistant, which suggests which checklist documents it is and points out missing signatures, initials or blanks, with pages. You save the types; nothing from the check is kept.",
+    where: { href: "/deals", label: "Deals" },
+  },
+  {
+    flag: "ai_staff_receipt_reader",
+    name: "Receipt reader",
+    what: "On a transaction's Receipts tab: reads an attached receipt into vendor, total, date and a category. You check the values and add the receipt; card and account numbers are never read out.",
+    where: { href: "/deals", label: "Deals" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";
