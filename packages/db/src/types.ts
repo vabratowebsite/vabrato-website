@@ -143,3 +143,15 @@ export interface MarketStats {
   market: { active: number; pending: number; median_list_price: number | null; months_of_inventory: number | null };
   by_month: { month: string; sold: number; median_price: number | null }[];
 }
+
+export type AiRun = Tables["ai_runs"]["Row"];
+/** ai_begin(feature, deal) (0026). */
+export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "daily_requests" | "daily_tokens" | "monthly_budget" };
+/** ai_usage_today() (0026). */
+export interface AiUsageToday {
+  enabled: boolean;
+  requests: number;
+  tokens: number;
+  requests_limit: number;
+  tokens_limit: number;
+}

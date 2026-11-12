@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 // packages/db is not scanned: it describes every table (generated types),
 // which is schema, not data access.
-const SCANNED = ["apps/web", "apps/mobile", "packages/ui", "packages/lib"];
+const SCANNED = ["apps/web", "apps/mobile", "packages/ui", "packages/lib", "packages/ai"];
 const FORBIDDEN = [/@vabrato\/mls\/full/, /mls\/src\/(levels\/)?full/, /\bmls_listing_full\b/, /\bmls_members\b/, /\bprojectFull\b/, /\bprojectMember\b/];
 
 function* sourceFiles(dir: string): Generator<string> {
