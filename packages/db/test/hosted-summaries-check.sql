@@ -3,7 +3,7 @@
 -- from one update attempted as a signed-in user inside a block that always
 -- rolls back. No model is called.
 --
--- Expected (2026-11-12):
+-- Expected, and seen on hosted (2026-11-12):
 --   flags "ai_staff_daily_briefing=false,ai_staff_data_questions=false,ai_staff_member_summary=false"
 --   authenticated_update "denied" (only admins, through set_ai_flag)
 do $$

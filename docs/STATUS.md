@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 (daily briefing, member activity summary, questions about your work; 0029) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -676,7 +676,7 @@ document checks, receipts, calendar drafts).
     for a whole open house at once, call notes to to-dos (PR 7), drafts for
     members (S5b).
 - **PR 4 (briefing, member summary, questions; migration 0029 = three
-  switches, not yet on hosted):**
+  switches, merged as #32):**
   - **Daily briefing** (Today, "Write my briefing"): what needs attention
     first and what's coming this week, from the person's own records:
     overdue and next-7-day tasks, contingency removals and closings in 14
@@ -711,8 +711,11 @@ document checks, receipts, calendar drafts).
     the fake Claude, including that an agent's briefing only covers their
     own transaction and lead; the PR 2 (64) and PR 3 (42) scripts still
     pass. Screenshots in `docs/screenshots/s6b-summaries/`.
-  - **After merge:** apply 0029 (three switch rows) on your OK, then
-    `packages/db/test/hosted-summaries-check.sql` (rolls back).
+  - **On hosted (2026-11-12):** 0029 applied after checking that main's
+    file matched the tested one. `hosted-summaries-check.sql` (rolled back)
+    passed: the three switches exist and are off, and a signed-in user
+    can't turn one on directly. The security advisor shows nothing new
+    (0029 only adds rows). All nine AI switches on hosted are off.
   - **Not in this PR:** a morning email of the briefing, stored briefings,
     questions about MLS market data (market updates come in PR 5).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
