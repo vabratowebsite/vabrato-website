@@ -1007,7 +1007,12 @@ document checks, receipts, calendar drafts).
     - 4 action tests (another deal's report refused).
     - `lib/numbers.ts` is now shared with market updates. The existing
       guard test keeps the Files API out of the Claude client.
-    - Browser QA `scripts/qa/s6b-repairs.mjs`: QA_RESULT.
+    - Browser QA `scripts/qa/s6b-repairs.mjs`: 36 checks pass on the local
+      stack with the fake Claude (incl. a tampered stored list rebuilt at
+      approval, invented and spelled-out amounts blocked, an agent without
+      deal access getting a 404, axe at 1440 and 390 px). The 7a and PR 2–6
+      scripts still pass (47, 64, 42, 28, 34, 24). Screenshots in
+      `docs/screenshots/s6b-repairs/`.
   - **After merge:** apply 0033 on your OK, then
     `packages/db/test/hosted-repairs-check.sql` (rolled back; passes
     locally).

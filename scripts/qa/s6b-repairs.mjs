@@ -110,7 +110,7 @@ const deal = sql(`insert into deals (address, seller_type, ratification_date, da
 const docs = { main: report(deal, "Home inspection.pdf", "ok"), many: report(deal, "Long inspection.pdf", "many"), wiring: report(deal, "Odd inspection.pdf", "wiring") };
 const vendorIds = sql(
   `insert into vendors (name, role, email, preferred) values ('Spark Electric QA ${stamp} (fictional)', 'Electrician', 'spark.${stamp}@example.test', true), ('Strap Plumbing QA ${stamp} (fictional)', 'Plumbing and water heater', 'strap.${stamp}@example.test', false) returning id`,
-).split("\n").filter(Boolean);
+).split("\n").filter((l) => /^[0-9a-f-]{36}$/.test(l));
 const ai = (on) => sql(`update feature_flags set enabled = ${on} where key in ${AI}`);
 const vendorSwitch = (on) => sql(`update feature_flags set enabled = ${on} where key = 'ai_staff_vendor_request'`);
 
