@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; checklist draft awaiting Mark's review). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -833,7 +833,9 @@ document checks, receipts, calendar drafts).
       missing documents.
   - **Checklist** for the deal's seller type, in code
     (`packages/lib/src/deal-documents.ts`). It's a **draft for Mark's
-    review**; rows marked (confirm) are new or changed on 2026-11-13.
+    review**; rows marked (confirm) are new or changed on 2026-11-13. The
+    review is deferred (owner decision 2026-11-13): the draft is used as
+    written until then, and changing rows later needs no migration.
     - Required, every sale:
       - purchase agreement (RPA)
       - agency disclosure (AD)
