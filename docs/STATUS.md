@@ -661,12 +661,17 @@ document checks, receipts, calendar drafts).
     file matched the tested one. The security advisor's only new entry is
     `can_work_draft_target` (signed-in users can call it; it only says
     whether the caller works a given lead or deal); nothing new is open to
-    the public. The four switches are off. The migration schedules the
-    daily purge (`vabrato-purge-ai-drafts`, 11:41 UTC) when pg_cron is
-    installed, as it is on hosted; the hosted check confirms the job.
-    `packages/db/test/hosted-drafts-check.sql` (rolled back) passes locally;
-    its hosted run is still to do (the Supabase connector's confirmation
-    prompt timed out).
+    the public. The four switches are off.
+    `packages/db/test/hosted-drafts-check.sql` (rolled back) passed on
+    hosted (2026-11-12, one admin): agents and VAs drafted only for the
+    leads and deals they work; another agent, the seller and the public
+    could neither draft nor see drafts; the admin saw approved drafts but
+    not someone else's unapproved one; approved text was frozen and a draft
+    couldn't be marked sent before approval; the purge removed an old
+    discarded draft and kept the approved one; only the service role can
+    run it, and the daily job `vabrato-purge-ai-drafts` (11:41 UTC) is
+    scheduled. Everything rolled back: no drafts, test accounts, leads,
+    deals, vendors or queued emails left, every AI switch off.
   - **Not in this PR:** sending from the console through Resend, follow-ups
     for a whole open house at once, call notes to to-dos (PR 7), drafts for
     members (S5b).
