@@ -45,21 +45,26 @@ export function IntakeForm({ reader }: { reader: { profileId: string } | null })
   const set = (name: FieldName) => (e: { target: { value: string } }) => setValues((v) => ({ ...v, [name]: e.target.value }));
   /** Props for a field's control, tied to the note saying where its value came from. */
   const field = (name: FieldName) => ({
+    id: `${uid}-${name}`,
     name,
     value: values[name],
     onChange: set(name),
     className: inputCls,
     ...(name !== "escrow_number" && draft?.sources[name] ? { "aria-describedby": `${uid}-${name}-src` } : {}),
   });
-  /** A labelled control; the note on where its value came from sits outside the label, so it isn't part of the field's name. */
+  /**
+   * A labelled control. The label points at the control by id rather than
+   * wrapping it, so a select's options aren't read as part of its name; the
+   * note on where the value came from is tied to it by aria-describedby.
+   */
   const row = (name: FieldName, label: string, control: ReactNode) => {
     const s = name === "escrow_number" ? undefined : draft?.sources[name];
     return (
       <div key={name}>
-        <label className={labelCls}>
+        <label htmlFor={`${uid}-${name}`} className={labelCls}>
           {label}
-          <span className="mt-1 block">{control}</span>
         </label>
+        <div className="mt-1">{control}</div>
         {s && (
           <p id={`${uid}-${name}-src`} className={`${mutedCls} mt-1`}>
             From the contract{s.page ? `, page ${s.page}` : ""}

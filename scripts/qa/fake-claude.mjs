@@ -83,7 +83,8 @@ createServer(async (req, res) => {
       thinking: body.thinking?.type ?? null,
       systemHasFeatureRules: /transaction coordinator/.test(system),
       systemHasAlwaysRules: /wiring|Fair Housing/i.test(system),
-      hasKey: Boolean(req.headers["x-api-key"]),
+      // SDK 1.x sends the key as "Authorization: Bearer"; older ones used x-api-key.
+      hasKey: Boolean(req.headers["x-api-key"] || /^Bearer ./.test(req.headers.authorization ?? "")),
     })}\n`,
   );
 

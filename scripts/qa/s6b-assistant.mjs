@@ -34,7 +34,10 @@ mkdirSync(OUT, { recursive: true });
 const { chromium } = need("playwright");
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
 const stamp = Date.now();
-const asked = () => readFileSync(LOG, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+const logLines = () => readFileSync(LOG, "utf8").split("\n").filter(Boolean);
+// Only this run's requests: the fake keeps its log until it's restarted.
+const before = logLines().length;
+const asked = () => logLines().slice(before).map((l) => JSON.parse(l));
 
 /** A one-page PDF with the given lines (uncompressed, so the fake can see the mode marker). */
 function pdf(lines) {
@@ -105,6 +108,20 @@ async function read(page, file) {
   return reader;
 }
 
+/** Submits the intake form and returns the new deal's id; on failure, says which field the browser refused or what the console said. */
+async function createDeal(page) {
+  await page.getByRole("button", { name: "Create transaction and task list" }).click();
+  try {
+    await page.waitForURL(/\/deals\/[0-9a-f-]{36}$/, { timeout: 20000 });
+  } catch {
+    const why = await page.evaluate(() =>
+      [...document.querySelectorAll("form :invalid")].map((el) => `${el.getAttribute("name")}="${el.value}": ${el.validationMessage}`).concat([...document.querySelectorAll("form [role=alert]")].map((el) => el.textContent)).join("; "),
+    );
+    throw new Error(`the transaction wasn't created: ${why || "no message on the page"}`);
+  }
+  return page.url().split("/").pop();
+}
+
 // --- Setup: a clean slate, fictional staff ----------------------------------------------------
 sql(`update feature_flags set enabled = false where key like 'ai\\_%'`);
 sql(`update app_settings set ai_zdr_confirmed_at = null, ai_zdr_confirmed_by = null, ai_zdr_note = null, ai_monthly_budget_usd = 100, ai_daily_requests_staff = 100`);
@@ -167,7 +184,7 @@ try {
   check("…before anything is uploaded or asked", staged() === 0 && asked().length === 0 && runs() === "");
 
   reader = await read(v, contract("ok"));
-  check("the reader says how many fields it filled", await reader.getByRole("status").filter({ hasText: /Filled in 12 fields from the contract\. Check each one/ }).isVisible());
+  check("the reader says how many fields it filled", await reader.getByRole("status").filter({ hasText: /Filled in 10 fields from the contract\. Check each one/ }).isVisible());
   check(
     "the form is filled from the contract",
     (await value(v, "Property address (required)")) === "12 Fictional Lane, San Carlos, CA" &&
@@ -190,7 +207,7 @@ try {
   check("the staged file is deleted", staged() === 0);
   check("the usage log has one finished request, metadata only", sql(`select feature || '|' || status || '|' || model || '|' || input_tokens || '|' || output_tokens || '|' || cost_micros || '|' || (profile_id = '${vera.id}') from ai_runs`) === "staff_contract_reader|ok|claude-opus-5-5|61000|900|262000|true");
   const req = asked()[0] ?? {};
-  check("the request: one inline PDF, a JSON schema, our rules, no tools, no file upload", asked().length === 1 && req.documents === 1 && req.documentIsInlinePdf && req.fileReferences === 0 && req.tools === 0 && req.format === "json_schema" && req.messages === 1 && req.systemHasFeatureRules && req.systemHasAlwaysRules && !("unexpected" in req), JSON.stringify(req));
+  check("the request: the key, one inline PDF, a JSON schema, our rules, no tools, no file upload", asked().length === 1 && req.hasKey && req.documents === 1 && req.documentIsInlinePdf && req.fileReferences === 0 && req.tools === 0 && req.format === "json_schema" && req.messages === 1 && req.systemHasFeatureRules && req.systemHasAlwaysRules && !("unexpected" in req), JSON.stringify(req));
   check("the request: Claude Opus 5.5 with the fallback, adaptive thinking, high effort", req.model === "claude-opus-5-5" && req.fallbacks?.join() === "claude-opus-4-8" && req.thinking === "adaptive" && req.effort === "high" && /server-side-fallback/.test(req.beta ?? ""), JSON.stringify(req));
   await axeAll(v, "/deals/new (AI draft)");
   await shots(v, "intake-ai-draft");
@@ -198,9 +215,7 @@ try {
   // The person decides: the VA corrects a value, then creates the transaction.
   await v.getByLabel("Loan", { exact: true }).fill("17");
   await v.getByLabel("Escrow number").fill(`QA-${stamp}`);
-  await v.getByRole("button", { name: "Create transaction and task list" }).click();
-  await v.waitForURL(/\/deals\/[0-9a-f-]{36}$/, { timeout: 20000 });
-  const deal = v.url().split("/").pop();
+  const deal = await createDeal(v);
   deals.push(deal);
   check("the deal holds what the person confirmed", sql(`select address || '|' || seller_type || '|' || ratification_date || '|' || days_to_close || '|' || rent_back_days || '|' || sale_price::int from deals where id = '${deal}'`) === "12 Fictional Lane, San Carlos, CA|trust|2026-03-02|30|3|2150000");
   check("contingencies come from the form (the VA's 17, not the reader's 21)", sql(`select string_agg(kind || ':' || offset_days || ':' || due_date, ',' order by kind) from deal_contingencies where deal_id = '${deal}'`) === "appraisal:17:2026-03-19,financing:17:2026-03-19,insurance:7:2026-03-09,property_condition:10:2026-03-12");
@@ -211,9 +226,7 @@ try {
   await v.goto(`${VA}/deals/new`);
   reader = await read(v, contract("cash"));
   check("waived contingencies are blanked, with a note", (await value(v, "Loan")) === "" && (await value(v, "Appraisal")) === "" && (await value(v, "Property condition")) === "7" && (await v.getByText("Loan contingency: waived or removed in the contract, so the field is blank.").isVisible()));
-  await v.getByRole("button", { name: "Create transaction and task list" }).click();
-  await v.waitForURL(/\/deals\/[0-9a-f-]{36}$/, { timeout: 20000 });
-  deals.push(v.url().split("/").pop());
+  deals.push(await createDeal(v));
   check("the cash deal has no loan or appraisal contingency", sql(`select string_agg(kind, ',' order by kind) from deal_contingencies where deal_id = '${deals[1]}'`) === "insurance,property_condition" && sql(`select count(*) from tasks where deal_id = '${deals[1]}' and (title like 'Financing%' or title like 'Appraisal contingency%')`) === "0");
 
   // 5. Answers that must not be shown or used.
@@ -238,9 +251,12 @@ try {
   await a.getByRole("button", { name: "Save limits" }).click();
   await a.getByRole("status").filter({ hasText: "Limits saved." }).waitFor();
   await v.goto(`${VA}/deals/new`);
-  reader = await read(v, contract("ok")); // $1.31 → $1.57: past 80% of $2
-  check("a request that takes the month past 80% alerts the admins once", sql(`select string_agg(title, '|') from staff_notifications where kind = 'ai_budget' and recipient_id = '${ada.id}'`) === "AI budget: 80% of this month's $2 is used");
-  reader = await read(v, contract("ok")); // → $1.83
+  // Each fake request costs $0.262 (61,000 tokens in, 900 out on Opus 5.5).
+  const budgetAlerts = () => sql(`select coalesce(string_agg(title, '|' order by created_at), '') from staff_notifications where kind = 'ai_budget' and recipient_id = '${ada.id}'`);
+  reader = await read(v, contract("ok")); // $1.31 → $1.57: 79%
+  check("no alert below 80% of the budget", budgetAlerts() === "");
+  reader = await read(v, contract("ok")); // → $1.83: past 80% of $2
+  check("a request that takes the month past 80% alerts the admins once", budgetAlerts() === "AI budget: 80% of this month's $2 is used");
   reader = await read(v, contract("ok")); // → $2.10: reaches the budget
   check("reaching the budget alerts the admins", sql(`select count(*) from staff_notifications where kind = 'ai_budget' and recipient_id = '${ada.id}' and title like 'AI budget reached%'`) === "1");
   const before = asked().length;
@@ -256,7 +272,7 @@ try {
   await a.getByRole("button", { name: "Save limits" }).click();
   await a.getByRole("status").filter({ hasText: "Limits saved." }).waitFor();
   reader = await read(v, contract("ok"));
-  check("raising the budget resumes it", await reader.getByRole("status").filter({ hasText: /Filled in 12 fields/ }).isVisible());
+  check("raising the budget resumes it", await reader.getByRole("status").filter({ hasText: /Filled in 10 fields/ }).isVisible());
 
   // The daily limit, per person.
   sql(`update app_settings set ai_daily_requests_staff = ${sql(`select count(*) from ai_runs where profile_id = '${vera.id}'`)}`);

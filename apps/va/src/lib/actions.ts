@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -49,9 +50,15 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
     contingencies: input.contingencies,
   });
 
-  const { data: deal, error: dealError } = await supabase
+  // The id is made here and the row isn't read back: under RLS a non-admin
+  // can't read their new deal in the same statement (has_deal_access runs on
+  // the statement's snapshot, which doesn't have the row yet), so
+  // insert(...).select() failed for every agent and VA.
+  const deal = { id: randomUUID() };
+  const { error: dealError } = await supabase
     .from("deals")
     .insert({
+      id: deal.id,
       address: input.address,
       escrow_number: input.escrow_number || null,
       seller_name: input.seller_name || null,
@@ -61,11 +68,9 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
       rent_back_days: input.rent_back_days,
       sale_price: input.sale_price,
       agent_id: auth.user.id,
-    })
-    .select("id")
-    .single();
-  if (dealError || !deal) {
-    return { error: `Could not create deal: ${dealError?.message ?? "unknown error"}` };
+    });
+  if (dealError) {
+    return { error: `Could not create deal: ${dealError.message}` };
   }
 
   const { error: taskError } = await supabase.from("tasks").insert(

@@ -133,3 +133,19 @@ It needs migration 0022 applied, the staff account set as lead admin (`update ap
 `s6-reports.mjs` covers the seller weekly report (preview, send once, the email reaches the fake Resend with the previewed subject and counts only), market stats and CMAs (off by default; then on with fictional sold listings QA-S1…QA-S6 in Belmont: the database's median on the page, a saved CMA with keys only, a price range, "not an appraisal", MLS attribution, a comparable that leaves the feed shown as missing, print view without the console frame) and the website's city stats behind `public_stats`. Needs `RESEND_LOG` and `CRON_SECRET` (as `s6-lead-alert.mjs`) and `REVALIDATE_SECRET`; start the fake Resend with its log path. The flags are switched off and the fixtures removed at the end.
 
 `s6-qa.mjs` is the S6 QA pass: every console page as the lead admin (with screenshots of every page and the main detail pages), the backup with the lead admin present and away, an agent who isn't MLS-verified, and a VA, with axe at 1440 and 390 px; a buyer gets "No access"; and a website contact form's alert email to the lead admin is timed (under 60 s at the fake Resend). It creates the fictional staff through the Auth admin API, so it needs `SERVICE_KEY`, plus `RESEND_LOG` and `CRON_SECRET` as `s6-lead-alert.mjs`. Output: `docs/screenshots/s6/` and `report.json` there.
+
+## VA assistant (S6b)
+
+`s6b-assistant.mjs` checks the assistant page, the admin switches and limits, and the contract reader end to end, without a key or any cost. A fake Claude server (`fake-claude.mjs`) answers `POST /v1/messages` as a stream; the answer is picked by a `QA-MODE: ok|cash|wiring|invalid|refusal` marker inside the fictional PDF the script makes. The fake logs the shape of each request (model, fallback, effort, documents, tools, output format, whether a key was sent), never its content, and logs any other endpoint as unexpected.
+
+```bash
+node scripts/qa/fake-claude.mjs /tmp/fake-claude.jsonl
+```
+
+Start apps/va with `ANTHROPIC_BASE_URL=http://127.0.0.1:4020` and `ANTHROPIC_API_KEY` set to any value (SDK 1.x sends it as `Authorization: Bearer`). Then:
+
+```bash
+QA_TOOLS=~/qa-tools MAIL_DIR=/path/to/mail PGURL=postgres://postgres@127.0.0.1:54329/authqa SERVICE_KEY=… CLAUDE_LOG=/tmp/fake-claude.jsonl node scripts/qa/s6b-assistant.mjs
+```
+
+It needs migration 0027 and a storage shim on `/storage/v1` that supports upload (raw and multipart), list, download and remove, with the bucket policies applied as the caller (the contract goes browser → `deal-docs` staging folder → server action → deleted). It counts only the requests made during its own run, so the fake can keep running between runs. Screenshots go to `docs/screenshots/s6b/` (`OUT` changes that). The switches, the ZDR confirmation, the limits and the test deals are reset at the end.
