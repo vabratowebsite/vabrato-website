@@ -99,6 +99,18 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "On a transaction's Receipts tab: reads an attached receipt into vendor, total, date and a category. You check the values and add the receipt; card and account numbers are never read out.",
     where: { href: "/deals", label: "Deals" },
   },
+  {
+    flag: "ai_staff_inspection_items",
+    name: "Repair items from an inspection report",
+    what: "On a transaction's Documents tab, next to a home or pest inspection report: lists the repair items with pages, by trade. You edit and approve the list; the bid list for contractors is made from it. No costs or names.",
+    where: { href: "/deals", label: "Deals" },
+  },
+  {
+    flag: "ai_staff_repair_response",
+    name: "Response to the buyer's request for repairs",
+    what: "On a transaction's Repairs tab: you decide each item with the seller (repair, credit, decline); the console writes the item list and totals, and the assistant writes only a short opening and closing. You approve it, then copy, email or print it.",
+    where: { href: "/deals", label: "Deals" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";
