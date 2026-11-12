@@ -505,7 +505,7 @@ document checks, receipts, calendar drafts).
      confirmed by a person before the schedule engine builds the timeline.
   3. Drafts: client emails (e.g. a weekly escrow update from the deal's
      tasks), lead replies, open-house follow-ups, vendor requests. (Call
-     notes to to-dos moved to PR 7, owner decision 2026-11-12.)
+     notes to to-dos moved to PR 8, owner decision 2026-11-12.)
   4. Daily briefing, member activity summary, plain questions about the
      console's data.
   5. Listing launch kit and printable listing and buyer presentations.
@@ -684,7 +684,7 @@ document checks, receipts, calendar drafts).
     scheduled. Everything rolled back: no drafts, test accounts, leads,
     deals, vendors or queued emails left, every AI switch off.
   - **Not in this PR:** sending from the console through Resend, follow-ups
-    for a whole open house at once, call notes to to-dos (PR 7), drafts for
+    for a whole open house at once, call notes to to-dos (PR 8), drafts for
     members (S5b).
 - **PR 4 (briefing, member summary, questions; migration 0029 = three
   switches, merged as #32):**
@@ -812,58 +812,131 @@ document checks, receipts, calendar drafts).
   - **Not in this PR:** scheduled or emailed market updates, any price
     suggestion.
 - **PR 7a (deal documents, checklist, document check, receipt reader;
-  migration 0032, not yet on hosted):**
-  - **Documents tab** on each deal (with the wiring banner). Staff upload
-    PDFs, JPGs or PNGs (20 MB at most, checked by content); uploads go to
-    a staff-only folder (`deal/{id}/staff/`) until someone uses "Share with
-    seller", which moves the file into the seller's Documents page; "Stop
-    sharing" moves it back (owner decision 2026-11-12). Files are opened
-    through 60-second signed links. Files already in the deal's folder
-    without a record show under "Not filed yet".
+  migration 0032, not yet on hosted; amended after owner review
+  2026-11-13):**
+  - **Documents tab** on each deal (with the wiring banner):
+    - Staff upload PDFs, JPGs or PNGs (20 MB at most, checked by content).
+      Files go from the browser straight to storage, never through a server
+      action.
+    - Uploads go to a staff-only folder (`deal/{id}/staff/`) until someone
+      uses "Share with seller" (owner decision 2026-11-12). It asks first:
+      "Never share wiring or bank instructions here."
+    - "Stop sharing" fails safe: the seller's copy is removed and confirmed
+      gone before the file is recorded as staff-only; otherwise nothing
+      changes and it says the seller can still see it.
+    - Files open through 60-second signed links. Storage keys use a
+      cleaned-up name; the list shows the name as uploaded.
+    - Files in the deal's folder without a record show under "Not filed
+      yet"; top-level ones say "The seller can see this".
+    - Share, stop sharing and delete are written to `staff_audit`.
+    - Until 0032 is applied, the tab shows only "Documents aren't set up
+      yet": no uploader, Share or file list. Today and the briefing skip
+      missing documents.
   - **Checklist** for the deal's seller type, in code
-    (`packages/lib/src/deal-documents.ts`; **draft for owner review**):
-    - Every sale: purchase agreement (RPA), counter offers and addenda (if
-      any), agency disclosure (AD), Statewide Buyer and Seller Advisory
-      (SBSA), Seller Property Questionnaire (SPQ), Agent Visual Inspection
-      Disclosure (AVID), Natural Hazard Disclosure (NHD), water heater and
-      smoke/CO detector statement (WHSD), lead-based paint disclosure (FLD,
-      if built before 1978), preliminary title report, home and pest
-      inspection reports (if done), contingency removal (CR), verification
-      of property condition (VP).
-    - Standard and trust: Transfer Disclosure Statement (TDS). Trust and
-      successor trustee: certification of trust. Successor trustee: TDS or
-      Exempt Seller Disclosure (ESD), and the settlor's death certificate.
-      Probate: ESD (no TDS), Letters Testamentary or Letters of
-      Administration, Probate Advisory (PA), court confirmation or IAEA
-      notice (if it applies).
-    - A file counts once its type is set (a combined packet can be several
-      types); items that don't apply are marked "not needed" with a note.
-      The seller's own portal uploads count once staff tag them for the
-      deal (owner decision 2026-11-12).
+    (`packages/lib/src/deal-documents.ts`). It's a **draft for Mark's
+    review**; rows marked (confirm) are new or changed on 2026-11-13.
+    - Required, every sale:
+      - purchase agreement (RPA)
+      - agency disclosure (AD)
+      - Statewide Buyer and Seller Advisory (SBSA)
+      - Agent Visual Inspection Disclosure (AVID)
+      - Natural Hazard Disclosure (NHD)
+      - water-conserving fixtures and carbon monoxide notice (WCMD,
+        confirm)
+      - preliminary title report
+      - contingency removal (CR)
+      - verification of property condition (VP)
+    - By seller type:
+      - Standard: Transfer Disclosure Statement (TDS); Seller Property
+        Questionnaire (SPQ, confirm).
+      - Trust: TDS or Exempt Seller Disclosure (ESD) (confirm); SPQ
+        (confirm); certification of trust; Trust Advisory (TA, confirm).
+      - Successor trustee: TDS or ESD (confirm); SPQ or ESD (confirm);
+        certification of trust; the settlor's death certificate; TA
+        (confirm).
+      - Probate: ESD in place of TDS and SPQ (confirm); Letters
+        Testamentary or Letters of Administration; Probate Advisory (PA);
+        probate purchase agreement addendum (PAPA, confirm); probate
+        listing addendum (PLA, confirm).
+    - If they apply (listed separately):
+      - counter offers and addenda
+      - water heater and smoke detector statement (WHSD, confirm)
+      - lead-based paint disclosure (FLD, if built before 1978)
+      - home and pest inspection reports
+      - probate court confirmation or IAEA notice
+    - Also if they apply, flagged for Mark to keep or drop (confirm):
+      - listing agreement (RLA)
+      - Seller's Advisory (SA)
+      - Fair Housing advisory (FHDA)
+      - PRBS
+      - Wire Fraud Advisory (WFA)
+      - SFLS
+      - seller withholding (FIRPTA / CA 593)
+      - HOA documents
+      - county advisory
+    - Counting:
+      - "N of M done" counts required items, plus an if-applies item once
+        it's on file or marked not needed.
+      - "Missing" counts required items only.
+      - Either/or items are satisfied by either document.
+      - A file counts once its type is set (a combined packet can be
+        several types). "On file" means filed, not signed or complete; the
+        panel says so.
+      - The seller's own portal uploads count once staff tag them for the
+        deal (owner decision 2026-11-12).
   - **Missing documents** on Today (a panel per sale, no AI) and in the
     daily briefing (each deal's missing items; within 30 days of closing it
     is in the briefing). Our code counts them.
-  - **Check this document** (switch `ai_staff_document_check`): sends that
-    one file, the seller type and the list of document types. It suggests
-    which types the file is (unknown ones dropped), whether it's signed,
-    and up to 10 things to look at with pages (missing initials, blanks,
-    dates that don't match). The person saves the types; the issues are
-    shown, not stored. Answers with wiring details are refused.
-  - **Receipt reader** (switch `ai_staff_receipt_reader`): on Receipts
-    (now with the wiring banner), a receipt file can be attached (also with
-    the assistant off); "Read it" fills vendor, total, date and a category
-    for the person to check before adding. Card and account numbers have
-    no field to go in. The file stays with the receipt (deleted with it);
-    unsaved uploads are tidied after an hour.
-  - **Database:** 0032 adds the two switches; `deal_documents`,
-    `deal_member_document_types` and `deal_checklist_marks` (staff with
-    deal access only; the seller sees none of them); the storage policy
-    that keeps `deal/{id}/staff/` from the seller.
-  - **Tests:** 12 database tests (`deal-documents.test.ts`, incl. storage:
-    the seller reads shared files, never the staff folder), 9 checklist
-    tests, 18 for the console (file checks, paths, what each feature sends,
-    a document that tries to give the assistant orders, the briefing).
-    Browser QA `scripts/qa/s6b-documents.mjs`: 38 checks pass on the local stack with the fake Claude (incl. the seller seeing a shared file in `/my/documents` and not after "Stop sharing", another agent getting a 404, axe at 1440 and 390 px); the PR 2–6 scripts still pass (64, 42, 28, 34, 24). Screenshots in `docs/screenshots/s6b-documents/`.
+  - **Check this document** (switch `ai_staff_document_check`):
+    - It sends that one file, the seller type and the list of document
+      types.
+    - It suggests which types the file is (unknown ones dropped), whether
+      it's signed, and up to 10 things to look at with pages (missing
+      initials, blanks, dates that don't match).
+    - The person saves the types; the issues are shown, not stored.
+      Answers with wiring details are refused.
+    - PDFs over the model's page limit are stopped with "Split this file".
+      The limit is 600 pages for both our models, per Anthropic's PDF page
+      read on 2026-11-13; it's in `packages/ai/src/models.ts`. An API "too
+      large" error gives the same message.
+    - The Documents and Receipts pages allow 300 seconds.
+  - **Receipt reader** (switch `ai_staff_receipt_reader`):
+    - On Receipts (now with the wiring banner), a receipt file can be
+      attached, also with the assistant off.
+    - "Read it" fills vendor (80 characters at most), total, date and a
+      category for the person to check before adding.
+    - Anything with 8 or more digits in a row (a card or account number) is
+      dropped.
+    - Adding a receipt checks its file is still there ("Upload the receipt
+      again" if the tidy-up removed it).
+    - The file stays with the receipt (deleted with it); unsaved uploads
+      are tidied after an hour.
+  - **Database:** 0032 adds:
+    - the two switches;
+    - `deal_documents`, `deal_member_document_types` and
+      `deal_checklist_marks` (staff with deal access only; the seller sees
+      none of them);
+    - path allowlist: a file is either `deal/{id}/{file}` (shared) or
+      `deal/{id}/staff/{file}` (not), nothing else;
+    - a storage read allowlist: the seller reads only files directly in
+      `deal/{id}/`, staff with deal access read everything under it;
+    - `log_deal_document_action` for the audit log.
+  - **Tests:**
+    - 16 database tests (`deal-documents.test.ts`), including a third
+      folder, `Staff/` and deeper paths refused to the seller, and the
+      audit function.
+    - 11 checklist tests (either/or and if-applies rules); 22 console tests
+      (file checks, paths, page counts, original names, what each feature
+      sends, a document that tries to give the assistant orders, receipt
+      digit runs, missing documents before 0032, the briefing); PDF limit
+      and "too large" tests in `packages/ai`.
+    - Browser QA `scripts/qa/s6b-documents.mjs`: 47 checks pass on the
+      local stack with the fake Claude. Includes "not set up yet" with the
+      table hidden, sharing with the seller and back, stop sharing refused
+      safely when the seller's copy can't be removed, the audit rows,
+      another agent getting a 404, and axe at 1440 and 390 px.
+    - The PR 2–6 scripts still pass (64, 42, 28, 34, 24). Screenshots are
+      in `docs/screenshots/s6b-documents/`.
   - **After merge:** apply 0032 on your OK, then
     `packages/db/test/hosted-documents-check.sql` (rolled back; passes
     locally).

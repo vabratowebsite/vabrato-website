@@ -12,6 +12,11 @@
 //   dropped) and issues with pages; wiring in an answer is refused; a receipt
 //   read into the form and saved with its file; an unreadable one explained.
 // - Today lists the deal's missing documents; another agent sees nothing.
+// - Amendment (2026-11-13): "not set up yet" before 0032; the trust list
+//   with its "If they apply" group and counts; a top-level unfiled file says
+//   the seller can see it; the share warning; stop sharing fails safe when
+//   the seller's copy can't be removed; the audit log; a receipt whose
+//   upload was tidied away isn't accepted.
 // - axe at 1440 and 390 px; screenshots. Everything added is removed.
 //
 // Start: node scripts/qa/fake-claude.mjs <log>; apps/va with
@@ -36,6 +41,15 @@ const logLines = () => readFileSync(LOG, "utf8").split("\n").filter(Boolean);
 const before = logLines().length;
 const asked = () => logLines().slice(before).map((l) => JSON.parse(l));
 const last = () => asked().at(-1) ?? {};
+const dialogs = [];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Before 0032 is applied: hide the table (and tell PostgREST), then put it back.
+const hideDocs = async (hide) => {
+  sql(hide ? `alter table deal_documents rename to deal_documents_qa_hidden` : `alter table if exists deal_documents_qa_hidden rename to deal_documents`);
+  sql(`notify pgrst, 'reload schema'`);
+  await sleep(1500);
+};
+const BLOCK = "qa_block_unshare_delete";
 
 // Fictional files: the fake Claude reads "QA-MODE: …" from their bytes.
 const pdf = (mode, title) => Buffer.from(`%PDF-1.4\n% ${title} (fictional QA file)\n% QA-MODE: ${mode}\n%%EOF\n`);
@@ -57,7 +71,10 @@ async function account(first, role) {
 async function signIn(email) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
-  page.on("dialog", (d) => d.accept());
+  page.on("dialog", (d) => {
+    dialogs.push(d.message());
+    d.accept();
+  });
   await page.goto(`${VA}/login`);
   await page.getByPlaceholder("you@vabrato.com").fill(email);
   const sent = mails();
@@ -125,12 +142,36 @@ writeFileSync(join(STORAGE, "member-docs", `${spqPath}.type`), "application/pdf"
 const ai = (on) => sql(`update feature_flags set enabled = ${on} where key in ${AI}`);
 
 try {
-  // 1. Off by default: the tab and checklist work; no assistant buttons.
+  // 0. Before 0032 is applied on hosted: no uploader, no Share, nothing listed.
   const av = await signIn(avery.email);
+  await hideDocs(true);
+  await av.goto(`${VA}/deals/${deal}/documents`);
+  check(
+    "before 0032: \"Documents aren't set up yet\", and nothing to upload, share or list",
+    (await av.getByRole("heading", { name: "Documents aren't set up yet" }).isVisible()) &&
+      (await av.getByRole("button", { name: "Upload", exact: true }).count()) === 0 &&
+      (await av.getByRole("button", { name: /Share with seller/ }).count()) === 0 &&
+      (await av.getByRole("heading", { name: /^Not filed yet/ }).count()) === 0 &&
+      (await av.getByRole("note", { name: "Wiring safety" }).isVisible()),
+  );
+  await av.goto(`${VA}/`);
+  check("before 0032: Today still works, with no Missing documents panel", (await av.getByRole("heading", { name: "Today" }).isVisible()) && (await av.getByRole("heading", { name: /^Missing documents/ }).count()) === 0);
+  await hideDocs(false);
+
+  // 1. Off by default: the tab and checklist work; no assistant buttons.
   await av.goto(`${VA}/deals/${deal}/documents`);
   const total = Number(/of (\d+) done/.exec(await heading(av))?.[1]);
-  check("the Documents tab shows the trust checklist", /^Checklist for a trust sale: 0 of \d+ done$/.test(await heading(av)) && total >= 15, await heading(av));
-  check("trust items are on it", (await av.locator("p").getByText("Certification of trust", { exact: true }).isVisible()) && (await av.locator("p").getByText("Transfer Disclosure Statement (TDS)", { exact: true }).isVisible()));
+  check("the Documents tab shows the trust checklist: 13 required documents", (await heading(av)) === "Checklist for a trust sale: 0 of 13 done", await heading(av));
+  const p = (t) => av.locator("p").getByText(t, { exact: true });
+  check(
+    "trust items: TDS or ESD, certification of trust, Trust Advisory; WHSD and FLD under If they apply",
+    (await p("TDS, or Exempt Seller Disclosure (ESD)").isVisible()) &&
+      (await p("Certification of trust").isVisible()) &&
+      (await p("Trust Advisory (TA)").isVisible()) &&
+      (await av.getByRole("list", { name: "Documents if they apply" }).getByText("Water heater and smoke detector statement (WHSD)", { exact: true }).isVisible()) &&
+      (await av.getByRole("list", { name: "Documents if they apply" }).getByText("Lead-based paint disclosure (FLD)", { exact: true }).isVisible()),
+  );
+  check("the panel says on file isn't signed", await av.getByText(/doesn't mean it's signed or complete/).isVisible());
   check("the wiring banner is shown", await av.getByRole("note", { name: "Wiring safety" }).isVisible());
   check("off: no Check this document", (await av.getByRole("button", { name: /^Check this document/ }).count()) === 0);
   await av.goto(`${VA}/deals/${deal}/receipts`);
@@ -142,11 +183,12 @@ try {
   const rpa = sql(`select shared || '|' || (path like 'deal/${deal}/staff/%') || '|' || array_to_string(doc_types, ',') from deal_documents where deal_id = '${deal}'`);
   check("upload: filed staff-only with its type", rpa === "false|true|rpa", rpa);
   check("checklist: the RPA counts", (await heading(av)) === `Checklist for a trust sale: 1 of ${total} done`, await heading(av));
+  check("upload: the name as uploaded is shown", (await av.getByRole("link", { name: "Purchase agreement.pdf" }).count()) === 1 && sql(`select file_name from deal_documents where deal_id = '${deal}'`) === "Purchase agreement.pdf");
   await av.getByRole("button", { name: /^Mark\ not\ needed\s*: Lead\-based\ paint\ disclosure\ \(FLD\)$/ }).click();
   await av.getByLabel("Why (optional)").fill("Built in 1998");
   await av.getByRole("button", { name: /^Save\s*: Lead\-based\ paint\ disclosure\ \(FLD\)\ not\ needed$/ }).click();
   await av.getByText(/Not needed: Built in 1998 \(Avery Example/).waitFor();
-  check("checklist: not needed, with the note and who", (await heading(av)) === `Checklist for a trust sale: 2 of ${total} done`);
+  check("checklist: an if-applies item counts once decided", (await heading(av)) === `Checklist for a trust sale: 2 of ${total + 1} done`, await heading(av));
 
   // 3. The seller's own upload, tagged for this deal.
   await av.getByRole("button", { name: "Edit types for Seller questionnaire.pdf" }).click();
@@ -154,7 +196,16 @@ try {
   await av.getByRole("button", { name: "Save types" }).click();
   await waitStatus(av, "Types saved.");
   await av.reload();
-  check("the seller's upload counts once tagged", (await heading(av)) === `Checklist for a trust sale: 3 of ${total} done` && sql(`select array_to_string(doc_types, ',') from deal_member_document_types where member_document_id = '${spqDoc}'`) === "spq");
+  check("the seller's upload counts once tagged", (await heading(av)) === `Checklist for a trust sale: 3 of ${total + 1} done` && sql(`select array_to_string(doc_types, ',') from deal_member_document_types where member_document_id = '${spqDoc}'`) === "spq");
+
+  // An old file in the seller's view, never filed: labelled, then deleted.
+  const old = `deal/${deal}/Old disclosure.pdf`;
+  sql(`insert into storage.objects (bucket_id, name, owner) values ('deal-docs', '${old}', '${avery.id}')`);
+  mkdirSync(join(STORAGE, "deal-docs", "deal", deal), { recursive: true });
+  writeFileSync(join(STORAGE, "deal-docs", old), pdf("ok", "Old disclosure"));
+  writeFileSync(join(STORAGE, "deal-docs", `${old}.type`), "application/pdf");
+  await av.reload();
+  check("not filed yet: a top-level file says the seller can see it", await av.getByText(/^The seller can see this/).isVisible());
   await axeAll(av, "/deals/[id]/documents");
   await shots(av, "documents");
 
@@ -164,14 +215,32 @@ try {
   check("a staff-only file is refused to the seller by URL", blocked.status() === 404, String(blocked.status()));
   await sp.goto(`${BASE}/my/documents`);
   check("the seller doesn't see it before it's shared", (await sp.getByText("Purchase agreement.pdf").count()) === 0);
+  await av.getByRole("button", { name: /^Delete\s*Old disclosure\.pdf$/ }).click();
+  await waitStatus(av, "Deleted.");
+  await av.reload();
   await av.getByRole("button", { name: /^Share\ with\ seller\s*: Purchase\ agreement\.pdf$/ }).click();
   await waitStatus(av, "Shared Purchase agreement.pdf with the seller.");
+  check("share asks first, with the wiring warning", dialogs.at(-1) === "Share Purchase agreement.pdf with the seller? They'll see it on their Documents page. Never share wiring or bank instructions here.", dialogs.at(-1));
   check("shared: moved to the seller's view", sql(`select shared || '|' || path from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`) === `true|deal/${deal}/Purchase agreement.pdf`);
   await sp.reload();
   const link = sp.getByRole("link", { name: "Purchase agreement.pdf" });
   check("the seller sees it in /my/documents", await link.isVisible());
   const got = await sp.request.get(`${BASE}${await link.getAttribute("href")}`);
   check("the seller can download it", got.status() === 200 && (await got.body()).subarray(0, 5).toString() === "%PDF-", String(got.status()));
+  // Stop sharing fails safe: if the seller's copy can't be removed, nothing changes.
+  sql(`create policy ${BLOCK} on storage.objects as restrictive for delete to authenticated using (name <> '${`deal/${deal}/Purchase agreement.pdf`}')`);
+  await av.reload();
+  await av.getByRole("button", { name: /^Stop\ sharing\s*: Purchase\ agreement\.pdf$/ }).click();
+  await waitStatus(av, null, "Couldn't stop sharing: the seller can still see this file. Try again.");
+  await sp.reload();
+  check(
+    "stop sharing: if the seller's copy can't be removed, the row stays shared and no staff copy is left",
+    sql(`select shared::text from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`) === "true" &&
+      (await sp.getByRole("link", { name: "Purchase agreement.pdf" }).isVisible()) &&
+      sql(`select count(*) from storage.objects where name like 'deal/${deal}/staff/%Purchase agreement.pdf'`) === "0",
+    `${sql(`select shared from deal_documents where deal_id = '${deal}' and 'rpa' = any(doc_types)`)} · seller sees ${await sp.getByRole("link", { name: "Purchase agreement.pdf" }).count()} · staff copies ${sql(`select string_agg(name, ' ') from storage.objects where name like 'deal/${deal}/%'`)}`,
+  );
+  sql(`drop policy ${BLOCK} on storage.objects`);
   await av.reload();
   await av.getByRole("button", { name: /^Stop\ sharing\s*: Purchase\ agreement\.pdf$/ }).click();
   await waitStatus(av, "is staff-only again");
@@ -208,6 +277,15 @@ try {
   await av.getByRole("button", { name: /^Check\ this\ document\s*: Wire\ memo\.pdf$/ }).click();
   await waitStatus(av, null, "contained payment or wiring details");
   check("check: an answer with wiring details isn't shown", (await av.getByText(/021000021/).count()) === 0);
+  await av.reload();
+  await av.getByRole("button", { name: /^Delete\s*Wire memo\.pdf$/ }).click();
+  await waitStatus(av, "Deleted.");
+  const audit = sql(`select string_agg(action || ':' || (detail->>'file'), ',' order by id) from staff_audit where ref_table = 'deal_documents' and detail->>'deal' = '${deal}'`);
+  check(
+    "audit: share, stop sharing and deletes are logged (the refused attempt isn't)",
+    audit === "unfiled_deleted:Old disclosure.pdf,document_shared:Purchase agreement.pdf,document_unshared:Purchase agreement.pdf,document_deleted:Wire memo.pdf",
+    audit,
+  );
 
   // 7. Today: missing documents.
   await av.goto(`${VA}/`);
@@ -241,11 +319,22 @@ try {
   await av.getByRole("button", { name: "Read it" }).click();
   await waitStatus(av, null, "The photo is too blurry to read the total.");
   check("receipt: an unreadable one is explained, nothing filled in", (await av.getByLabel("Vendor").inputValue()) === "");
+  // The tidy-up removed the upload before it was saved: the receipt isn't added.
+  const gone = sql(`select name from storage.objects where bucket_id = 'receipts' and name like 'deal/${deal}/uploads/${avery.id}/%' and name not in (select storage_path from receipts where storage_path is not null) order by created_at desc limit 1`);
+  sql(`delete from storage.objects where bucket_id = 'receipts' and name = '${gone}'`);
+  await av.getByLabel("Vendor").fill("Fixture Cleaning");
+  await av.getByLabel("Amount ($)").fill("120");
+  await av.getByRole("button", { name: "Add receipt" }).click();
+  await waitStatus(av, null, "Upload the receipt again.");
+  check("receipt: a file the tidy-up removed isn't accepted", Boolean(gone) && sql(`select count(*) from receipts where deal_id = '${deal}'`) === "1");
 
   check("the usage log has metadata only", sql(`select string_agg(feature || ':' || status, ',' order by created_at) from ai_runs`) === "staff_document_check:ok,staff_document_check:blocked_output,staff_receipt_reader:ok,staff_receipt_reader:ok");
   check("the console called nothing but the Messages endpoint", asked().every((r) => !("unexpected" in r)));
 } finally {
   ai(false);
+  await hideDocs(false);
+  sql(`drop policy if exists ${BLOCK} on storage.objects`);
+  sql(`delete from staff_audit where ref_table = 'deal_documents' and detail->>'deal' = '${deal}'`);
   sql(`update app_settings set ai_zdr_confirmed_at = null, ai_zdr_confirmed_by = null, ai_zdr_note = null, lead_admin_id = ${leadAdminBefore ? `'${leadAdminBefore}'` : "null"}`);
   const objects = sql(`select bucket_id || '/' || name from storage.objects where name like 'deal/${deal}/%' or name = '${spqPath}'`).split("\n").filter(Boolean);
   for (const o of objects) for (const ext of ["", ".type"]) rmSync(join(STORAGE, o) + ext, { force: true });
