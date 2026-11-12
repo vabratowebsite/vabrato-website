@@ -2,7 +2,9 @@ import Link from "next/link";
 import { KpiTile, Panel, PanelAction, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
+import { BriefingPanel } from "@/components/summary-panels";
 import { mutedCls } from "@/components/ui";
+import { aiFeaturesOn } from "@/lib/ai-flags";
 import { fmtDuration, medianDuration } from "@/lib/leads";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -10,7 +12,8 @@ import { feedRows, fmtWhen, leadKindLabel, shortName, type SyncHealth, type Sync
 
 // Today (mockup 07): the console's home. KPIs, the newest leads, the MLS feed
 // and what runs automatically. Leads and replies are what this person can
-// see (RLS: all for the acting lead admin). No AI rows.
+// see (RLS: all for the acting lead admin). With the assistant's daily
+// briefing switched on, a briefing written on request from the same records.
 export const dynamic = "force-dynamic";
 
 const TONE = { green: "text-green", red: "text-red", ink: "text-ink" } as const;
@@ -21,6 +24,7 @@ export default async function Today() {
   const supabase = await supabaseServer();
   const since30 = new Date(Date.now() - 30 * 86_400_000).toISOString();
 
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_daily_briefing"]);
   const [newLeads, members, tours, replies, recent, health, runs, routing, away, mails] = await Promise.all([
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
     supabase.from("profiles").select("id", { count: "exact", head: true }).in("role", ["buyer", "seller", "both"]),
@@ -48,6 +52,12 @@ export default async function Today() {
         <KpiTile value={String(tours.count ?? 0)} label="Tour requests (30 days)" />
         <KpiTile value={medianReply === null ? "—" : fmtDuration(medianReply)} label="Median first reply (30 days)" />
       </div>
+
+      {ai.ai_staff_daily_briefing && (
+        <Panel title="Your briefing">
+          <BriefingPanel />
+        </Panel>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Panel title="Newest leads">

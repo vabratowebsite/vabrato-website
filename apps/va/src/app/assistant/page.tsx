@@ -3,6 +3,7 @@ import type { AiMonthSummary, AiUsageToday } from "@vabrato/db";
 import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
 import { ConsoleShell } from "@/components/console-shell";
+import { WorkQuestionPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, linkAction, mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
 import { ASSISTANT_FEATURES, MASTER_FLAG, budgetPercent, usd } from "@/lib/assistant";
@@ -91,8 +92,14 @@ export default async function AssistantPage() {
             );
           })}
         </ul>
-        <p className={`${mutedCls} mt-4`}>Drafts are yours until you approve them; discarded drafts, and drafts left untouched, are deleted after 30 days. More is on the way: a daily briefing, listing launch kits and document checks.</p>
+        <p className={`${mutedCls} mt-4`}>Drafts are yours until you approve them; discarded drafts, and drafts left untouched, are deleted after 30 days. More is on the way: listing launch kits, market updates and document checks.</p>
       </Panel>
+
+      {master && on("ai_staff_data_questions") && (
+        <Panel title="Ask about your work">
+          <WorkQuestionPanel />
+        </Panel>
+      )}
 
       {(myDrafts?.length ?? 0) > 0 && (
         <Panel title="My drafts">
