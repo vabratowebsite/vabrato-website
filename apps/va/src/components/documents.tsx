@@ -171,10 +171,12 @@ export interface DocItemProps {
   types: DocType[];
   shared?: boolean;
   canCheck: boolean;
+  /** More actions for this file (S6b PR 7b: "Repair items" on inspection reports). */
+  extra?: React.ReactNode;
 }
 
 /** One file: its types, and what can be done with it. */
-export function DocItem({ dealId, source, id, name, href, meta, types, shared, canCheck }: DocItemProps) {
+export function DocItem({ dealId, source, id, name, href, meta, types, shared, canCheck, extra }: DocItemProps) {
   const router = useRouter();
   const [editing, setEditing] = useState<DocType[] | null>(null);
   const [check, setCheck] = useState<CheckResult | null>(null);
@@ -249,6 +251,7 @@ export function DocItem({ dealId, source, id, name, href, meta, types, shared, c
             <span className="sr-only">: {name}</span>
           </button>
         )}
+        {extra}
         {source !== "member" && (
           <button
             type="button"

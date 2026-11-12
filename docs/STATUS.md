@@ -517,10 +517,13 @@ document checks, receipts, calendar drafts).
        seller), the seller-type checklist with what's missing (also on
        Today and in the briefing; the seller's own uploads count once
        tagged), "Check this document", and the receipt reader.
-     - 7b: inspection report to repair items, then a contractor bid list or
-       a draft repair request/response letter (the agent chooses); what
-       changed in a counter-offer or addendum; "Check unchecked documents"
-       with the number of calls shown and a confirmation.
+     - 7b: inspection report to repair items, the contractor bid list, and
+       the seller's response to the buyer's request for repairs (split
+       again, owner decision 2026-11-13).
+     - 7c: what changed in a counter-offer or addendum (shown only; a
+       non-AI "Edit deal terms" comes later), and "Check unchecked
+       documents" (up to 10 per click, with the number of calls shown and a
+       confirmation).
   8. Appointment drafts (calendar file first; Google Calendar once that
      connection is built), and call notes to to-dos and a follow-up draft.
   9. QA: screens, accessibility, and an optional live test run against the
@@ -957,6 +960,79 @@ document checks, receipts, calendar drafts).
     sold-data switches.
   - **Not in this PR:** inspection reports and counter-offers (7b);
     Drive/Dropbox import (integrations PR after S6b).
+- **PR 7b (repair items, bid list, response to the buyer's request;
+  migration 0033, not yet on hosted; plan revised after owner review
+  2026-11-13):**
+  - **Repair items** (switch `ai_staff_inspection_items`):
+    - "Repair items" next to a home or pest inspection report (Documents
+      tab, and the new **Repairs** tab).
+    - The server checks the report is this deal's own document and typed
+      as an inspection.
+    - It sends that one file, inline, under Zero Data Retention, with the
+      list of trades. It returns up to 60 items, each with a title, detail,
+      location, trade, page, severity and the report's own severity words.
+    - Phones, emails, links and dollar amounts are stripped in code. A
+      60-item answer is flagged "may be incomplete".
+    - The agent edits, removes and adds items, then approves the list;
+      Fair Housing, wiring and contact checks run at approval. "Revise"
+      copies an approved list into a new draft. There's one open list per
+      report; an unapproved list is deleted after 30 days idle.
+    - Every page says "A summary, not a replacement for the report."
+  - **Bid list** (no AI):
+    - The approved items by trade (15 trades, incl. sewer lateral and pool
+      and spa), with a printable page labelled "Drafted by the assistant,
+      approved by {agent} on {date}".
+    - Per trade: with the vendor switch on, the vendor quote request (PR 3)
+      starts with that trade's items. With it off: copy the items, or open
+      an email to a matching vendor with our code's list.
+  - **Response to the buyer's request** (switch
+    `ai_staff_repair_response`):
+    - Every item starts as "Not requested" and stays out of the letter. The
+      agent marks repair, credit (amount) or decline, can add items that
+      aren't in the report, and must tick "The seller has approved these
+      decisions".
+    - Our code writes the greeting, the item list, the credit total, the
+      fixed line "This summary is for convenience; the signed Request for
+      Repair response form governs." and the signature. The assistant
+      writes only an opening and a closing, from the property, the closing
+      date and counts; never the report.
+    - At approval, our code rebuilds the letter from the stored decisions,
+      so a changed list can't be approved.
+    - Numbers in the opening and closing must be typed by the agent or sent
+      by our code; amounts in words, contacts, wiring and Fair Housing
+      wording are refused.
+    - Approved responses are copied, opened in email (a copy fallback over
+      1,800 characters) or printed; nothing is sent by the console.
+    - For Mark to confirm: the fixed line, and "Seller will repair, by a
+      licensed contractor before close of escrow".
+  - **Database:** 0033 adds:
+    - the two switches;
+    - the `inspection_items` and `repair_response` kinds on `ai_drafts`
+      (deal only, with content);
+    - one open items list per report (a unique index).
+    The 0028 policies cover them (staff with deal access; approved ones
+    visible to staff on the deal; approved drafts frozen and kept).
+  - **Tests:**
+    - 9 database tests (`ai-repairs.test.ts`).
+    - 29 feature tests (`repairs.test.ts`): what each call sends, stripping,
+      the cap and flag, the checks on inspection words ("wiring",
+      "rewire", "master bedroom", "in-law unit", "grab bars"), our list, a
+      dropped item, swapped amount or changed decision, numbers and number
+      words.
+    - 4 action tests (another deal's report refused).
+    - `lib/numbers.ts` is now shared with market updates. The existing
+      guard test keeps the Files API out of the Claude client.
+    - Browser QA `scripts/qa/s6b-repairs.mjs`: 36 checks pass on the local
+      stack with the fake Claude (incl. a tampered stored list rebuilt at
+      approval, invented and spelled-out amounts blocked, an agent without
+      deal access getting a 404, axe at 1440 and 390 px). The 7a and PR 2–6
+      scripts still pass (47, 64, 42, 28, 34, 24). Screenshots in
+      `docs/screenshots/s6b-repairs/`.
+  - **After merge:** apply 0033 on your OK, then
+    `packages/db/test/hosted-repairs-check.sql` (rolled back; passes
+    locally).
+  - **Not in this PR:** counter-offer changes and "Check unchecked
+    documents" (7c); editing deal terms; cost estimates.
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

@@ -25,6 +25,8 @@ export const DRAFT_KINDS: Record<AiDraftKind, DraftKindInfo> = {
   buyer_presentation: { kind: "buyer_presentation", flag: "ai_staff_presentations", name: "Presentations", one: "Buyer presentation", heading: "Buyer presentation" },
   market_update: { kind: "market_update", flag: "ai_staff_market_update", name: "Market updates", one: "Market update", heading: "Market update" },
   cma_writeup: { kind: "cma_writeup", flag: "ai_staff_cma_writeup", name: "CMA write-ups", one: "CMA write-up", heading: "Summary" },
+  inspection_items: { kind: "inspection_items", flag: "ai_staff_inspection_items", name: "Repair items", one: "Repair items", heading: "Repair items" },
+  repair_response: { kind: "repair_response", flag: "ai_staff_repair_response", name: "Repair responses", one: "Response to the request for repairs", heading: "Response to the buyer's request for repairs" },
 };
 
 /** The draft a lead gets: open-house visitors a follow-up, everyone else a reply. */

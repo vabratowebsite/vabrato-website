@@ -4,6 +4,7 @@ import { Panel, Pill, WiringBanner } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { DealShell } from "@/components/deal-shell";
 import { ChecklistMarkControl, DocItem, DocumentUploader } from "@/components/documents";
+import { StartRepairItems } from "@/components/repairs";
 import { mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
 import { aiKeyConfigured } from "@/lib/ai";
@@ -58,7 +59,7 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
     supabase.from("deal_checklist_marks").select("item_key, note, marked_by, marked_at").eq("deal_id", id),
     bucket.list(`deal/${id}`, { limit: 1000 }),
     bucket.list(`deal/${id}/staff`, { limit: 1000 }),
-    aiFeaturesOn(supabase, ["ai_staff_document_check"]),
+    aiFeaturesOn(supabase, ["ai_staff_document_check", "ai_staff_inspection_items"]),
   ]);
   const sellerIds = (sellers ?? []).map((s) => s.profile_id);
   const [{ data: memberDocs }, { data: memberTypes }] = sellerIds.length
@@ -88,6 +89,8 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
     (marks ?? []).map((m) => ({ item_key: m.item_key, note: m.note, marked_by_name: nameOf(m.marked_by), marked_at: m.marked_at })),
   );
   const canCheck = ai.ai_staff_document_check && aiKeyConfigured();
+  const canReadRepairs = ai.ai_staff_inspection_items && aiKeyConfigured();
+  const isInspection = (types: string[]) => types.some((t) => t === "home_inspection" || t === "pest_inspection");
   const rowItem = (r: (typeof checklist.rows)[number]) => (
     <li key={r.key} className="flex flex-wrap items-start justify-between gap-3 py-3">
       <div className="min-w-0">
@@ -147,6 +150,7 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
                 types={cleanDocTypes(d.doc_types)}
                 shared={d.shared}
                 canCheck={canCheck}
+                extra={canReadRepairs && isInspection(d.doc_types) ? <StartRepairItems dealId={id} documentId={d.id} name={d.file_name} /> : null}
               />
             ))}
           </ul>
