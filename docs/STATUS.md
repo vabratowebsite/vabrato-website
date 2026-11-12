@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a (deal documents, seller-type checklist, document check, receipt reader; 0032) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -812,8 +812,7 @@ document checks, receipts, calendar drafts).
   - **Not in this PR:** scheduled or emailed market updates, any price
     suggestion.
 - **PR 7a (deal documents, checklist, document check, receipt reader;
-  migration 0032, not yet on hosted; amended after owner review
-  2026-11-13):**
+  migration 0032, merged as #38; amended after owner review 2026-11-13):**
   - **Documents tab** on each deal (with the wiring banner):
     - Staff upload PDFs, JPGs or PNGs (20 MB at most, checked by content).
       Files go from the browser straight to storage, never through a server
@@ -834,7 +833,9 @@ document checks, receipts, calendar drafts).
       missing documents.
   - **Checklist** for the deal's seller type, in code
     (`packages/lib/src/deal-documents.ts`). It's a **draft for Mark's
-    review**; rows marked (confirm) are new or changed on 2026-11-13.
+    review**; rows marked (confirm) are new or changed on 2026-11-13. The
+    review is deferred (owner decision 2026-11-13): the draft is used as
+    written until then, and changing rows later needs no migration.
     - Required, every sale:
       - purchase agreement (RPA)
       - agency disclosure (AD)
@@ -937,9 +938,23 @@ document checks, receipts, calendar drafts).
       another agent getting a 404, and axe at 1440 and 390 px.
     - The PR 2–6 scripts still pass (64, 42, 28, 34, 24). Screenshots are
       in `docs/screenshots/s6b-documents/`.
-  - **After merge:** apply 0032 on your OK, then
-    `packages/db/test/hosted-documents-check.sql` (rolled back; passes
-    locally).
+  - **On hosted (2026-11-12):** 0032 applied after checking that main's
+    file matched the tested one and that the storage policy it replaces
+    was there. `hosted-documents-check.sql` (rolled back) passed:
+    - the deal's agent adds and reads a document, tags the seller's upload
+      and marks an item not needed;
+    - a shared file in `staff/` and a `tmp/` path are refused by the table;
+    - another agent sees nothing and can't add;
+    - the seller sees no rows and, in storage, only the top-level file
+      (not `staff/`, `Staff/`, `tmp/` or deeper);
+    - the public is refused;
+    - the audit function writes for the deal's agent and refuses another
+      agent and unknown actions.
+    Nothing from the check remains. The security advisor's only new item
+    is `log_deal_document_action` being callable by signed-in users, which
+    is intended (it checks staff and deal access itself, like the other
+    audit functions). All 15 AI switches on hosted are off, as are the
+    sold-data switches.
   - **Not in this PR:** inspection reports and counter-offers (7b);
     Drive/Dropbox import (integrations PR after S6b).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
