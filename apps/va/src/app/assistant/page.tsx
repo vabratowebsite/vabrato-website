@@ -6,10 +6,12 @@ import { ConsoleShell } from "@/components/console-shell";
 import { inputCls, labelCls, linkAction, mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
 import { ASSISTANT_FEATURES, MASTER_FLAG, budgetPercent, usd } from "@/lib/assistant";
+import { DRAFT_KINDS, DRAFT_STATUS_LABEL, SENT_VIA_LABEL } from "@/lib/draft-kinds";
 import { confirmZdrAction, setAiFlagAction, setAiLimitsAction } from "@/lib/assistant-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen } from "@/lib/today";
+import type { AiDraftKind } from "@vabrato/db";
 
 // The VA assistant (S6b): what it can do and whether it's on, for all staff;
 // the switches, limits and this month's spend, for admins. Every change goes
@@ -24,7 +26,7 @@ export default async function AssistantPage() {
   const isAdmin = profile.role === "admin";
   const supabase = await supabaseServer();
   const keys = [MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag)];
-  const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }] = await Promise.all([
+  const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }, { data: myDrafts }] = await Promise.all([
     supabase.from("feature_flags").select("key, enabled").in("key", keys),
     supabase.rpc("ai_usage_today"),
     supabase
@@ -32,6 +34,13 @@ export default async function AssistantPage() {
       .select("ai_daily_requests_staff, ai_daily_requests_member, ai_daily_tokens_staff, ai_daily_tokens_member, ai_monthly_budget_usd, ai_zdr_confirmed_at, ai_zdr_confirmed_by, ai_zdr_note")
       .maybeSingle(),
     isAdmin ? supabase.rpc("ai_month_summary") : Promise.resolve({ data: null }),
+    supabase
+      .from("ai_drafts")
+      .select("id, kind, subject, status, sent_via, updated_at, lead_id, deal_id, leads(name, email), deals(address)")
+      .eq("owner_id", profile.id)
+      .in("status", ["draft", "approved"])
+      .order("updated_at", { ascending: false })
+      .limit(20),
   ]);
   const on = (key: string) => Boolean((flagRows ?? []).find((f) => f.key === key)?.enabled);
   const usage = usageRaw as unknown as AiUsageToday | null;
@@ -82,8 +91,35 @@ export default async function AssistantPage() {
             );
           })}
         </ul>
-        <p className={`${mutedCls} mt-4`}>More is on the way: drafts for client emails and lead replies, a daily briefing, listing launch kits and document checks.</p>
+        <p className={`${mutedCls} mt-4`}>Drafts are yours until you approve them; discarded drafts, and drafts left untouched, are deleted after 30 days. More is on the way: a daily briefing, listing launch kits and document checks.</p>
       </Panel>
+
+      {(myDrafts?.length ?? 0) > 0 && (
+        <Panel title="My drafts">
+          <p className={`${mutedCls} mb-3`}>Your open drafts and the ones you approved recently. Drafts you don&apos;t approve or discard are deleted 30 days after you last changed them.</p>
+          <ul className="divide-y divide-line">
+            {(myDrafts ?? []).map((d) => {
+              const about = d.lead_id ? (d.leads?.name || d.leads?.email || "Lead") : (d.deals?.address ?? "Transaction");
+              const href = d.lead_id ? `/leads/${d.lead_id}` : `/deals/${d.deal_id}`;
+              return (
+                <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 font-body text-body-sm text-ink">
+                  <Pill tone={d.status === "approved" ? "green" : "outline"}>{DRAFT_STATUS_LABEL[d.status] ?? d.status}</Pill>
+                  <span className="min-w-0 flex-1">
+                    <a href={href} className="text-navy underline">
+                      {d.subject || DRAFT_KINDS[d.kind as AiDraftKind]?.one || "Draft"}
+                    </a>
+                    <span className="text-muted">
+                      {" "}
+                      · {DRAFT_KINDS[d.kind as AiDraftKind]?.one} for {about} · {fmtWhen(d.updated_at)}
+                      {d.sent_via ? ` · ${SENT_VIA_LABEL[d.sent_via] ?? d.sent_via}` : ""}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      )}
 
       {isAdmin && (
         <Panel title="Before turning it on">

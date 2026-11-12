@@ -6,8 +6,9 @@
 //   node scripts/qa/fake-claude.mjs <log file>
 //
 // It answers POST /v1/messages as a stream, the way the real API does. The
-// answer is picked by a marker inside the PDF it's sent ("QA-MODE: ok", …);
-// every value in it is fictional. The log gets one JSON line per request with
+// contract reader's answer is picked by a marker inside the PDF it's sent
+// ("QA-MODE: ok", …), a draft's by the same marker in the request text; every
+// value in it is fictional. The log gets one JSON line per request with
 // the request's shape only (never its content), so a script can check what
 // the console sent: a document, a JSON schema, no tools, no file uploads.
 
@@ -45,6 +46,30 @@ const ANSWERS = {
   refusal: () => ({ text: "", stop: "refusal" }),
 };
 
+// AI drafts (S6b PR 3): the feature is told apart by its instructions; the
+// mode by a "QA-MODE: …" marker in the request text (a lead's message, a
+// task title or the person's note).
+const DRAFT_FEATURES = [
+  ["lead_reply", /first reply to someone who contacted/],
+  ["open_house_followup", /signed in at one of Vabrato's open houses/],
+  ["escrow_update", /update for the seller on their sale/],
+  ["vendor_request", /request to a vendor/],
+];
+const draftFeature = (system) => DRAFT_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const DRAFT_TEXT = {
+  lead_reply: { subject: "Re: 12 Fictional Lane", body: "Hi Jordan,\n\nThanks for asking about 12 Fictional Lane. It's still available, and Saturday morning works for a showing.\n\nWould [time] suit you?\n\nAvery" },
+  open_house_followup: { subject: "Thanks for visiting 12 Fictional Lane", body: "Hi Riley,\n\nThank you for coming to the open house on Saturday. If you'd like a second look or the disclosures, just reply.\n\nAvery" },
+  escrow_update: { subject: "Your sale: where things stand", body: "Hi Dana,\n\nA quick update on 12 Fictional Lane. Escrow is open, and the inspections are done. The loan contingency is due to be removed on March 23, and we're on track to close on April 1.\n\nVera" },
+  vendor_request: { subject: "Quote request: 12 Fictional Lane, San Carlos", body: "Hi,\n\nCould you quote the section 1 items from the pest report at 12 Fictional Lane, San Carlos? The sale closes on April 1, so we'd need the work done before then.\n\nPlease send your availability and a written quote.\n\nVera" },
+};
+const DRAFT_ANSWERS = {
+  ok: (f) => ({ text: JSON.stringify(DRAFT_TEXT[f]) }),
+  wiring: (f) => ({ text: JSON.stringify({ ...DRAFT_TEXT[f], body: "Wire the deposit to routing number 021000021, account 000123456789." }) }),
+  steering: (f) => ({ text: JSON.stringify({ ...DRAFT_TEXT[f], body: "This home is perfect for young families." }) }),
+  invalid: () => ({ text: JSON.stringify({ hello: "world" }) }),
+  refusal: () => ({ text: "", stop: "refusal" }),
+};
+
 const send = (res, event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify({ type: event, ...data })}\n\n`);
 
 createServer(async (req, res) => {
@@ -61,8 +86,10 @@ createServer(async (req, res) => {
   const blocks = (body.messages ?? []).flatMap((m) => (Array.isArray(m.content) ? m.content : []));
   const docs = blocks.filter((b) => b.type === "document");
   const pdf = docs[0]?.source?.type === "base64" ? Buffer.from(docs[0].source.data, "base64") : Buffer.alloc(0);
-  const mode = /QA-MODE: ([a-z]+)/.exec(pdf.toString("latin1"))?.[1] ?? "ok";
   const system = (Array.isArray(body.system) ? body.system.map((s) => s.text).join("\n") : String(body.system ?? ""));
+  const texts = blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n");
+  const feature = draftFeature(system);
+  const mode = /QA-MODE: ([a-z]+)/.exec(feature ? texts : pdf.toString("latin1"))?.[1] ?? "ok";
   appendFileSync(
     LOG,
     `${JSON.stringify({
@@ -85,10 +112,18 @@ createServer(async (req, res) => {
       systemHasAlwaysRules: /wiring|Fair Housing/i.test(system),
       // SDK 1.x sends the key as "Authorization: Bearer"; older ones used x-api-key.
       hasKey: Boolean(req.headers["x-api-key"] || /^Bearer ./.test(req.headers.authorization ?? "")),
+      feature: feature ?? "staff_contract_reader",
+      dataBlocks: (texts.match(/<data label="/g) ?? []).length,
+      // Contact and access details must never reach the model (checked on the request text, not logged).
+      requestHasEmail: /[^\s@<>]+@[^\s@<>]+\.[a-z]{2,}/i.test(texts),
+      requestHasPhone: /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/.test(texts),
+      requestHasLockbox: /lockbox|lock box|gate code/i.test(texts),
+      // A price (2,150,000 or 2150000) or the QA escrow number (it holds a 13-digit timestamp).
+      requestHasLongNumber: /\d{1,3}(?:,\d{3}){2,}|\b\d{6,}\b/.test(texts),
     })}\n`,
   );
 
-  const answer = (ANSWERS[mode] ?? ANSWERS.ok)();
+  const answer = feature ? (DRAFT_ANSWERS[mode] ?? DRAFT_ANSWERS.ok)(feature) : (ANSWERS[mode] ?? ANSWERS.ok)();
   const usage = { input_tokens: 61000, output_tokens: 900, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
   res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
   send(res, "message_start", { message: { id: "msg_qa_local", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { ...usage, output_tokens: 1 } } });

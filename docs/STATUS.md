@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -504,8 +504,8 @@ document checks, receipts, calendar drafts).
      proposed dates, contingencies, price and rent-back with page numbers,
      confirmed by a person before the schedule engine builds the timeline.
   3. Drafts: client emails (e.g. a weekly escrow update from the deal's
-     tasks), lead replies, open-house follow-ups, vendor requests, call
-     notes to to-dos.
+     tasks), lead replies, open-house follow-ups, vendor requests. (Call
+     notes to to-dos moved to PR 7, owner decision 2026-11-12.)
   4. Daily briefing, member activity summary, plain questions about the
      console's data.
   5. Listing launch kit, market update and CMA write-up, presentations as
@@ -513,7 +513,7 @@ document checks, receipts, calendar drafts).
   6. Document checks: missing documents by seller type, inspection report
      to repair request, what changed in a counter-offer, receipts.
   7. Appointment drafts (calendar file first; Google Calendar once that
-     connection is built).
+     connection is built), and call notes to to-dos and a follow-up draft.
   8. QA: screens, accessibility, and an optional live test run against the
      real model (costs money; only with approval).
 - **PR 1 (foundations, migration 0026):**
@@ -624,6 +624,44 @@ document checks, receipts, calendar drafts).
     tasks and contingencies, and the read-back that broke it before still
     fails as expected. Everything rolled back: flags off, no confirmation,
     $100 budget, no runs, alerts, test accounts, deals or uploads left.
+- **PR 3 (drafts; migration 0028, not yet on hosted):**
+  - Four drafts, each behind its own switch (off): **lead replies** and
+    **open-house follow-ups** on the lead page, **escrow updates** for the
+    seller and **vendor quote requests** on the deal page. The person can
+    add a note ("offer Saturday morning"); the assistant writes a subject
+    and an email; the person edits, approves, then sends it themselves.
+  - **Sending (owner decision 2026-11-12):** "Open in email" opens the
+    person's own mail app with the draft filled in (addresses from our
+    records, never from the model), "Copy", or "Send as portal message"
+    when the recipient has a member account the person may write to
+    (assigned to them, or an admin). The console never sends an email.
+  - **Approval:** the person who asked approves. The text they approve goes
+    through the Fair Housing and payment checks again (they may have
+    edited it); an approved draft can't be changed, only recorded as sent.
+  - **Storage:** `ai_drafts` (0028). A draft is its owner's while they work
+    that lead or deal; once approved it's part of the lead or transaction
+    file for staff who work it; members and the public never see drafts.
+    Discarded drafts, and drafts nobody approves or discards, are deleted
+    30 days after their last change (daily `purge_ai_drafts`, pg_cron on
+    hosted; owner decision 2026-11-12). The usage log still holds no text.
+  - **What goes to the model:** first names, the lead's message and form
+    answers (as data), the listing's public fields; for an escrow update
+    the address, dates, contingencies and task list (as data); for a vendor
+    the vendor, address and closing date. Never: email addresses or phone
+    numbers (also blanked out of anything typed), prices, escrow numbers,
+    documents, lockbox or access details (a note mentioning them is
+    refused).
+  - "My drafts" on /assistant lists each person's open and approved drafts.
+  - **Tests:** 15 database tests (`ai-drafts.test.ts`), 18 for the features
+    (what each sends, prompt injection kept as data, approval checks,
+    mailto, redaction). Browser QA `scripts/qa/s6b-drafts.mjs`: 42 checks
+    pass on the local stack with the fake Claude server; the PR 2 script
+    (64) still passes. Screenshots in `docs/screenshots/s6b-drafts/`.
+  - **After merge:** apply 0028 on your OK, then
+    `packages/db/test/hosted-drafts-check.sql` (rolled back; passes locally).
+  - **Not in this PR:** sending from the console through Resend, follow-ups
+    for a whole open house at once, call notes to to-dos (PR 7), drafts for
+    members (S5b).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

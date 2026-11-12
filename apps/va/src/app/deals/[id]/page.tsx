@@ -3,10 +3,14 @@ import { notFound } from "next/navigation";
 import type { Task, TaskPhase } from "@vabrato/db";
 import { OwnerChip, Panel, WiringBanner, cx, focusLight } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
+import { ApprovedDrafts } from "@/components/approved-drafts";
 import { DealShell } from "@/components/deal-shell";
+import { DraftPanel } from "@/components/draft-panel";
 import { linkAction, linkDanger, mutedCls } from "@/components/ui";
 import { removeMemberAction, toggleTaskAction } from "@/lib/actions";
 import { dueState, fmtShort } from "@/lib/dates";
+import { draftsFor } from "@/lib/draft-data";
+import { DRAFT_KINDS } from "@/lib/draft-kinds";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -33,11 +37,17 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const { deal, done, total } = result;
 
   const supabase = await supabaseServer();
-  const [{ data: tasks }, { data: members }] = await Promise.all([
+  const [{ data: tasks }, { data: members }, drafts] = await Promise.all([
     supabase.from("tasks").select("*").eq("deal_id", id).order("due_date").order("offset_days"),
     supabase.from("deal_members").select("profile_id, member_role, profiles(email, full_name)").eq("deal_id", id),
+    draftsFor(supabase, profile.id, { deal_id: id }, ["escrow_update", "vendor_request"]),
   ]);
   const all = tasks ?? [];
+  const sellers = (members ?? []).filter((m) => m.member_role === "seller");
+  const { data: vendors } = drafts.on.vendor_request
+    ? await supabase.from("vendors").select("id, name, role, email").order("preferred", { ascending: false }).order("name")
+    : { data: [] };
+  const showAssistant = drafts.on.escrow_update || drafts.on.vendor_request || drafts.approved.length > 0;
 
   return (
     <DealShell profile={profile} deal={deal} done={done} total={total} active="tasks">
@@ -92,6 +102,37 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
           </Panel>
         );
       })}
+
+      {showAssistant && (
+        <Panel title="Assistant">
+          <div className="space-y-8">
+            {drafts.on.escrow_update && (
+              <DraftPanel
+                heading={DRAFT_KINDS.escrow_update.heading}
+                target={{ target: "escrow", dealId: deal.id }}
+                initial={drafts.open.escrow_update ?? null}
+                emailTo={sellers.map((m) => m.profiles?.email ?? "").filter(Boolean)}
+                portal={sellers.length > 0}
+                noteLabel="Anything it should mention? (optional)"
+                noteHint="It writes from the task list and dates above. For example: the appraisal came in at value. Leave out amounts and bank details."
+              />
+            )}
+            {drafts.on.vendor_request && (
+              <DraftPanel
+                heading={DRAFT_KINDS.vendor_request.heading}
+                target={{ target: "vendor", dealId: deal.id }}
+                initial={drafts.open.vendor_request ?? null}
+                emailTo={[]}
+                portal={false}
+                vendors={vendors ?? []}
+                noteLabel="What do you need? (required)"
+                noteHint="For example: a quote for the section 1 items in the pest report, before March 20. Don't type lockbox codes or how to get in; add those to the email yourself."
+              />
+            )}
+          </div>
+          <ApprovedDrafts drafts={drafts.approved} />
+        </Panel>
+      )}
     </DealShell>
   );
 }
