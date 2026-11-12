@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 (assistant page, AI settings, contract reader; 0027) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -553,7 +553,7 @@ document checks, receipts, calendar drafts).
     admins read the usage log or change limits; the public can call none
     of it. Hosted has no usage rows and `ai_enabled` is off.
 - **PR 2 (assistant page, AI settings, contract reader; migration 0027,
-  not yet on hosted):**
+  merged as #28):**
   - **Assistant page** (`/assistant`, all staff): whether it's on, what it
     can do, and the person's own use today. Admins also see what's needed
     before it can be turned on (the API key, shown as set or not and never
@@ -608,8 +608,22 @@ document checks, receipts, calendar drafts).
   - **Not proven yet:** a real model call (needs the key and ZDR), and how
     long a real read of a long contract takes against Vercel's 300-second
     limit (`maxDuration = 300` on `/deals/new`).
-  - **After merge:** apply 0027 to hosted on your OK (check the name of the
-    `staff_notifications` kind constraint there first).
+  - **On hosted (2026-11-12):** 0027 applied after checking that main's
+    file matched the tested one and that the hosted kind constraint had the
+    expected name (the new one keeps all 10 kinds and adds `ai_budget`).
+    The security advisor shows nothing new beyond the expected notices for
+    `confirm_ai_zdr`, `set_ai_flag` and `ai_month_summary` (signed-in users
+    can call them; each checks for an admin itself); none is callable by the
+    public. Both AI flags are off and no confirmation is recorded.
+    `packages/db/test/hosted-assistant-check.sql` (rolled back; ZDR gate,
+    admin-only controls, budget alerts and pause, the staging folder, and a
+    VA creating a deal) passed on hosted (2026-11-12, one admin): the gate
+    held even for direct SQL; non-admins were refused; one 80% alert and one
+    100% alert reached the admin only, and the next request was paused; each
+    person's staging folder was theirs alone; a VA created a deal with its
+    tasks and contingencies, and the read-back that broke it before still
+    fails as expected. Everything rolled back: flags off, no confirmation,
+    $100 budget, no runs, alerts, test accounts, deals or uploads left.
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches
