@@ -44,6 +44,54 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_runs: {
+        Row: {
+          cache_read_tokens: number
+          cost_micros: number
+          created_at: string
+          deal_id: string | null
+          duration_ms: number | null
+          feature: string
+          finished_at: string | null
+          id: string
+          input_tokens: number
+          model: string | null
+          output_tokens: number
+          profile_id: string
+          status: string
+        }
+        Insert: {
+          cache_read_tokens?: number
+          cost_micros?: number
+          created_at?: string
+          deal_id?: string | null
+          duration_ms?: number | null
+          feature: string
+          finished_at?: string | null
+          id?: string
+          input_tokens?: number
+          model?: string | null
+          output_tokens?: number
+          profile_id: string
+          status?: string
+        }
+        Update: {
+          cache_read_tokens?: number
+          cost_micros?: number
+          created_at?: string
+          deal_id?: string | null
+          duration_ms?: number | null
+          feature?: string
+          finished_at?: string | null
+          id?: string
+          input_tokens?: number
+          model?: string | null
+          output_tokens?: number
+          profile_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       alert_deliveries: {
         Row: {
           created_at: string
@@ -194,6 +242,11 @@ export type Database = {
       }
       app_settings: {
         Row: {
+          ai_daily_requests_member: number
+          ai_daily_requests_staff: number
+          ai_daily_tokens_member: number
+          ai_daily_tokens_staff: number
+          ai_monthly_budget_usd: number
           backup_admin_id: string | null
           default_agent_id: string | null
           id: boolean
@@ -206,6 +259,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_daily_requests_member?: number
+          ai_daily_requests_staff?: number
+          ai_daily_tokens_member?: number
+          ai_daily_tokens_staff?: number
+          ai_monthly_budget_usd?: number
           backup_admin_id?: string | null
           default_agent_id?: string | null
           id?: boolean
@@ -218,6 +276,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_daily_requests_member?: number
+          ai_daily_requests_staff?: number
+          ai_daily_tokens_member?: number
+          ai_daily_tokens_staff?: number
+          ai_monthly_budget_usd?: number
           backup_admin_id?: string | null
           default_agent_id?: string | null
           id?: boolean
@@ -1915,6 +1978,10 @@ export type Database = {
     }
     Functions: {
       accept_vow_terms: { Args: { p_version: string }; Returns: string }
+      ai_begin: { Args: { p_deal?: string; p_feature: string }; Returns: Json }
+      ai_finish: { Args: { p_cache_read_tokens?: number; p_cost_micros?: number; p_duration_ms?: number; p_input_tokens?: number; p_model?: string; p_output_tokens?: number; p_run: string; p_status: string }; Returns: undefined }
+      ai_period_start: { Args: { p_unit: string }; Returns: string }
+      ai_usage_today: { Args: never; Returns: Json }
       can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
       can_work_lead: { Args: { p_lead: string }; Returns: boolean }
@@ -2144,6 +2211,7 @@ export type Database = {
       }
       seller_weekly_report_data: { Args: { p_deal: string; p_week_start?: string }; Returns: Json }
       send_seller_weekly_report: { Args: { p_deal: string; p_week_start?: string }; Returns: number }
+      set_ai_limits: { Args: { p_monthly_budget_usd?: number; p_requests_member?: number; p_requests_staff?: number; p_tokens_member?: number; p_tokens_staff?: number }; Returns: undefined }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
       set_lead_admin_away: { Args: { p_away: boolean; p_until?: string }; Returns: undefined }

@@ -30,8 +30,9 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | Not started |
+| S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations (`packages/ai`, migration 0026; PR open, not on hosted). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -489,6 +490,64 @@ comes after S6, by decision; the console has no AI code.
   - pg_net and pg_cron are available on the hosted project but not installed
     (PR 2a installs them).
 
+### S6b staff AI assistant, the VA assistant (in progress)
+
+Owner decision 2026-11-12: build the VA assistant first, then the client
+assistant (S5b). Both run on one foundation. SPEC `<ai_rules>` now lists the
+staff features (contract reader, drafts, briefing, launch kit, presentations,
+document checks, receipts, calendar drafts).
+
+- **Plan (PRs):**
+  1. Foundations: `packages/ai` and migration 0026 (this PR, no screens).
+  2. Assistant panel in the console, AI settings for admins (switches,
+     limits, this month's spend, a budget alert), and the contract reader:
+     proposed dates, contingencies, price and rent-back with page numbers,
+     confirmed by a person before the schedule engine builds the timeline.
+  3. Drafts: client emails (e.g. a weekly escrow update from the deal's
+     tasks), lead replies, open-house follow-ups, vendor requests, call
+     notes to to-dos.
+  4. Daily briefing, member activity summary, plain questions about the
+     console's data.
+  5. Listing launch kit, market update and CMA write-up, presentations as
+     printable pages.
+  6. Document checks: missing documents by seller type, inspection report
+     to repair request, what changed in a counter-offer, receipts.
+  7. Appointment drafts (calendar file first; Google Calendar once that
+     connection is built).
+  8. QA: screens, accessibility, and an optional live test run against the
+     real model (costs money; only with approval).
+- **PR 1 (foundations, migration 0026):**
+  - `packages/ai` is the only code that calls the model (ESLint and a guard
+    test enforce it; nothing on public pages or in client components may
+    import it). Every feature goes through `runAi()`: switches and limits,
+    Fair Housing check of the person's words, documents and pasted text sent
+    as data (never as instructions), the model call with no tools, then
+    checks on the whole answer (payment or wiring details stop it, Fair
+    Housing wording stops it, links that aren't ours or the person's own are
+    removed) before anything is shown, then the usage log.
+  - Model: Claude Opus 5.5; if it declines a request the API retries on
+    Claude Opus 4.8. Documents go inline with the request: no file storage
+    or conversation threads at Anthropic (Zero Data Retention).
+  - Database: `ai_enabled` master switch (off) plus one `ai_<feature>` flag
+    per feature; staff features for staff only, member features for members
+    only; `ai_runs` usage log with metadata only (no column for questions,
+    documents or answers; admins read it); limits per person per day and a
+    monthly budget for the whole site.
+  - Defaults, changeable by admins (`set_ai_limits`, audited): staff 100
+    requests and 3,000,000 tokens a day; members 30 requests and 300,000
+    tokens a day; $100 a month for the site.
+  - Listing data sent to the model uses the data-level field list and never
+    includes contact details, showing instructions or lockbox information.
+  - Tests use a scripted stand-in for the model (no network, no cost): 13
+    database tests and 55 in `packages/ai`, including six prompt-injection
+    fixtures.
+  - Not yet built: the alert when the monthly budget is nearly used (PR 2),
+    and the live test against the real model (PR 8).
+- **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
+  later the website) and Anthropic's written Zero Data Retention
+  confirmation. Until then everything is built and tested with the switches
+  off.
+
 **Must ship before launch (S5 review item 17):** done in S6 PR 2a (member
 message and tour-request alerts, in the console and by email). Email
 delivery itself waits on Resend (To finish S6, step 1).
@@ -548,6 +607,14 @@ with the code (timeline: 5 tests, now in packages/lib).
   acting lead admin) or MLS data (ACC-1). Admins also get the in-console
   delivery and MLS-sync alerts, and every new lead whenever routing is
   unset. Applied per person after their first sign-in.
+
+- **2026-11-12 — VA assistant first (Rachanee):** the staff AI assistant
+  (S6b) is built before the member assistant (S5b). SPEC `<ai_rules>` staff
+  features extended, including reading a deal's own documents under Zero
+  Data Retention. Working defaults until Rachanee says otherwise (proposed
+  2026-11-12, not yet confirmed): model Claude Opus 5.5; the usage limits
+  listed under S6b; the agent sees assistant suggestions, not a member's
+  whole conversation; photo-style room concepts wait for an image provider.
 
 ## Where things stand
 

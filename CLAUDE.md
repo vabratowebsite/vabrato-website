@@ -16,6 +16,8 @@ pnpm monorepo, one Supabase backend:
 - packages/ui  — shared components and design tokens
 - packages/lib — auth helpers, schedule engine, notifications, integrations
 - packages/mls — MLSListings RESO Web API client, mock server, fixtures, sync (S3)
+- packages/ai  — the only code that calls the model: guarded pipeline (flags,
+                 limits, Fair Housing, documents as data, usage log), Claude client
 
 ## Stack (don't substitute without asking)
 

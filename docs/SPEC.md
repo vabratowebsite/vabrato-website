@@ -219,10 +219,18 @@ Member features (each behind its own feature flag):
 - Design: palettes, moodboards, staging ideas, open-house flyers and social posts (Claude generates layouts as HTML/SVG; photo-style room concepts go through an image-model adapter whose provider is chosen in S5b). Concept images are labeled "AI concept" and can never be uploaded as listing photos. Flyers are approved by the agent.
 - Explain and compare: explain terms, compare saved homes, answer questions about a listing from its permitted fields, with "not legal or tax advice" and an "Ask my agent" action.
 - Natural-language search: turns a sentence into normal search filters.
-Staff features: draft lead replies, listing launch kits, monthly market updates from computed statistics, CMA write-ups, member activity summaries. A person approves every staff draft before it is sent or published. Who approves: the agent who requested the draft; anything published on the website also needs Mark's approval.
+Staff features (the VA assistant in the agent console; each behind its own feature flag; list extended 2026-11-12 by owner decision):
+- Drafts: lead replies, one-off client emails (for example a weekly escrow update written from the deal's task list), open-house follow-ups, vendor quote requests.
+- Listing launch kits: listing description, social posts, email blast, flyer. Also listing and buyer presentations as printable pages.
+- Monthly market updates from computed statistics, and CMA write-ups.
+- Summaries: member activity, a daily briefing (what is due across deals, leads with no reply, messages waiting), showing feedback for a seller.
+- Document work on a deal's own files: read a ratified contract and propose its dates, contingency periods, price and rent-back with page references (a person confirms them and the schedule engine sets every deadline); show what changed in a counter-offer or addendum; check the deal's documents against the checklist for its seller type; turn an inspection report into a draft repair request or contractor bid list.
+- Small helpers: read a receipt into vendor, amount and date; turn call notes into to-dos and a follow-up draft; draft an appointment and its confirmation (it goes on a calendar only when a person adds it); answer plain questions about the console's own data.
+A person approves every staff draft before it is sent or published. Who approves: the agent who requested the draft; anything published on the website also needs Mark's approval. AI never sends, books or changes anything by itself.
 Guardrails (all AI features):
 - Claude API under Anthropic's Commercial Terms with Zero Data Retention, called only from server code in packages/ai.
 - Our own code computes statistics and selects records; only that request's results are sent, through a field allowlist for the user's data level (IDX / VOW / FULL). Never send seller/occupant contact info, lockbox or showing instructions, or agent phone/email to the model.
+- A deal's own documents (contracts, disclosures, inspection reports) name the clients. Staff may send one to the model for that request only, for a deal they have access to, under Zero Data Retention. Nothing from the document is kept at Anthropic, and bank or wiring details read from a document are never stored or repeated.
 - No training, fine-tuning, embeddings or vector stores of MLS data. A member's own uploaded documents may be indexed for that member only, under RLS, and deleted on request.
 - Never generate wiring or payment instructions, never change a deadline, never present a price opinion as an appraisal.
 - Fair Housing check on input and output; demographic or steering questions get a neutral answer pointing to official sources. Generated copy must pass the same check.
@@ -352,6 +360,7 @@ Work proceeds in these segments, in order, one Claude Code session each. A segme
 | S5 | Membership portal | 4 | G3 complete; RLS tests pass for every table; a test buyer gets an alert within 30 minutes of a feed change |
 | S5b | Member AI assistant (Ask Vabrato) | 4 | Ask Vabrato features in `/my`, each behind its own flag, server-side via `packages/ai`; guardrail tests (field allowlist, Fair Housing, prompt-injection fixtures, usage caps) pass |
 | S6 | Staff console & automations | 5 | G5 complete; every web lead reaches Mark within 1 minute |
+| S6b | Staff AI assistant (the VA assistant) | 5 | Staff features of `<ai_rules>` in the agent console, each behind its own flag, server-side via `packages/ai`; the same guardrail tests pass. Built before S5b (owner decision 2026-11-12); both share one foundation |
 | S7 | Mobile app | 6 | G4 complete; TestFlight and Play internal testing |
 | S8 | SEO migration | 7 | Old-URL list and redirects done; baseline saved |
 | S9 | Launch QA | 7 | `<definition_of_done>` met |
