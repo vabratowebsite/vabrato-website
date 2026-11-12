@@ -112,6 +112,25 @@ const STATS_ANSWER = (feature, data, mode) => {
     adjustments_note: "Condition and updates matter more than the numbers show.",
   };
 };
+// S6b PR 7a: "Check this document" and the receipt reader. The file (a PDF
+// or an image) carries the "QA-MODE: …" marker in its bytes.
+const FILE_FEATURES = [
+  ["document_check", /keep a sale's file complete/],
+  ["receipt_reader", /You read a receipt or invoice/],
+];
+const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const FILE_ANSWERS = {
+  document_check: (mode) =>
+    mode === "wiring"
+      ? { doc_types: ["rpa"], title: "Purchase agreement", signed: "yes", issues: [{ page: 2, issue: "Wire the deposit to routing number 021000021, account 000123456789." }] }
+      : mode === "none"
+        ? { doc_types: [], title: "Lender pre-approval letter", signed: "not_applicable", issues: [] }
+        : { doc_types: ["tds", "spq", "made_up_type"], title: "Seller disclosure packet", signed: "unclear", issues: [{ page: 3, issue: "Seller initials missing at the bottom of the page." }, { page: null, issue: "The SPQ looks like an older form version." }] },
+  receipt_reader: (mode) =>
+    mode === "unreadable"
+      ? { readable: false, vendor: null, amount: null, date: null, category: null, problem: "The photo is too blurry to read the total." }
+      : { readable: true, vendor: "Fixture Home Inspections", amount: 550, date: "2026-10-02", category: "Inspection", problem: null },
+};
 const KIT_ANSWER = {
   mls_description: "Light-filled three-bedroom home with a remodeled kitchen, a sunny yard and an easy walk to the park.",
   headline: "Light-filled in San Carlos",
@@ -182,8 +201,11 @@ createServer(async (req, res) => {
   const summary = summaryFeature(system);
   const kit = kitFeature(system);
   const stats = statsFeature(system);
-  const feature = draftFeature(system) ?? summary ?? kit ?? stats;
-  const mode = /QA-MODE: ([a-z]+)/.exec(feature ? texts : pdf.toString("latin1"))?.[1] ?? "ok";
+  const fileFeat = fileFeature(system);
+  const images = blocks.filter((b) => b.type === "image");
+  const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
+  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat;
+  const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
     LOG,
@@ -196,6 +218,8 @@ createServer(async (req, res) => {
       stream: body.stream === true,
       messages: (body.messages ?? []).length,
       documents: docs.length,
+      images: images.length,
+      imageTypes: images.map((b) => b.source?.media_type ?? null),
       documentIsInlinePdf: docs.every((d) => d.source?.type === "base64" && d.source?.media_type === "application/pdf") && pdf.subarray(0, 5).toString() === "%PDF-",
       documentBytes: pdf.length,
       fileReferences: blocks.filter((b) => b.source?.type === "file").length,
@@ -221,7 +245,9 @@ createServer(async (req, res) => {
     })}\n`,
   );
 
-  const answer = stats
+  const answer = fileFeat
+    ? { text: JSON.stringify(FILE_ANSWERS[fileFeat](mode)) }
+    : stats
     ? { text: JSON.stringify(STATS_ANSWER(stats, dataJson(texts), mode)) }
     : kit
     ? mode === "wiring"
