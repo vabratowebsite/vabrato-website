@@ -21,6 +21,30 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "Reads a ratified purchase contract and fills in the new-transaction form (dates, days to close, contingencies, price, rent-back), with the page and a quote for each value. You check the values, then create the transaction.",
     where: { href: "/deals/new", label: "New transaction" },
   },
+  {
+    flag: "ai_staff_lead_reply",
+    name: "Lead replies",
+    what: "Drafts a first reply to a website lead from what they asked and the listing they asked about. You edit and approve it, then send it from your own email (or as a portal message if they have an account).",
+    where: { href: "/leads", label: "Leads" },
+  },
+  {
+    flag: "ai_staff_open_house_followup",
+    name: "Open-house follow-ups",
+    what: "Drafts a thank-you and follow-up to someone who signed in at an open house. You edit, approve and send it yourself.",
+    where: { href: "/leads", label: "Leads" },
+  },
+  {
+    flag: "ai_staff_escrow_update",
+    name: "Escrow updates",
+    what: "Drafts an update for the seller from the transaction's task list: what's done, what's next and the closing date. You edit, approve and send it yourself.",
+    where: { href: "/deals", label: "Deals" },
+  },
+  {
+    flag: "ai_staff_vendor_request",
+    name: "Vendor quote requests",
+    what: "Drafts a quote or appointment request to a vendor for a transaction, from what you say you need. You add access details, approve and send it yourself.",
+    where: { href: "/deals", label: "Deals" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";

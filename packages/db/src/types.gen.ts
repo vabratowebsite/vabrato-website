@@ -44,6 +44,89 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_drafts: {
+        Row: {
+          approved_at: string | null
+          body: string
+          created_at: string
+          deal_id: string | null
+          discarded_at: string | null
+          id: string
+          kind: string
+          lead_id: string | null
+          owner_id: string
+          sent_via: string | null
+          status: string
+          subject: string
+          updated_at: string
+          used_at: string | null
+          vendor_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          body: string
+          created_at?: string
+          deal_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          kind: string
+          lead_id?: string | null
+          owner_id?: string
+          sent_via?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          used_at?: string | null
+          vendor_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          body?: string
+          created_at?: string
+          deal_id?: string | null
+          discarded_at?: string | null
+          id?: string
+          kind?: string
+          lead_id?: string | null
+          owner_id?: string
+          sent_via?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          used_at?: string | null
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_drafts_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_drafts_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_drafts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_drafts_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_runs: {
         Row: {
           cache_read_tokens: number
@@ -1995,6 +2078,7 @@ export type Database = {
       can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
       can_work_lead: { Args: { p_lead: string }; Returns: boolean }
+      can_work_draft_target: { Args: { p_deal: string; p_lead: string }; Returns: boolean }
       check_sync_health: { Args: never; Returns: string }
       claim_due_notifications: {
         Args: { p_batch?: number }
@@ -2136,6 +2220,7 @@ export type Database = {
       }
       publish_content: { Args: { p_revision: string }; Returns: string }
       purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
+      purge_ai_drafts: { Args: never; Returns: number }
       purge_old_leads: { Args: { p_months?: number }; Returns: number }
       reassign_lead: { Args: { p_agent: string; p_lead: string }; Returns: undefined }
       record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }

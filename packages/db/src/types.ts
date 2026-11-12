@@ -145,6 +145,9 @@ export interface MarketStats {
 }
 
 export type AiRun = Tables["ai_runs"]["Row"];
+export type AiDraft = Tables["ai_drafts"]["Row"];
+export type AiDraftKind = "lead_reply" | "open_house_followup" | "escrow_update" | "vendor_request";
+export type AiDraftStatus = "draft" | "approved" | "discarded";
 /** ai_begin(feature, deal) (0026). */
 export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "daily_requests" | "daily_tokens" | "monthly_budget" };
 /** ai_usage_today() (0026). */

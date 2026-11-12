@@ -3,8 +3,12 @@ import { notFound } from "next/navigation";
 import { Panel, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
+import { ApprovedDrafts } from "@/components/approved-drafts";
+import { DraftPanel } from "@/components/draft-panel";
 import { ConsoleShell } from "@/components/console-shell";
 import { btnPrimary, inputCls, labelCls, mutedCls } from "@/components/ui";
+import { draftsFor } from "@/lib/draft-data";
+import { DRAFT_KINDS, leadDraftKind } from "@/lib/draft-kinds";
 import { addLeadNoteAction, markRepliedAction, reassignLeadAction, setLeadStatusAction } from "@/lib/lead-actions";
 import { STATUS_LABEL, fmtDuration, payloadRows } from "@/lib/leads";
 import { requireSignIn } from "@/lib/staff";
@@ -27,12 +31,16 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
   const { data: lead } = await supabase.from("leads").select("*").eq("id", id).maybeSingle();
   if (!lead) notFound();
 
-  const [{ data: notes }, { data: acting }, { data: alerts }, { data: agents }] = await Promise.all([
+  const draftKind = leadDraftKind(lead.kind);
+  const [{ data: notes }, { data: acting }, { data: alerts }, { data: agents }, drafts] = await Promise.all([
     supabase.from("lead_notes").select("id, body, created_at, author_id").eq("lead_id", id).order("created_at"),
     supabase.rpc("is_acting_lead_admin"),
     supabase.from("notifications").select("template_key, created_at, sent_at, status, attempts").like("dedupe_key", `%:${id}:%`).order("created_at"),
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
+    draftsFor(supabase, profile.id, { lead_id: id }, [draftKind]),
   ]);
+  // A portal message only when this person may write to that member (assigned to them, or an admin).
+  const { data: canMessage } = lead.profile_id ? await supabase.rpc("can_see_member", { p_profile: lead.profile_id }) : { data: false };
   const people = new Map((agents ?? []).map((a) => [a.id, a.full_name || a.email]));
   const authorIds = [...new Set((notes ?? []).map((n) => n.author_id).filter((x): x is string => Boolean(x) && !people.has(x as string)))];
   if (authorIds.length) {
@@ -113,6 +121,25 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
           </Panel>
+
+          {(drafts.on[draftKind] || drafts.approved.length > 0) && (
+            <Panel title="Assistant">
+              {drafts.on[draftKind] ? (
+                <DraftPanel
+                  heading={DRAFT_KINDS[draftKind].heading}
+                  target={{ target: "lead", leadId: id }}
+                  initial={drafts.open[draftKind] ?? null}
+                  emailTo={[lead.email]}
+                  portal={Boolean(lead.profile_id && canMessage)}
+                  noteLabel="Anything it should say? (optional)"
+                  noteHint="For example: offer Saturday morning for a showing. Don't add phone numbers or other personal details; you can add them to the email yourself."
+                />
+              ) : (
+                <p className={mutedCls}>The assistant&apos;s {DRAFT_KINDS[draftKind].name.toLowerCase()} are off.</p>
+              )}
+              <ApprovedDrafts drafts={drafts.approved} />
+            </Panel>
+          )}
 
           <Panel title="Notes">
             {notes?.length ? (
