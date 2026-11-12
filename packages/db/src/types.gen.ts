@@ -48,12 +48,14 @@ export type Database = {
         Row: {
           approved_at: string | null
           body: string
+          content: Json | null
           created_at: string
           deal_id: string | null
           discarded_at: string | null
           id: string
           kind: string
           lead_id: string | null
+          listing_key: string | null
           owner_id: string
           sent_via: string | null
           status: string
@@ -65,12 +67,14 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           body: string
+          content?: Json | null
           created_at?: string
           deal_id?: string | null
           discarded_at?: string | null
           id?: string
           kind: string
           lead_id?: string | null
+          listing_key?: string | null
           owner_id?: string
           sent_via?: string | null
           status?: string
@@ -82,12 +86,14 @@ export type Database = {
         Update: {
           approved_at?: string | null
           body?: string
+          content?: Json | null
           created_at?: string
           deal_id?: string | null
           discarded_at?: string | null
           id?: string
           kind?: string
           lead_id?: string | null
+          listing_key?: string | null
           owner_id?: string
           sent_via?: string | null
           status?: string
@@ -110,6 +116,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_drafts_listing_key_fkey"
+            columns: ["listing_key"]
+            isOneToOne: false
+            referencedRelation: "mls_listings"
+            referencedColumns: ["listing_key"]
           },
           {
             foreignKeyName: "ai_drafts_owner_id_fkey"

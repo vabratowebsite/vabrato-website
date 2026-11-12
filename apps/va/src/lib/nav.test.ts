@@ -19,6 +19,7 @@ describe("console nav", () => {
       "/reports",
       "/stats",
       "/cmas",
+      "/presentations",
       "/deals",
       "/vendors",
       "/profile",

@@ -40,7 +40,7 @@ async function sent(kind: keyof typeof DRAFT_FEATURES, input: Parameters<typeof 
 
 describe("the four draft features", () => {
   it("each has its own switch, matching the pipeline's feature key", () => {
-    for (const info of Object.values(DRAFT_KINDS)) expect(info.flag).toBe(`ai_${DRAFT_FEATURES[info.kind].key}`);
+    for (const kind of Object.keys(DRAFT_FEATURES) as (keyof typeof DRAFT_FEATURES)[]) expect(DRAFT_KINDS[kind].flag).toBe(`ai_${DRAFT_FEATURES[kind].key}`);
     expect(new Set(Object.values(DRAFT_FEATURES).map((f) => f.key)).size).toBe(4);
   });
 

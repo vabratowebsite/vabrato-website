@@ -16,6 +16,7 @@ export type ConsolePage =
   | "reports"
   | "stats"
   | "cmas"
+  | "presentations"
   | "deals"
   | "vendors"
   | "profile"
@@ -49,7 +50,7 @@ export function consoleNav(current: ConsolePage | null, counts: { unreadMessages
       ],
     },
     { label: "Website", items: [item("content", "Content", "/content"), item("featured", "Featured listings", "/featured")] },
-    { label: "Reports", items: [item("reports", "Seller reports", "/reports"), item("stats", "Market stats", "/stats"), item("cmas", "CMAs", "/cmas")] },
+    { label: "Reports", items: [item("reports", "Seller reports", "/reports"), item("stats", "Market stats", "/stats"), item("cmas", "CMAs", "/cmas"), item("presentations", "Presentations", "/presentations")] },
     { label: "Transactions", items: [item("deals", "Deals", "/deals"), item("vendors", "Vendors", "/vendors")] },
     { label: "Account", items: [item("profile", "My profile", "/profile"), item("settings", "Settings", "/settings")] },
   ];

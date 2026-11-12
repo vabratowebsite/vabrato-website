@@ -66,6 +66,34 @@ const SUMMARY_FEATURES = [
   ["data_questions", /Answer the person's question about their own work/],
 ];
 const summaryFeature = (system) => SUMMARY_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+
+// S6b PR 5: launch kits and presentations.
+const KIT_FEATURES = [
+  ["listing_kit", /Write a launch kit for one of Vabrato's own listings/],
+  ["listing_presentation", /This is a listing presentation/],
+  ["buyer_presentation", /This is a buyer presentation/],
+];
+const kitFeature = (system) => KIT_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const KIT_ANSWER = {
+  mls_description: "Light-filled three-bedroom home with a remodeled kitchen, a sunny yard and an easy walk to the park.",
+  headline: "Light-filled in San Carlos",
+  instagram: "Just listed in San Carlos: light, a remodeled kitchen and a sunny yard. #justlisted #sancarlos",
+  facebook: "Just listed: a light-filled three-bedroom home with a remodeled kitchen and a sunny yard.",
+  linkedin: "Proud to bring this light-filled San Carlos home to market.",
+  email_subject: "Just listed in San Carlos",
+  email_body: "Hi,\n\nI've just listed a light-filled three-bedroom home in San Carlos with a remodeled kitchen and a sunny yard.\n\nAvery",
+  flyer_headline: "Light-filled in San Carlos",
+  flyer_bullets: ["Remodeled kitchen", "Sunny yard", "Three bedrooms", "Walk to the park"],
+  flyer_blurb: "A bright, updated home with room to relax inside and out.",
+};
+const PRESENTATION_ANSWER = (kind) => ({
+  title: kind === "listing_presentation" ? "Selling your home with Vabrato" : "Buying a home with Vabrato",
+  sections: [
+    { heading: "Welcome", paragraphs: ["Thank you for meeting with me.", "Here's how we'd work together."] },
+    { heading: kind === "listing_presentation" ? "Preparing and marketing your home" : "Finding the right home", paragraphs: ["We start with a plan that fits your timing."] },
+    { heading: "Through escrow", paragraphs: ["Your portal shows every deadline and document."] },
+  ],
+});
 const refsIn = (texts) => [...texts.matchAll(/^([DTCLM]\d+) \|/gm)].map((m) => m[1]);
 const SUMMARY_ANSWERS = {
   daily_briefing: (refs) => ({
@@ -114,7 +142,8 @@ createServer(async (req, res) => {
   const system = (Array.isArray(body.system) ? body.system.map((s) => s.text).join("\n") : String(body.system ?? ""));
   const texts = blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n");
   const summary = summaryFeature(system);
-  const feature = draftFeature(system) ?? summary;
+  const kit = kitFeature(system);
+  const feature = draftFeature(system) ?? summary ?? kit;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature ? texts : pdf.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
@@ -149,10 +178,17 @@ createServer(async (req, res) => {
       requestHasLongNumber: /\d{1,3}(?:,\d{3}){2,}|\b\d{6,}\b/.test(texts),
       refsSent: Object.fromEntries(["D", "T", "C", "L", "M"].map((k) => [k, refs.filter((r) => r[0] === k).length])),
       messagesSent: (texts.match(/^Message \d+ \|/gm) ?? []).length,
+      requestHasPrivateListingFields: /PrivateRemarks|ShowingInstructions|LockBox|OwnerName|ListAgentEmail|ListAgent(?:Direct|Mobile)Phone/.test(texts),
     })}\n`,
   );
 
-  const answer = summary
+  const answer = kit
+    ? mode === "wiring"
+      ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, email_body: "Wire the deposit to routing number 021000021, account 000123456789." } : { ...PRESENTATION_ANSWER(kit), sections: [{ heading: "Deposit", paragraphs: ["Wire instructions: routing 021000021 account 000123456789"] }] }) }
+      : mode === "steering"
+        ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, facebook: "This home is perfect for young families." } : PRESENTATION_ANSWER(kit)) }
+        : { text: JSON.stringify(kit === "listing_kit" ? KIT_ANSWER : PRESENTATION_ANSWER(kit)) }
+    : summary
     ? mode === "wiring"
       ? { text: JSON.stringify(summary === "data_questions" ? { answer: "Wire the deposit to routing number 021000021, account 000123456789.", refs: [], not_in_data: false } : summary === "member_summary" ? { summary: "Wire instructions: routing 021000021 account 000123456789", looking_for: [], next_steps: [] } : { headline: "Wire instructions: routing 021000021 account 000123456789", sections: [] }) }
       : { text: JSON.stringify(SUMMARY_ANSWERS[summary](refs, texts)) }
