@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 (market updates, CMA write-ups, CMA in listing presentations; 0031) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -761,6 +761,41 @@ document checks, receipts, calendar drafts).
     hosted are off.
   - **Not in this PR:** posting to social networks or the MLS, sending the
     email blast, AI images, CMA in presentations (PR 6).
+- **PR 6 (market updates and CMA write-ups; migration 0031, not yet on
+  hosted):** both run on sold data, so they only work while
+  `market_stats_enabled` / `cma_enabled` are on (off on hosted until
+  MLSListings approves); built and tested on fictional sold listings.
+  - **Market update** (Market stats → "Write a market update"): written
+    around the console's own figures for the city and period. **Numbers
+    check:** at approval, every number in the text must be one we sent
+    (rounding allowed; years and small counts ignored); anything else is
+    listed and blocks approval. While `public_stats` is off the approved
+    update is an internal preview only (no copy, no website; owner decision
+    2026-11-12). Once it's on: copy it, or "Send to website review", which
+    puts a post (kind market update) in Mark's content queue; publishing
+    stays his (Viv's while he's away).
+  - **CMA write-up** (a CMA → "Write a summary"): a plain-language summary
+    of the comparables and our computed range, with "not an appraisal"
+    required at approval and the same numbers check; never the assistant's
+    own value. The approved summary shows on the CMA and its printout.
+  - **CMA in listing presentations** (owner decision 2026-11-12): the form
+    can attach one of the agent's CMAs with an approved summary; the
+    printout adds our range, the comparables and the summary, only while
+    CMAs are on.
+  - **Database:** 0031 adds the two switches, the two kinds and `cma_id`
+    to `ai_drafts`, and `website` as a way a draft was used; a market
+    update only while market stats are on, a write-up only for a CMA the
+    person can open and only while CMAs are on.
+  - **Tests:** 9 database tests (`ai-market-cma.test.ts`), 11 for the
+    features (numbers check, what each sends, approval). Browser QA
+    `scripts/qa/s6b-market-cma.mjs`: 24 checks pass on the local stack with
+    the fake Claude; the PR 2–5 scripts still pass. Screenshots in
+    `docs/screenshots/s6b-market-cma/`.
+  - **After merge:** apply 0031 on your OK, then
+    `packages/db/test/hosted-market-cma-check.sql` (rolled back; passes
+    locally).
+  - **Not in this PR:** scheduled or emailed market updates, any price
+    suggestion.
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

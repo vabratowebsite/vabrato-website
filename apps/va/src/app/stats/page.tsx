@@ -2,8 +2,12 @@ import { KpiTile, Panel } from "@vabrato/ui/web";
 import type { MarketStats } from "@vabrato/db";
 import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
+import { MarketUpdatePanel } from "@/components/kit-editor";
 import { MlsAttribution } from "@/components/mls-attribution";
 import { btnSecondary, inputCls, labelCls, mutedCls } from "@/components/ui";
+import { aiFeaturesOn } from "@/lib/ai-flags";
+import { cleanParts } from "@/lib/kit-parts";
+import type { KitView } from "@/lib/kit-actions";
 import { requireSignIn } from "@/lib/staff";
 import { fmtMoney, fmtRatio, fmtStat, monthLabel } from "@/lib/stats";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -26,6 +30,15 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
   const months = PERIODS.includes(Number(sp.months)) ? Number(sp.months) : 12;
   const [{ data }, { data: lastUpdated }] = await Promise.all([supabase.rpc("market_stats", { p_slug: city, p_months: months }), supabase.rpc("mls_last_updated")]);
   const stats = data as unknown as MarketStats | { enabled: false } | null;
+  // The assistant's market update for this city and period (S6b PR 6).
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_market_update"]);
+  const [{ data: publicFlag }, { data: latest }] = await Promise.all([
+    supabase.from("feature_flags").select("enabled").eq("key", "public_stats").maybeSingle(),
+    ai.ai_staff_market_update
+      ? supabase.from("ai_drafts").select("id, kind, status, content, sent_via").eq("kind", "market_update").eq("owner_id", profile.id).eq("content->facts->>city", city).eq("content->facts->>months", String(months)).in("status", ["draft", "approved"]).order("updated_at", { ascending: false }).limit(1)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const update: KitView | null = latest?.[0] ? { id: latest[0].id, kind: "market_update", status: latest[0].status as KitView["status"], parts: cleanParts("market_update", latest[0].content), sent_via: latest[0].sent_via } : null;
 
   return (
     <ConsoleShell profile={profile} current="stats" eyebrow="Reports" title="Market stats">
@@ -103,6 +116,14 @@ export default async function StatsPage({ searchParams }: { searchParams: Promis
               </table>
             </div>
           </Panel>
+          {ai.ai_staff_market_update && (
+            <Panel title="Market update">
+              <p className={`${mutedCls} mb-4`}>
+                The assistant writes an update around the figures above for {stats.city_name}, last {stats.months} months. Every number must be one of these; the check at approval lists any that aren&apos;t.
+              </p>
+              <MarketUpdatePanel key={`${city}-${months}`} city={city} months={months} initial={update} publicStats={Boolean(publicFlag?.enabled)} />
+            </Panel>
+          )}
           <MlsAttribution lastUpdated={(lastUpdated as string | null) ?? null} />
         </>
       )}

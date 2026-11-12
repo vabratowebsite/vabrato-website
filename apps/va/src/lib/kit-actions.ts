@@ -8,6 +8,7 @@ import { aiDeps, aiKeyConfigured } from "@/lib/ai";
 import { prepareNote } from "@/lib/drafts";
 import { KIND_TITLE, cleanParts, partsText, type KitKind, type Parts } from "@/lib/kit-parts";
 import { LISTING_KIT, PRESENTATIONS, kitInput, kitToParts, partsProblems, presentationInput, presentationToParts } from "@/lib/kits";
+import { writeupProblems } from "@/lib/market-cma";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // S6b PR 5: launch kits and presentations. The model writes; the agent who
@@ -70,6 +71,7 @@ export async function writeKitAction(listingKey: string, note: string): Promise<
 
 const PresentationForm = z.object({
   kind: z.enum(["listing_presentation", "buyer_presentation"]),
+  cmaId: z.string().uuid().optional().or(z.literal("")),
   client: z.string().max(80).optional(),
   place: z.string().max(200).optional(),
   note: z.string().max(1000).optional(),
@@ -95,9 +97,16 @@ export async function writePresentationAction(raw: z.input<typeof PresentationFo
     if (!result.ok) return { ok: false, error: result.message };
     if (!result.data) return { ok: false, error: "The assistant's answer wasn't usable. Please try again." };
     const content = presentationToParts(f.data.kind, result.data);
+    // An attached CMA (listing presentations only): one of the person's own, with an approved summary.
+    let cmaId: string | undefined;
+    if (f.data.kind === "listing_presentation" && f.data.cmaId) {
+      const { data: w } = await supabase.from("ai_drafts").select("id").eq("kind", "cma_writeup").eq("cma_id", f.data.cmaId).eq("owner_id", profile.id).eq("status", "approved").limit(1);
+      if (!w?.length) return { ok: false, error: "That CMA has no approved summary yet. Approve one on the CMA's page first." };
+      cmaId = f.data.cmaId;
+    }
     const { data: saved, error } = await supabase
       .from("ai_drafts")
-      .insert({ kind: f.data.kind, subject: (content.title || KIND_TITLE[f.data.kind]).slice(0, 200), body: partsText(f.data.kind, content), content })
+      .insert({ kind: f.data.kind, subject: (content.title || KIND_TITLE[f.data.kind]).slice(0, 200), body: partsText(f.data.kind, content), content: { ...content, ...(cmaId ? { cma_id: cmaId } : {}) } })
       .select("id")
       .single();
     if (error || !saved) return { ok: false, error: "Couldn't save the presentation. Please try again." };
@@ -111,21 +120,39 @@ export async function writePresentationAction(raw: z.input<typeof PresentationFo
 
 const Id = z.string().uuid();
 
-async function loadKit(supabase: Awaited<ReturnType<typeof supabaseServer>>, id: string) {
-  const { data } = await supabase.from("ai_drafts").select(COLS).eq("id", id).in("kind", ["listing_kit", "listing_presentation", "buyer_presentation"]).maybeSingle();
-  return data ? toView(data) : null;
+const KINDS = ["listing_kit", "listing_presentation", "buyer_presentation", "market_update", "cma_writeup"] as const;
+
+/** The facts a market update or CMA write-up was written from (kept beside the parts, for the numbers check). */
+const factsOf = (content: unknown): unknown => (content && typeof content === "object" ? (content as Record<string, unknown>).facts : undefined);
+/** A listing presentation's attached CMA (S6b PR 6), kept beside the parts. */
+const cmaOf = (content: unknown): string | undefined => {
+  const v = content && typeof content === "object" ? (content as Record<string, unknown>).cma_id : undefined;
+  return typeof v === "string" && /^[0-9a-f-]{36}$/.test(v) ? v : undefined;
+};
+
+async function loadKitRaw(supabase: Awaited<ReturnType<typeof supabaseServer>>, id: string) {
+  const { data } = await supabase.from("ai_drafts").select(COLS).eq("id", id).in("kind", [...KINDS]).maybeSingle();
+  return data ? { view: toView(data), facts: factsOf(data.content), cmaId: cmaOf(data.content) } : null;
 }
+async function loadKit(supabase: Awaited<ReturnType<typeof supabaseServer>>, id: string) {
+  return (await loadKitRaw(supabase, id))?.view ?? null;
+}
+
+const subjectFor = (kind: KitKind, parts: Parts) =>
+  (kind === "listing_kit" ? `Launch kit: ${parts.headline}` : kind === "cma_writeup" ? "CMA summary" : parts.title || KIND_TITLE[kind]).slice(0, 200);
 
 export async function saveKitAction(id: string, raw: Parts): Promise<KitResult> {
   if (!Id.safeParse(id).success) return { ok: false, error: "Something's missing. Reload the page and try again." };
   const { supabase } = await staffClient();
-  const current = await loadKit(supabase, id);
-  if (!current) return { ok: false, error: "That isn't yours." };
+  const loaded = await loadKitRaw(supabase, id);
+  if (!loaded) return { ok: false, error: "That isn't yours." };
+  const current = loaded.view;
   if (current.status !== "draft") return { ok: false, error: current.status === "approved" ? "It's already approved and can't be changed. Write a new one." : "It was discarded.", view: current };
   const parts = cleanParts(current.kind, raw);
+  const content = { ...parts, ...(loaded.facts === undefined ? {} : { facts: loaded.facts }), ...(loaded.cmaId ? { cma_id: loaded.cmaId } : {}) };
   const { data, error } = await supabase
     .from("ai_drafts")
-    .update({ content: parts, body: partsText(current.kind, parts), subject: (current.kind === "listing_kit" ? `Launch kit: ${parts.headline}` : parts.title || KIND_TITLE[current.kind]).slice(0, 200) })
+    .update({ content: content as never, body: partsText(current.kind, parts), subject: subjectFor(current.kind, parts) })
     .eq("id", id)
     .select(COLS)
     .maybeSingle();
@@ -137,13 +164,25 @@ export async function saveKitAction(id: string, raw: Parts): Promise<KitResult> 
 export async function approveKitAction(id: string, raw: Parts): Promise<KitResult> {
   const saved = await saveKitAction(id, raw);
   if (!saved.ok) return saved;
-  const problems = partsProblems(saved.view.kind, saved.view.parts);
+  const kind = saved.view.kind;
+  let problems: string[];
+  if (kind === "market_update" || kind === "cma_writeup") {
+    const { supabase } = await staffClient();
+    problems = writeupProblems(kind, saved.view.parts, (await loadKitRaw(supabase, id))?.facts ?? {});
+  } else problems = partsProblems(kind, saved.view.parts);
   if (problems.length) return { ok: false, error: `Not approved yet. ${problems.join(" ")}`, view: saved.view };
   const { supabase } = await staffClient();
   const { data, error } = await supabase.from("ai_drafts").update({ status: "approved" }).eq("id", id).eq("status", "draft").select(COLS).maybeSingle();
   if (error || !data) return { ok: false, error: "Couldn't approve it. Please try again.", view: saved.view };
   revalidatePath("/assistant");
-  return { ok: true, view: toView(data), message: saved.view.kind === "listing_kit" ? "Approved. Copy each part where it goes, or print the flyer." : "Approved. Print it or save it as a PDF." };
+  const done: Record<KitKind, string> = {
+    listing_kit: "Approved. Copy each part where it goes, or print the flyer.",
+    listing_presentation: "Approved. Print it or save it as a PDF.",
+    buyer_presentation: "Approved. Print it or save it as a PDF.",
+    market_update: "Approved.",
+    cma_writeup: "Approved. It now shows on the CMA and its printout.",
+  };
+  return { ok: true, view: toView(data), message: done[kind] };
 }
 
 export async function discardKitAction(id: string): Promise<KitResult> {

@@ -23,13 +23,15 @@ export const DRAFT_KINDS: Record<AiDraftKind, DraftKindInfo> = {
   listing_kit: { kind: "listing_kit", flag: "ai_staff_listing_kit", name: "Listing launch kits", one: "Launch kit", heading: "Launch kit" },
   listing_presentation: { kind: "listing_presentation", flag: "ai_staff_presentations", name: "Presentations", one: "Listing presentation", heading: "Listing presentation" },
   buyer_presentation: { kind: "buyer_presentation", flag: "ai_staff_presentations", name: "Presentations", one: "Buyer presentation", heading: "Buyer presentation" },
+  market_update: { kind: "market_update", flag: "ai_staff_market_update", name: "Market updates", one: "Market update", heading: "Market update" },
+  cma_writeup: { kind: "cma_writeup", flag: "ai_staff_cma_writeup", name: "CMA write-ups", one: "CMA write-up", heading: "Summary" },
 };
 
 /** The draft a lead gets: open-house visitors a follow-up, everyone else a reply. */
 export const leadDraftKind = (leadKind: string): EmailDraftKind => (leadKind === "open_house_signin" ? "open_house_followup" : "lead_reply");
 
 export const DRAFT_STATUS_LABEL: Record<string, string> = { draft: "Draft", approved: "Approved", discarded: "Discarded" };
-export const SENT_VIA_LABEL: Record<string, string> = { email: "opened in email", copy: "copied", portal: "sent as a portal message", print: "printed" };
+export const SENT_VIA_LABEL: Record<string, string> = { email: "opened in email", copy: "copied", portal: "sent as a portal message", print: "printed", website: "sent to website review" };
 
 /** Limits shared by the form and the database (0028). */
 export const MAX_SUBJECT = 200;

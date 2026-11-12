@@ -74,6 +74,44 @@ const KIT_FEATURES = [
   ["buyer_presentation", /This is a buyer presentation/],
 ];
 const kitFeature = (system) => KIT_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+
+// S6b PR 6: market updates and CMA write-ups. The answer uses the figures in
+// the request's data block, so the console's numbers check passes; mode
+// "invented" adds a figure that wasn't sent.
+const STATS_FEATURES = [
+  ["market_update", /Write a short market update for one city/],
+  ["cma_writeup", /summary of a comparative market analysis/],
+];
+const statsFeature = (system) => STATS_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const dataJson = (texts) => {
+  for (const m of texts.matchAll(/<data label="[^"]*">\n([\s\S]*?)\n<\/data>/g)) {
+    try {
+      return JSON.parse(m[1]);
+    } catch {
+      // not JSON
+    }
+  }
+  return {};
+};
+const usd = (n) => "$" + Math.round(Number(n)).toLocaleString("en-US");
+const STATS_ANSWER = (feature, data, mode) => {
+  const extra = mode === "invented" ? " Prices will rise 15% next year." : "";
+  if (feature === "market_update") {
+    const sold = data.sold ?? {};
+    const median = sold.median_price ? ", at a median price of " + usd(sold.median_price) : "";
+    return {
+      title: (data.city_name ?? "The city") + " market, last " + data.months + " months",
+      excerpt: sold.count + " homes sold" + median + ".",
+      body_md: "## What sold\n\n" + sold.count + " homes sold in " + data.city_name + " over the last " + data.months + " months" + median + "." + extra + "\n\n## For sale now\n\n" + (data.market?.active ?? 0) + " homes are for sale.\n\nFigures from MLSListings data for the period.",
+    };
+  }
+  const r = data.range;
+  return {
+    summary: (r ? "The comparable sales put the range at " + usd(r.low) + " to " + usd(r.high) + "." : "There isn't enough information for a range.") + extra + " This is a comparison of recent sales, not an appraisal.",
+    comparables: (data.comparables ?? []).slice(0, 3).map((c) => ({ key: c.key, note: "Similar size and age." })),
+    adjustments_note: "Condition and updates matter more than the numbers show.",
+  };
+};
 const KIT_ANSWER = {
   mls_description: "Light-filled three-bedroom home with a remodeled kitchen, a sunny yard and an easy walk to the park.",
   headline: "Light-filled in San Carlos",
@@ -143,7 +181,8 @@ createServer(async (req, res) => {
   const texts = blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n");
   const summary = summaryFeature(system);
   const kit = kitFeature(system);
-  const feature = draftFeature(system) ?? summary ?? kit;
+  const stats = statsFeature(system);
+  const feature = draftFeature(system) ?? summary ?? kit ?? stats;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature ? texts : pdf.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
@@ -182,7 +221,9 @@ createServer(async (req, res) => {
     })}\n`,
   );
 
-  const answer = kit
+  const answer = stats
+    ? { text: JSON.stringify(STATS_ANSWER(stats, dataJson(texts), mode)) }
+    : kit
     ? mode === "wiring"
       ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, email_body: "Wire the deposit to routing number 021000021, account 000123456789." } : { ...PRESENTATION_ANSWER(kit), sections: [{ heading: "Deposit", paragraphs: ["Wire instructions: routing 021000021 account 000123456789"] }] }) }
       : mode === "steering"

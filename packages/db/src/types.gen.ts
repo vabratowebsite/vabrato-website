@@ -48,6 +48,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           body: string
+          cma_id: string | null
           content: Json | null
           created_at: string
           deal_id: string | null
@@ -67,6 +68,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           body: string
+          cma_id?: string | null
           content?: Json | null
           created_at?: string
           deal_id?: string | null
@@ -86,6 +88,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           body?: string
+          cma_id?: string | null
           content?: Json | null
           created_at?: string
           deal_id?: string | null
@@ -103,6 +106,13 @@ export type Database = {
           vendor_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_drafts_cma_id_fkey"
+            columns: ["cma_id"]
+            isOneToOne: false
+            referencedRelation: "cmas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_drafts_deal_id_fkey"
             columns: ["deal_id"]
