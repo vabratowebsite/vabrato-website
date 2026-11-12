@@ -31,7 +31,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started |
-| S6 | Staff console & automations | Built and QA'd 2026-11-11 (PRs #18–#24; 0022–0025 on hosted). Done-when ("every web lead reaches Mark within 1 minute") proven with a fake sender (262 ms locally, 248-check QA pass); not yet on hosted: blocked on Resend, the Vault secrets, `console.vabrato.com` and Mark's and Viv's accounts (see "To finish S6"). Stats, CMAs and public stats built, flags off pending MLSListings |
+| S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -250,7 +250,7 @@ Then: create the Render jobs and the `mls_sync` role per RENDER.md.
 - **Follow-ups:** regenerate `packages/db/src/types.gen.ts` from hosted. It
   was hand-edited for 0015–0021, and the tests and typecheck cover it.
 
-### S6 staff console (built 2026-11-11; PRs #18–#24; done-when waits on Resend)
+### S6 staff console (done 2026-11-12; PRs #18–#25)
 
 Plan v3 (approved 2026-11-11): PR 1 frame and Today; PR 2a lead routing and
 notification pipeline (pg_net + pg_cron); PR 2b leads UI; PR 3 members, MLS
@@ -433,7 +433,20 @@ comes after S6, by decision; the console has no AI code.
   agent (or the lead admin) in the console and by email, staff replies email
   the member, and tour requests are leads, so they reach Mark the same way
   (PR 2a).
-- **To finish S6 (your steps, in this order):**
+- **Live on hosted (2026-11-12):** Resend verified for vabrato.com; Supabase
+  Auth sends through Resend SMTP; `console.vabrato.com` connected (Vercel,
+  Cloudflare DNS); console and website variables set and redeployed; both
+  Vault secrets stored. Checks: the database's call to the console returned
+  200; a real contact form on the website (Turnstile on, IP hash recorded)
+  was routed to the lead admin, raised the console alert and was accepted
+  by Resend 1,016 ms after the lead was created, first attempt, no errors.
+  Still to do: team sign-ins (step 5, postponed), then roles and routing to
+  Mark and a repeat of the test with Mark's inbox. `WEB_REVALIDATE_URL`
+  stays unset until vabrato.com points at the new site (the website's
+  vercel.app address is behind Vercel's login), so published content shows
+  within 15 minutes.
+- **To finish S6 (your steps, in this order):** steps 1–4 and 6 done
+  2026-11-12; step 5 postponed.
   1. Resend: verify vabrato.com, then set `RESEND_API_KEY` and
      `NOTIFICATIONS_FROM` on vabrato-console.
   2. Point `console.vabrato.com` at vabrato-console (custom domains skip
