@@ -8,7 +8,7 @@
 -- abort rolls back every row it added. Needs at least one admin profile (made
 -- the lead admin inside the check).
 --
--- Expected (2026-11-12):
+-- Expected, and seen on hosted (2026-11-12, one admin):
 --   flags "ai_staff_escrow_update=false,ai_staff_lead_reply=false,ai_staff_open_house_followup=false,ai_staff_vendor_request=false"
 --   agent_drafts_own_lead, va_drafts_own_deal, va_drafts_vendor "allowed"
 --   agent2_drafts_others_lead, agent_drafts_others_deal, seller_drafts, anon_drafts "denied…"
