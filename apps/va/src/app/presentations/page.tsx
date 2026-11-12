@@ -36,6 +36,11 @@ export default async function PresentationsPage() {
       </ConsoleShell>
     );
   }
+  // CMAs the agent may attach (S6b PR 6): their own, with an approved summary, while CMAs are on.
+  const { data: cmaFlag } = await supabase.from("feature_flags").select("enabled").eq("key", "cma_enabled").maybeSingle();
+  const { data: summaries } = cmaFlag?.enabled ? await supabase.from("ai_drafts").select("cma_id").eq("kind", "cma_writeup").eq("owner_id", profile.id).eq("status", "approved") : { data: [] };
+  const cmaIds = [...new Set((summaries ?? []).map((w) => w.cma_id).filter((x): x is string => Boolean(x)))];
+  const { data: attachable } = cmaIds.length ? await supabase.from("cmas").select("id, title").in("id", cmaIds).eq("created_by", profile.id).order("updated_at", { ascending: false }) : { data: [] };
   const { data: mine } = await supabase
     .from("ai_drafts")
     .select("id, kind, subject, status, updated_at")
@@ -51,7 +56,7 @@ export default async function PresentationsPage() {
         <p className={`${mutedCls} mb-4`}>
           The assistant writes the pages; your profile, Vabrato&apos;s services and the usual timeline are added from our records. You edit and approve it, then print it or save it as a PDF. It never includes pricing: use a CMA for that.
         </p>
-        <NewPresentationForm />
+        <NewPresentationForm cmas={attachable ?? []} />
       </Panel>
       <Panel title="Your presentations">
         {mine?.length ? (

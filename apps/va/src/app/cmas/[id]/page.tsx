@@ -4,10 +4,14 @@ import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
 import { ConsoleShell } from "@/components/console-shell";
 import { MlsAttribution } from "@/components/mls-attribution";
+import { CmaWriteupPanel } from "@/components/kit-editor";
 import { PrintButton } from "@/components/print-button";
 import { mutedCls } from "@/components/ui";
 import type { CmaSubject } from "@/lib/cma";
 import { deleteCmaAction } from "@/lib/cma-actions";
+import { aiFeaturesOn } from "@/lib/ai-flags";
+import { cleanParts } from "@/lib/kit-parts";
+import type { KitView } from "@/lib/kit-actions";
 import { requireSignIn } from "@/lib/staff";
 import { cmaRange, fmtMoney, missingComps } from "@/lib/stats";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -41,6 +45,14 @@ export default async function CmaPage({ params }: { params: Promise<{ id: string
   const found = comps ?? [];
   const missing = missingComps(cma.comp_keys, found);
   const range = cmaRange(found, subject.sqft ?? null);
+  // The assistant's summary (S6b PR 6): the latest approved one prints with the CMA.
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_cma_writeup"]);
+  const { data: writeups } = await supabase.from("ai_drafts").select("id, owner_id, status, content, sent_via, approved_at").eq("kind", "cma_writeup").eq("cma_id", cma.id).in("status", ["draft", "approved"]).order("updated_at", { ascending: false }).limit(10);
+  const approvedWriteup = (writeups ?? []).filter((w) => w.status === "approved").sort((a, b) => String(b.approved_at).localeCompare(String(a.approved_at)))[0];
+  const summary = approvedWriteup ? cleanParts("cma_writeup", approvedWriteup.content) : null;
+  const { data: approver } = approvedWriteup ? await supabase.from("profiles").select("full_name").eq("id", approvedWriteup.owner_id).maybeSingle() : { data: null };
+  const mine = (writeups ?? []).find((w) => w.owner_id === profile.id && w.status === "draft");
+  const writeupDraft: KitView | null = mine ? { id: mine.id, kind: "cma_writeup", status: "draft", parts: cleanParts("cma_writeup", mine.content), sent_via: mine.sent_via } : null;
   const describe = [
     city?.name,
     subject.sub_type,
@@ -74,6 +86,33 @@ export default async function CmaPage({ params }: { params: Promise<{ id: string
           This is a comparison of recent sales prepared by a real estate broker. It is not an appraisal and should not be relied on as one.
         </p>
       </Panel>
+
+      {summary && (
+        <Panel title="Summary">
+          <div className="space-y-3 font-body text-body-sm text-ink">
+            {summary.summary?.split(/\n\s*\n/).map((para, i) => (
+              <p key={i}>{para}</p>
+            ))}
+            {summary.comparables?.trim() && (
+              <ul className="list-disc space-y-1 pl-5">
+                {summary.comparables.split("\n").filter(Boolean).map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            )}
+            {summary.adjustments_note?.trim() && <p>{summary.adjustments_note}</p>}
+            <p className="text-caption text-muted">Written with the assistant from the figures on this page; approved by {approver?.full_name || "the agent"}.</p>
+          </div>
+        </Panel>
+      )}
+
+      {ai.ai_staff_cma_writeup && found.length > 0 && (
+        <div data-no-print>
+          <Panel title="Assistant">
+            <CmaWriteupPanel cmaId={cma.id} initial={writeupDraft} />
+          </Panel>
+        </div>
+      )}
 
       <Panel title={`Comparable sales (${found.length})`}>
         {found.length ? (

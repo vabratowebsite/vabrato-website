@@ -37,7 +37,7 @@ export default async function AssistantPage() {
     isAdmin ? supabase.rpc("ai_month_summary") : Promise.resolve({ data: null }),
     supabase
       .from("ai_drafts")
-      .select("id, kind, subject, status, sent_via, updated_at, lead_id, deal_id, listing_key, leads(name, email), deals(address)")
+      .select("id, kind, subject, status, sent_via, updated_at, lead_id, deal_id, listing_key, cma_id, leads(name, email), deals(address)")
       .eq("owner_id", profile.id)
       .in("status", ["draft", "approved"])
       .order("updated_at", { ascending: false })
@@ -106,8 +106,8 @@ export default async function AssistantPage() {
           <p className={`${mutedCls} mb-3`}>Your open drafts and the ones you approved recently. Drafts you don&apos;t approve or discard are deleted 30 days after you last changed them.</p>
           <ul className="divide-y divide-line">
             {(myDrafts ?? []).map((d) => {
-              const about = d.lead_id ? (d.leads?.name || d.leads?.email || "Lead") : d.deal_id ? (d.deals?.address ?? "Transaction") : d.listing_key ? `listing ${d.listing_key}` : "a client";
-              const href = d.lead_id ? `/leads/${d.lead_id}` : d.deal_id ? `/deals/${d.deal_id}` : d.listing_key ? `/listings/${encodeURIComponent(d.listing_key)}/kit` : `/presentations/${d.id}`;
+              const about = d.lead_id ? (d.leads?.name || d.leads?.email || "Lead") : d.deal_id ? (d.deals?.address ?? "Transaction") : d.listing_key ? `listing ${d.listing_key}` : d.cma_id ? "a CMA" : d.kind === "market_update" ? "market stats" : "a client";
+              const href = d.lead_id ? `/leads/${d.lead_id}` : d.deal_id ? `/deals/${d.deal_id}` : d.listing_key ? `/listings/${encodeURIComponent(d.listing_key)}/kit` : d.cma_id ? `/cmas/${d.cma_id}` : d.kind === "market_update" ? "/stats" : `/presentations/${d.id}`;
               return (
                 <li key={d.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 font-body text-body-sm text-ink">
                   <Pill tone={d.status === "approved" ? "green" : "outline"}>{DRAFT_STATUS_LABEL[d.status] ?? d.status}</Pill>

@@ -75,6 +75,18 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "Listing and buyer presentations to print: the assistant writes the pages; your profile, Vabrato's services and the usual timeline come from our records. Never any pricing.",
     where: { href: "/presentations", label: "Presentations" },
   },
+  {
+    flag: "ai_staff_market_update",
+    name: "Market updates",
+    what: "On Market stats: an update for a city and period, written around the console's own figures (every number is checked against them). Internal until MLSListings confirms public statistics; then copy it or send it to Mark's website review.",
+    where: { href: "/stats", label: "Market stats" },
+  },
+  {
+    flag: "ai_staff_cma_writeup",
+    name: "CMA write-ups",
+    what: "On a CMA: a plain-language summary of the comparable sales and our range, for the homeowner. A comparison of recent sales, never an appraisal or the assistant's own value.",
+    where: { href: "/cmas", label: "CMAs" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";

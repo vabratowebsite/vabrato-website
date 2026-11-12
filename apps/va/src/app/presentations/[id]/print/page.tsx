@@ -4,6 +4,8 @@ import { PrintButton } from "@/components/print-button";
 import { KIND_TITLE, VABRATO_SERVICES, cleanParts, sections, type KitKind } from "@/lib/kit-parts";
 import { typicalTimeline } from "@/lib/kits";
 import { PRINT_CSS } from "@/lib/print";
+import type { CmaSubject } from "@/lib/cma";
+import { cmaRange, fmtMoney } from "@/lib/stats";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -23,6 +25,23 @@ export default async function PresentationPrint({ params }: { params: Promise<{ 
   const kind = p.kind as KitKind;
   const parts = cleanParts(kind, p.content);
   const { data: agent } = await supabase.from("agent_profiles").select("display_name, title, bio, phone, email, license_number").eq("profile_id", p.owner_id).maybeSingle();
+
+  // An attached CMA (S6b PR 6): our range and comparables, and the approved summary. Only while CMAs are on.
+  const cmaId = typeof (p.content as Record<string, unknown> | null)?.cma_id === "string" ? String((p.content as Record<string, unknown>).cma_id) : null;
+  let cmaSection: { range: ReturnType<typeof cmaRange>; comps: { listing_key: string; street: string | null; city: string | null; close_price: number | null; close_date: string | null; living_area: number | null; price_per_sqft: number | null }[]; summary: string[] } | null = null;
+  if (cmaId) {
+    const [{ data: flag }, { data: cma }, { data: writeup }] = await Promise.all([
+      supabase.from("feature_flags").select("enabled").eq("key", "cma_enabled").maybeSingle(),
+      supabase.from("cmas").select("subject, comp_keys").eq("id", cmaId).maybeSingle(),
+      supabase.from("ai_drafts").select("content").eq("kind", "cma_writeup").eq("cma_id", cmaId).eq("status", "approved").order("approved_at", { ascending: false }).limit(1),
+    ]);
+    if (flag?.enabled && cma && writeup?.length) {
+      const { data: comps } = cma.comp_keys.length ? await supabase.rpc("cma_comps", { p_keys: cma.comp_keys }) : { data: [] };
+      const subject = cma.subject as unknown as CmaSubject;
+      const w = cleanParts("cma_writeup", writeup[0]!.content);
+      cmaSection = { range: cmaRange(comps ?? [], subject.sqft ?? null), comps: comps ?? [], summary: (w.summary ?? "").split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean) };
+    }
+  }
 
   return (
     <main id="main" className="mx-auto max-w-[8.5in] bg-white p-8 font-body text-ink">
@@ -48,6 +67,51 @@ export default async function PresentationPrint({ params }: { params: Promise<{ 
             </section>
           ))}
         </section>
+        {cmaSection && (
+          <section className="print-page mt-10 space-y-4" aria-label="Recent comparable sales">
+            <h2 className="font-display text-[22px] text-navy">Recent comparable sales</h2>
+            {cmaSection.range ? (
+              <p className="text-body-md">
+                <span className="font-medium">
+                  {fmtMoney(cmaSection.range.low)} – {fmtMoney(cmaSection.range.high)}
+                </span>{" "}
+                (midpoint {fmtMoney(cmaSection.range.mid)}; median {fmtMoney(cmaSection.range.medianPpsf)}/sq ft from {cmaSection.range.comps} sales)
+              </p>
+            ) : (
+              <p className="text-body-md">No range: it needs the home&apos;s size and at least 3 comparables with a known size.</p>
+            )}
+            <table className="w-full text-body-sm">
+              <thead>
+                <tr className="border-b border-line text-left">
+                  <th scope="col" className="py-1 pr-3 font-medium">Address</th>
+                  <th scope="col" className="py-1 pr-3 text-right font-medium">Sold</th>
+                  <th scope="col" className="py-1 pr-3 font-medium">Date</th>
+                  <th scope="col" className="py-1 pr-3 text-right font-medium">Sq ft</th>
+                  <th scope="col" className="py-1 text-right font-medium">$/sq ft</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cmaSection.comps.map((c) => (
+                  <tr key={c.listing_key} className="border-b border-line">
+                    <th scope="row" className="py-1 pr-3 text-left font-normal">
+                      {c.street ?? "Address withheld"}, {c.city}
+                    </th>
+                    <td className="py-1 pr-3 text-right">{fmtMoney(c.close_price)}</td>
+                    <td className="py-1 pr-3">{c.close_date}</td>
+                    <td className="py-1 pr-3 text-right">{c.living_area ? Number(c.living_area).toLocaleString("en-US") : "—"}</td>
+                    <td className="py-1 text-right">{fmtMoney(c.price_per_sqft)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {cmaSection.summary.map((para, i) => (
+              <p key={i} className="text-body-md leading-relaxed">
+                {para}
+              </p>
+            ))}
+            <p className="border-l-4 border-gold bg-gold-50 p-3 text-body-sm">This is a comparison of recent sales prepared by a real estate broker. It is not an appraisal and should not be relied on as one. Based on MLSListings data.</p>
+          </section>
+        )}
         <section className="print-page mt-10 space-y-6" aria-label="About us">
           <div>
             <h2 className="font-display text-[22px] text-navy">Your agent</h2>

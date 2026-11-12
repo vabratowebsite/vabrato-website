@@ -3,7 +3,7 @@
 // so client components can use it. Content is stored in ai_drafts.content as
 // a flat map of part → text (0030).
 
-export type KitKind = "listing_kit" | "listing_presentation" | "buyer_presentation";
+export type KitKind = "listing_kit" | "listing_presentation" | "buyer_presentation" | "market_update" | "cma_writeup";
 export type Parts = Record<string, string>;
 
 export interface PartDef {
@@ -41,7 +41,24 @@ export function presentationParts(): PartDef[] {
   return parts;
 }
 
-export const partsFor = (kind: KitKind): PartDef[] => (kind === "listing_kit" ? KIT_PARTS : presentationParts());
+export const MARKET_PARTS: PartDef[] = [
+  { key: "title", label: "Title", rows: 1, max: 200, required: true },
+  { key: "excerpt", label: "Summary (one or two sentences)", rows: 2, max: 400, required: true },
+  { key: "body_md", label: "Article", rows: 14, max: 6000, required: true, hint: "Markdown. Every number must come from the statistics above; the check at approval lists any that don't." },
+];
+
+export const CMA_PARTS: PartDef[] = [
+  { key: "summary", label: "Summary", rows: 8, max: 3000, required: true, hint: "Every number must come from the comparables and range above. A comparison of recent sales, not an appraisal." },
+  { key: "comparables", label: "Notes on each comparable (one per line)", rows: 6, max: 3000 },
+  { key: "adjustments_note", label: "What to keep in mind", rows: 3, max: 1500 },
+];
+
+export function partsFor(kind: KitKind): PartDef[] {
+  if (kind === "listing_kit") return KIT_PARTS;
+  if (kind === "market_update") return MARKET_PARTS;
+  if (kind === "cma_writeup") return CMA_PARTS;
+  return presentationParts();
+}
 
 /** Only known parts, as trimmed strings, cut to their limits. */
 export function cleanParts(kind: KitKind, raw: unknown): Parts {
@@ -81,7 +98,7 @@ export const bullets = (s: string | undefined) =>
     .filter(Boolean)
     .slice(0, 6);
 
-export const KIND_TITLE: Record<KitKind, string> = { listing_kit: "Launch kit", listing_presentation: "Listing presentation", buyer_presentation: "Buyer presentation" };
+export const KIND_TITLE: Record<KitKind, string> = { listing_kit: "Launch kit", listing_presentation: "Listing presentation", buyer_presentation: "Buyer presentation", market_update: "Market update", cma_writeup: "CMA write-up" };
 
 /** What Vabrato offers, for presentations (our words, not the model's). */
 export const VABRATO_SERVICES = [
