@@ -5,12 +5,13 @@ import { computeCoe, diffDays, fmtLong, fmtShort, todayISO } from "@vabrato/lib"
 import { cx, focusLight } from "@vabrato/ui/web";
 import { ConsoleShell } from "./console-shell";
 
-export type DealTab = "tasks" | "calendar" | "documents" | "receipts";
+export type DealTab = "tasks" | "calendar" | "documents" | "repairs" | "receipts";
 
 const TABS: { key: DealTab; label: string; path: string }[] = [
   { key: "tasks", label: "Tasks", path: "" },
   { key: "calendar", label: "Calendar", path: "/calendar" },
   { key: "documents", label: "Documents", path: "/documents" },
+  { key: "repairs", label: "Repairs", path: "/repairs" },
   { key: "receipts", label: "Receipts", path: "/receipts" },
 ];
 

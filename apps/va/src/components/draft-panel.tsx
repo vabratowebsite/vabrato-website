@@ -44,14 +44,16 @@ export interface DraftPanelProps {
   vendors?: VendorOption[];
   noteLabel: string;
   noteHint: string;
+  /** Text to start the note with (S6b PR 7b: a trade's repair items). */
+  initialNote?: string;
 }
 
-export function DraftPanel({ heading, target, initial, emailTo, portal, vendors, noteLabel, noteHint }: DraftPanelProps) {
+export function DraftPanel({ heading, target, initial, emailTo, portal, vendors, noteLabel, noteHint, initialNote }: DraftPanelProps) {
   const uid = useId();
   const [draft, setDraft] = useState<DraftView | null>(initial);
   const [subject, setSubject] = useState(initial?.subject ?? "");
   const [body, setBody] = useState(initial?.body ?? "");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initialNote ?? "");
   const [vendorId, setVendorId] = useState(initial?.vendor_id ?? vendors?.[0]?.id ?? "");
   const [busy, setBusy] = useState<string | null>(null);
   const [status, setStatus] = useState("");
