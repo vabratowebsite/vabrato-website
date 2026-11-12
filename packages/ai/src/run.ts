@@ -60,6 +60,7 @@ export type AiFailure =
   | "refused"
   | "invalid_output"
   | "busy"
+  | "too_large"
   | "error";
 
 export type AiResult<T> =
@@ -95,6 +96,7 @@ const MESSAGES: Record<AiFailure, string> = {
   refused: "The assistant couldn't help with this request.",
   invalid_output: "The assistant's answer wasn't usable. Please try again.",
   busy: "The assistant is busy right now. Please try again in a minute.",
+  too_large: "This file is too large for the assistant to read in one go. Split this file and check the parts.",
   error: "Something went wrong. Please try again.",
 };
 
@@ -155,7 +157,7 @@ export async function runAi<T = never>(deps: AiDeps, feature: AiFeature<T>, inpu
     });
   } catch (e) {
     await close({ status: "error" });
-    return fail(e instanceof ModelError && (e.kind === "rate_limited" || e.kind === "overloaded") ? "busy" : "error");
+    return fail(e instanceof ModelError && (e.kind === "rate_limited" || e.kind === "overloaded") ? "busy" : e instanceof ModelError && e.kind === "too_large" ? "too_large" : "error");
   }
   const spent = {
     model: result.model,

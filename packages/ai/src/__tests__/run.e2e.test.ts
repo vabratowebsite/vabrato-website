@@ -211,7 +211,8 @@ describe("runAi: the guarded pipeline", () => {
       expect(await runAi(deps(fakeModel({ text: "Half an ans", stop: "max_tokens" })), SUMMARY, { instruction: "x y z" })).toMatchObject({ ok: false, reason: "invalid_output" });
       expect(await runAi(deps(fakeModel(() => Promise.reject(new ModelError("rate_limited", "rate limited")))), SUMMARY, { instruction: "x y z" })).toMatchObject({ ok: false, reason: "busy" });
       expect(await runAi(deps(fakeModel(() => Promise.reject(new Error("boom")))), SUMMARY, { instruction: "x y z" })).toMatchObject({ ok: false, reason: "error" });
-      expect((await runs()).map((x) => x.status)).toEqual(["refused", "error", "error", "error"]);
+      expect(await runAi(deps(fakeModel(() => Promise.reject(new ModelError("too_large", "too large (400)")))), SUMMARY, { instruction: "x y z" })).toMatchObject({ ok: false, reason: "too_large", message: expect.stringMatching(/Split this file/) });
+      expect((await runs()).map((x) => x.status)).toEqual(["refused", "error", "error", "error", "error"]);
     });
   });
 

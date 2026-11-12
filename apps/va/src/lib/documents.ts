@@ -61,7 +61,35 @@ export function safeFileName(name: string, type: ReceiptContentType): string {
   return `${base || "document"}.${ext}`;
 }
 
+export const STILL_SHARED = "Couldn't stop sharing: the seller can still see this file. Try again.";
+
 export const staffDocPath = (dealId: string, id: string, name: string) => `deal/${dealId}/staff/${id}-${name}`;
+
+/** The name as the person uploaded it, for display (the storage key uses safeFileName): no control characters or slashes, at most 200 characters. */
+export function originalName(name: unknown, fallback: string): string {
+  const clean = String(name ?? "")
+    .replace(/[\u0000-\u001f\u007f/\\]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200)
+    .trim();
+  return clean || fallback;
+}
+
+/**
+ * A PDF's page count from its page tree without a PDF library: the largest
+ * /Count in a /Pages node, else the number of /Type /Page objects. Null when
+ * neither can be read (compressed object streams); the file is then sent and
+ * an API "too large" error says to split it.
+ */
+export function countPdfPages(bytes: Uint8Array): number | null {
+  const text = new TextDecoder("latin1").decode(bytes);
+  let count = 0;
+  for (const m of text.matchAll(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)) count = Math.max(count, Number(m[1] ?? m[2]));
+  if (count > 0) return count;
+  const pages = (text.match(/\/Type\s*\/Page(?![a-zA-Z])/g) ?? []).length;
+  return pages > 0 ? pages : null;
+}
 
 export interface DocPath {
   shared: boolean;
@@ -128,14 +156,19 @@ export function missingByDeal(rows: DealDocsRows): DealMissing[] {
     .filter((d) => d.missing.length > 0);
 }
 
-/** Reads what missingByDeal needs for these deals, as the signed-in person (RLS decides). */
+/**
+ * Reads what missingByDeal needs for these deals, as the signed-in person
+ * (RLS decides). Empty when the documents tables aren't there yet (the console
+ * can deploy before migration 0032 is applied).
+ */
 export async function loadMissing(supabase: SupabaseDb, deals: DealDocsRows["deals"]): Promise<DealMissing[]> {
   if (!deals.length) return [];
   const ids = deals.map((d) => d.id);
-  const [{ data: docs }, { data: memberDocs }, { data: marks }] = await Promise.all([
+  const [{ data: docs, error }, { data: memberDocs }, { data: marks }] = await Promise.all([
     supabase.from("deal_documents").select("deal_id, doc_types").in("deal_id", ids),
     supabase.from("deal_member_document_types").select("deal_id, doc_types").in("deal_id", ids),
     supabase.from("deal_checklist_marks").select("deal_id, item_key").in("deal_id", ids),
   ]);
+  if (error) return [];
   return missingByDeal({ deals, docs: docs ?? [], memberDocs: memberDocs ?? [], marks: marks ?? [] });
 }

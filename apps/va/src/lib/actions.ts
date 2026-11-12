@@ -239,7 +239,13 @@ export async function addReceiptAction(
   let storagePath: string | null = null;
   if (file) {
     const profile = await getProfile(supabase);
-    if (!profile || !isOwnReceiptUpload(file, dealId, profile.id)) return { error: "Attach the receipt again." };
+    if (!profile || !isOwnReceiptUpload(file, dealId, profile.id)) return { error: "Upload the receipt again." };
+    // The hourly tidy-up may have removed an upload left unsaved; check it's still there.
+    const { data: there } = await supabase.storage
+      .from("receipts")
+      .exists(file)
+      .catch(() => ({ data: false }));
+    if (there !== true) return { error: "Upload the receipt again." };
     storagePath = file;
   }
   const { error } = await supabase.from("receipts").insert({

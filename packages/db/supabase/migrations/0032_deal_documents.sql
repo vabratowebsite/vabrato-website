@@ -5,7 +5,8 @@
 -- deal-docs/deal/{id}/ showed in the seller's portal. From here, files staff
 -- upload sit in deal/{id}/staff/ (staff with deal access only) until someone
 -- shares one, which moves it to deal/{id}/ (the seller's view, as before;
--- owner decision 2026-11-12). deal_documents records each file and the
+-- owner decision 2026-11-12). The seller reads only files directly in
+-- deal/{id}/ (an allowlist; owner review 2026-11-13). deal_documents records each file and the
 -- checklist items it covers; the checklist itself lives in code
 -- (packages/lib deal-documents.ts). The sellers' own uploads
 -- (member_documents) can be tagged too, and "not needed" marks close items
@@ -41,10 +42,13 @@ create table public.deal_documents (
   uploaded_by uuid default auth.uid() references public.profiles (id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  -- In the deal's own folder, one level down at most (staff/).
-  check (path ~ ('^deal/' || deal_id::text || '/(staff/)?[^/]{1,240}$')),
-  -- Shared exactly when it's in the seller's view (not under staff/).
-  check (shared = (path !~ '^deal/[^/]+/staff/'))
+  -- An allowlist of exactly two places (case-sensitive): directly in the
+  -- deal's folder, which the seller sees (shared), or in its staff/ folder
+  -- (not shared). Anything else is rejected.
+  check (
+    (shared and path ~ ('^deal/' || deal_id::text || '/[^/]{1,240}$'))
+    or (not shared and path ~ ('^deal/' || deal_id::text || '/staff/[^/]{1,240}$'))
+  )
 );
 
 create index deal_documents_deal_idx on public.deal_documents (deal_id, created_at desc);
@@ -152,16 +156,43 @@ revoke all on public.deal_checklist_marks from anon, authenticated;
 grant select, delete on public.deal_checklist_marks to authenticated;
 grant insert (deal_id, item_key, note, marked_by) on public.deal_checklist_marks to authenticated;
 
--- Storage: deal/{id}/staff/ is for staff with deal access only --------------------------------------
+-- Storage reads as an allowlist ----------------------------------------------------------------------
+-- Staff with deal access read everything under deal/{id}/. Anyone else with
+-- deal access (the seller) reads only objects directly in deal/{id}/: exactly
+-- two folder segments, so staff/, Staff/, tmp/ or deeper are never theirs.
 
 drop policy "deal-docs bucket: deal access" on storage.objects;
-create policy "deal-docs bucket: deal access (staff folder staff only)"
+create policy "deal-docs bucket: deal access (seller: top level only)"
   on storage.objects for select to authenticated
   using (
     bucket_id = 'deal-docs'
     and public.has_deal_access(public.storage_deal_id(name))
-    and (coalesce((storage.foldername(name))[3], '') <> 'staff' or public.is_staff())
+    and (public.is_staff() or coalesce(array_length(storage.foldername(name), 1), 0) = 2)
   );
+
+-- Audit: sharing, stopping sharing and deleting are written to staff_audit
+-- (who, which document, which deal and file name; never content).
+create function public.log_deal_document_action(p_deal uuid, p_action text, p_document uuid, p_file text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not (public.is_staff() and public.has_deal_access(p_deal)) then
+    raise exception 'not_allowed' using errcode = '42501';
+  end if;
+  if p_action not in ('document_shared', 'document_unshared', 'document_deleted', 'unfiled_deleted') then
+    raise exception 'bad_action' using errcode = '22023';
+  end if;
+  insert into staff_audit (actor_id, action, ref_table, ref_id, detail)
+  values (auth.uid(), p_action, 'deal_documents', p_document::text,
+          jsonb_build_object('deal', p_deal, 'file', left(coalesce(p_file, ''), 200)));
+end;
+$$;
+
+revoke execute on function public.log_deal_document_action(uuid, text, uuid, text) from public, anon;
+grant execute on function public.log_deal_document_action(uuid, text, uuid, text) to authenticated;
 
 revoke execute on function public.valid_doc_types(text[]) from public, anon;
 revoke execute on function public.is_deal_seller_document(uuid, uuid) from public, anon;

@@ -20,7 +20,7 @@ async function ask<T>(feature: AiFeature<T>, input: Parameters<typeof runAi>[2],
   const begun: { feature: string; deal: string | null }[] = [];
   const store: AiStore = {
     begin: async (feature, deal) => {
-      begun.push({ feature, deal });
+      begun.push({ feature, deal: deal ?? null });
       return { allowed: true, run_id: "run-1" };
     },
     finish: async () => undefined,
@@ -87,6 +87,16 @@ describe("the receipt reader", () => {
     // A future or impossible date, a silly amount and an unknown category are left for the person.
     expect(toReceiptProposal({ readable: true, vendor: "Fixture Cleaning", amount: -5, date: "2027-01-01", category: "Snacks", problem: null }, "2026-11-12")).toEqual({ ok: true, vendor: "Fixture Cleaning", amount: "", date: "", category: "Other" });
     expect(toReceiptProposal({ readable: true, vendor: "X", amount: 10, date: "2026-02-30", category: null, problem: null }, "2026-11-12")).toMatchObject({ date: "" });
+  });
+
+  it("caps the vendor and the reason, and drops anything with a card- or account-like number", () => {
+    const base = { readable: true, amount: 10, date: "2026-10-02", category: "Other", problem: null };
+    expect(toReceiptProposal({ ...base, vendor: "V".repeat(200) }, "2026-11-12")).toMatchObject({ vendor: "V".repeat(80) });
+    expect(toReceiptProposal({ ...base, vendor: "Visa 4111 1111 1111 1111" }, "2026-11-12")).toMatchObject({ ok: true, vendor: "" });
+    expect(toReceiptProposal({ ...base, vendor: "Acct 000123456789" }, "2026-11-12")).toMatchObject({ vendor: "" });
+    expect(toReceiptProposal({ ...base, vendor: "Suite 120, 2026 Fixture Inspections" }, "2026-11-12")).toMatchObject({ vendor: "Suite 120, 2026 Fixture Inspections" });
+    expect(toReceiptProposal({ readable: false, vendor: null, amount: null, date: null, category: null, problem: "Card 4111-1111-1111-1111 is shown but the total is cut off." }, "2026-11-12")).toEqual({ ok: false, problem: "The assistant couldn't read this receipt." });
+    expect((toReceiptProposal({ readable: false, vendor: null, amount: null, date: null, category: null, problem: "x".repeat(400) }, "2026-11-12") as { problem: string }).problem).toHaveLength(160);
   });
 
   it("says why when it can't read one", () => {

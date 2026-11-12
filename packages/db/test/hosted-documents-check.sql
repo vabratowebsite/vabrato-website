@@ -11,7 +11,9 @@
 --   flags "ai_staff_document_check=false,ai_staff_receipt_reader=false"
 --   agent_adds "allowed", agent_sees 1, shared_in_staff_folder "denied…"
 --   agent2_sees 0, agent2_adds "denied…", seller_sees_rows 0, anon "denied"
---   seller_storage "deal/…/shared.pdf" only (not staff/), agent_storage 2, agent2_storage 0
+--   seller_storage "deal/…/shared.pdf" only (not staff/, Staff/, tmp/ or deeper), agent_storage 5, agent2_storage 0
+--   odd_path "denied…" (the table takes only deal/{id}/x or deal/{id}/staff/x)
+--   audit_agent "allowed", audit_agent2 "denied…", audit_bad_action "denied…"
 --   tag_seller_upload "allowed", seller_tags "denied…"
 --   mark "allowed", agent2_marks 0
 do $$
@@ -38,7 +40,10 @@ begin
     values (mdoc, seller, 'spq.pdf', 'member/' || seller || '/spq.pdf', 10, 'application/pdf', seller);
   insert into storage.objects (bucket_id, name) values
     ('deal-docs', 'deal/' || deal || '/shared.pdf'),
-    ('deal-docs', 'deal/' || deal || '/staff/private.pdf');
+    ('deal-docs', 'deal/' || deal || '/staff/private.pdf'),
+    ('deal-docs', 'deal/' || deal || '/tmp/x.pdf'),
+    ('deal-docs', 'deal/' || deal || '/Staff/x.pdf'),
+    ('deal-docs', 'deal/' || deal || '/a/b/c.pdf');
 
   -- The deal's agent.
   perform set_config('request.jwt.claims', json_build_object('sub', agent, 'role', 'authenticated')::text, true);
@@ -58,6 +63,16 @@ begin
   exception when others then r := 'denied: ' || sqlerrm; end;
   out := out || jsonb_build_object('shared_in_staff_folder', r);
   select count(*) into n from storage.objects where bucket_id = 'deal-docs' and name like 'deal/' || deal || '/%'; out := out || jsonb_build_object('agent_storage', n);
+  begin
+    insert into deal_documents (deal_id, path, file_name, size_bytes, content_type, shared)
+      values (deal, 'deal/' || deal || '/tmp/x.pdf', 'x.pdf', 10, 'application/pdf', true);
+    r := 'allowed';
+  exception when others then r := 'denied: ' || sqlerrm; end;
+  out := out || jsonb_build_object('odd_path', r);
+  begin perform public.log_deal_document_action(deal, 'document_shared', mdoc, 'rpa.pdf'); r := 'allowed'; exception when others then r := 'denied: ' || sqlerrm; end;
+  out := out || jsonb_build_object('audit_agent', r);
+  begin perform public.log_deal_document_action(deal, 'document_viewed', mdoc, 'rpa.pdf'); r := 'allowed'; exception when others then r := 'denied: ' || sqlerrm; end;
+  out := out || jsonb_build_object('audit_bad_action', r);
   begin insert into deal_member_document_types (deal_id, member_document_id, doc_types) values (deal, mdoc, '{spq}'); r := 'allowed'; exception when others then r := 'denied: ' || sqlerrm; end;
   out := out || jsonb_build_object('tag_seller_upload', r);
   begin insert into deal_checklist_marks (deal_id, item_key, note) values (deal, 'lead_paint', 'Built after 1978'); r := 'allowed'; exception when others then r := 'denied: ' || sqlerrm; end;
@@ -77,6 +92,8 @@ begin
   out := out || jsonb_build_object('agent2_adds', r);
   select count(*) into n from storage.objects where bucket_id = 'deal-docs' and name like 'deal/' || deal || '/%'; out := out || jsonb_build_object('agent2_storage', n);
   select count(*) into n from deal_checklist_marks where deal_id = deal; out := out || jsonb_build_object('agent2_marks', n);
+  begin perform public.log_deal_document_action(deal, 'document_shared', mdoc, 'rpa.pdf'); r := 'allowed'; exception when others then r := 'denied: ' || sqlerrm; end;
+  out := out || jsonb_build_object('audit_agent2', r);
   reset role;
 
   -- The seller.

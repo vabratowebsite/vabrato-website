@@ -13,6 +13,8 @@ import { supabaseServer } from "@/lib/supabase-server";
 import { ReceiptForm } from "./receipt-form";
 
 export const dynamic = "force-dynamic";
+// The receipt reader's server action runs under this page's limit.
+export const maxDuration = 300;
 
 const money = (n: number) => `$${Number(n).toLocaleString("en-US")}`;
 

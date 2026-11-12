@@ -68,7 +68,7 @@ export function DocumentUploader({ dealId }: { dealId: string }) {
       setStatus({ kind: "ok", text: "Uploading…" });
       const { error } = await supabase.storage.from("deal-docs").upload(path, file, { contentType: checked.type, upsert: false });
       if (error) return setStatus({ kind: "error", text: "Couldn't upload the file. Try again." });
-      const r = await fileDealDocumentAction(dealId, path, type ? [type] : []);
+      const r = await fileDealDocumentAction(dealId, path, type ? [type] : [], file.name);
       if (!r.ok) await supabase.storage.from("deal-docs").remove([path]).catch(() => undefined);
       setStatus(show(r.ok ? { ok: true, message: `${r.message} It's staff-only until you share it.` } : r));
       if (r.ok) {
@@ -149,6 +149,9 @@ function TypesEditor({ initial, onSave, onCancel, saveLabel }: { initial: DocTyp
     </fieldset>
   );
 }
+
+/** The question asked before a file goes to the seller's Documents page. */
+export const shareQuestion = (name: string) => `Share ${name} with the seller? They'll see it on their Documents page. Never share wiring or bank instructions here.`;
 
 const SIGNED: Record<CheckResult["signed"], string> = {
   yes: "Signed where it should be",
@@ -234,7 +237,14 @@ export function DocItem({ dealId, source, id, name, href, meta, types, shared, c
           </button>
         )}
         {source === "deal" && (
-          <button type="button" className={linkAction} disabled={pending} onClick={() => run(() => setSharedAction(dealId, id, !shared))}>
+          <button
+            type="button"
+            className={linkAction}
+            disabled={pending}
+            onClick={() => {
+              if (shared || window.confirm(shareQuestion(name))) run(() => setSharedAction(dealId, id, !shared));
+            }}
+          >
             {shared ? "Stop sharing" : "Share with seller"}
             <span className="sr-only">: {name}</span>
           </button>

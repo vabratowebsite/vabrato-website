@@ -137,9 +137,17 @@ export type ReceiptProposal = { ok: true; vendor: string; amount: string; date: 
  * $1,000,000 (cents), a real date not in the future. Anything else is left
  * for the person to type.
  */
+/** 8 or more digits in a row, spaces or dashes allowed between them: a card or account number. */
+export const LONG_DIGITS = /\d(?:[\s-]?\d){7,}/;
+const CANT_READ = "The assistant couldn't read this receipt.";
+
 export function toReceiptProposal(a: ReceiptAnswer, today: string): ReceiptProposal {
-  if (!a.readable) return { ok: false, problem: line(a.problem ?? "The assistant couldn't read this receipt.", 200) || "The assistant couldn't read this receipt." };
-  const vendor = line(a.vendor ?? "", 120);
+  // Long digit runs are checked on the raw text, before contact redaction.
+  if (!a.readable) {
+    const why = LONG_DIGITS.test(a.problem ?? "") ? "" : line(a.problem ?? "", 160);
+    return { ok: false, problem: why || CANT_READ };
+  }
+  const vendor = LONG_DIGITS.test(a.vendor ?? "") ? "" : line(a.vendor ?? "", 80);
   const amount = a.amount !== null && Number.isFinite(a.amount) && a.amount > 0 && a.amount < 1_000_000 ? (Math.round(a.amount * 100) / 100).toFixed(2) : "";
   let date = "";
   if (a.date) {

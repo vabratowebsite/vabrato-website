@@ -2,12 +2,12 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { runAi } from "@vabrato/ai";
+import { pdfPageLimit, runAi } from "@vabrato/ai";
 import type { SellerType } from "@vabrato/db";
 import { STAFF_ROLES, checklistKeys, cleanDocTypes, getProfile, todayISO } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
 import { DOCUMENT_CHECK, RECEIPT_READER, checkInput, receiptInput, toCheckResult, toReceiptProposal, type CheckResult, type ReceiptProposal } from "@/lib/document-check";
-import { MAX_DOC_BYTES, checkDealFile, checkReceiptFile, freeName, isOwnReceiptUpload, parseDocPath, receiptFolder, sniffType, staffDocPath } from "@/lib/documents";
+import { MAX_DOC_BYTES, checkDealFile, checkReceiptFile, STILL_SHARED, countPdfPages, freeName, isOwnReceiptUpload, originalName, parseDocPath, receiptFolder, sniffType, staffDocPath } from "@/lib/documents";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Deal documents and receipts (S6b PR 7a). Every read and write runs as the
@@ -36,11 +36,28 @@ const refresh = (dealId: string) => {
 
 // --- Filing, types, sharing, deleting ---------------------------------------------------------------
 
+/** Writes share, stop sharing and delete to staff_audit (0032): who, which document, which deal and file. Never content. */
+async function audit(supabase: Awaited<ReturnType<typeof supabaseServer>>, dealId: string, action: "document_shared" | "document_unshared" | "document_deleted" | "unfiled_deleted", docId: string | null, file: string) {
+  const { error } = await supabase.rpc("log_deal_document_action", { p_deal: dealId, p_action: action, p_document: docId ?? "00000000-0000-0000-0000-000000000000", p_file: file });
+  if (error) console.error("[documents] audit", action, error.message);
+}
+
+/** True only when storage confirms the object is gone (anything else counts as "maybe still there"). */
+async function isGone(bucket: ReturnType<Awaited<ReturnType<typeof supabaseServer>>["storage"]["from"]>, path: string): Promise<boolean> {
+  try {
+    const { data } = await bucket.exists(path);
+    return data === false;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Records a file that is already in this deal's folder (just uploaded to
  * staff/, or left unfiled): checks its real type and size, then adds the row.
+ * The storage key uses a cleaned-up name; file_name keeps the name as uploaded.
  */
-export async function fileDealDocumentAction(dealId: string, path: string, docTypes: string[]): Promise<DocActionResult> {
+export async function fileDealDocumentAction(dealId: string, path: string, docTypes: string[], uploadedName?: string): Promise<DocActionResult> {
   const { supabase, profile } = await staffDeal(dealId);
   const where = parseDocPath(path, dealId);
   if (!where) return fail("That file isn't in this deal's folder. Upload it again.");
@@ -49,10 +66,11 @@ export async function fileDealDocumentAction(dealId: string, path: string, docTy
   const bytes = new Uint8Array(await file.arrayBuffer());
   const checked = checkDealFile(bytes.length, bytes.subarray(0, 12));
   if ("error" in checked) return fail(checked.error);
+  const name = originalName(uploadedName, where.name);
   const { error: insErr } = await supabase.from("deal_documents").insert({
     deal_id: dealId,
     path,
-    file_name: where.name.slice(0, 200),
+    file_name: name,
     size_bytes: bytes.length,
     content_type: checked.type,
     doc_types: cleanDocTypes(docTypes ?? []),
@@ -61,7 +79,7 @@ export async function fileDealDocumentAction(dealId: string, path: string, docTy
   });
   if (insErr) return fail(insErr.code === "23505" ? "That file is already filed." : "Couldn't file the document. Try again.");
   refresh(dealId);
-  return { ok: true, message: `Filed ${where.name}.` };
+  return { ok: true, message: `Filed ${name}.` };
 }
 
 export async function setDocTypesAction(dealId: string, docId: string, docTypes: string[]): Promise<DocActionResult> {
@@ -91,41 +109,69 @@ export async function setMemberDocTypesAction(dealId: string, memberDocId: strin
   return { ok: true, message: "Types saved." };
 }
 
-/** Moves a document between the staff folder and the seller's view (copy, record, then remove the old copy). */
+/**
+ * Share: copy into the seller's view, record it, then remove the staff copy
+ * (a leftover staff copy is staff-only, and is logged).
+ * Stop sharing fails safe: copy back to staff/, remove the seller's copy and
+ * confirm it's gone, and only then record it; otherwise the staff copy is
+ * removed and the row stays shared.
+ */
 export async function setSharedAction(dealId: string, docId: string, share: boolean): Promise<DocActionResult> {
   const { supabase } = await staffDeal(dealId);
-  const { data: doc } = await supabase.from("deal_documents").select("id, path, shared").eq("id", docId).eq("deal_id", dealId).maybeSingle();
+  const { data: doc } = await supabase.from("deal_documents").select("id, path, shared, file_name").eq("id", docId).eq("deal_id", dealId).maybeSingle();
   if (!doc) return fail("That document isn't here any more.");
   if (doc.shared === share) return { ok: true, message: share ? "Already shared with the seller." : "Already staff-only." };
   const where = parseDocPath(doc.path, dealId);
   if (!where) return fail("That document's file is in an unexpected place.");
   const bucket = supabase.storage.from("deal-docs");
-  let dest: string;
+
   if (share) {
     const { data: top } = await bucket.list(`deal/${dealId}`, { limit: 1000 });
-    dest = `deal/${dealId}/${freeName(where.name, (top ?? []).filter((f) => f.id).map((f) => f.name))}`;
-  } else {
-    dest = staffDocPath(dealId, randomUUID(), where.name);
+    const dest = `deal/${dealId}/${freeName(where.name, (top ?? []).filter((f) => f.id).map((f) => f.name))}`;
+    const { error: copyErr } = await bucket.copy(doc.path, dest);
+    if (copyErr) return fail("Couldn't share the file. Try again.");
+    const { error: updErr } = await supabase.from("deal_documents").update({ path: dest, shared: true }).eq("id", docId);
+    if (updErr) {
+      await bucket.remove([dest]);
+      if (!(await isGone(bucket, dest))) console.error("[documents] share rollback left a shared copy", docId);
+      return fail("Couldn't share the file. Try again.");
+    }
+    await bucket.remove([doc.path]);
+    if (!(await isGone(bucket, doc.path))) console.error("[documents] staff copy left after sharing", docId);
+    await audit(supabase, dealId, "document_shared", docId, doc.file_name);
+    refresh(dealId);
+    return { ok: true, message: `Shared ${doc.file_name} with the seller. It's on their Documents page now.` };
   }
+
+  const dest = staffDocPath(dealId, randomUUID(), where.name);
   const { error: copyErr } = await bucket.copy(doc.path, dest);
-  if (copyErr) return fail("Couldn't move the file. Try again.");
-  const { error: updErr } = await supabase.from("deal_documents").update({ path: dest, shared: share }).eq("id", docId);
-  if (updErr) {
-    await bucket.remove([dest]);
-    return fail("Couldn't move the file. Try again.");
-  }
+  if (copyErr) return fail(STILL_SHARED);
   await bucket.remove([doc.path]);
+  if (!(await isGone(bucket, doc.path))) {
+    await bucket.remove([dest]);
+    return fail(STILL_SHARED);
+  }
+  const { error: updErr } = await supabase.from("deal_documents").update({ path: dest, shared: false }).eq("id", docId);
+  if (updErr) {
+    // The seller's copy is gone; put it back so the row and the file agree.
+    const { error: back } = await bucket.copy(dest, doc.path);
+    if (!back) await bucket.remove([dest]);
+    return fail("Couldn't record that the file is staff-only. Try again.");
+  }
+  await audit(supabase, dealId, "document_unshared", docId, doc.file_name);
   refresh(dealId);
-  return { ok: true, message: share ? `Shared ${where.name} with the seller. It's in their Documents page now.` : `${where.name} is staff-only again; the seller no longer sees it.` };
+  return { ok: true, message: `${doc.file_name} is staff-only again; the seller no longer sees it.` };
 }
 
 export async function deleteDealDocumentAction(dealId: string, docId: string): Promise<DocActionResult> {
   const { supabase } = await staffDeal(dealId);
-  const { data: doc } = await supabase.from("deal_documents").select("id, path").eq("id", docId).eq("deal_id", dealId).maybeSingle();
+  const { data: doc } = await supabase.from("deal_documents").select("id, path, file_name").eq("id", docId).eq("deal_id", dealId).maybeSingle();
   if (!doc) return fail("That document isn't here any more.");
-  const { error } = await supabase.storage.from("deal-docs").remove([doc.path]);
-  if (error) return fail("Couldn't delete the file. Try again.");
+  const bucket = supabase.storage.from("deal-docs");
+  await bucket.remove([doc.path]);
+  if (!(await isGone(bucket, doc.path))) return fail("Couldn't delete the file. Try again.");
   await supabase.from("deal_documents").delete().eq("id", docId);
+  await audit(supabase, dealId, "document_deleted", docId, doc.file_name);
   refresh(dealId);
   return { ok: true, message: "Deleted." };
 }
@@ -133,11 +179,14 @@ export async function deleteDealDocumentAction(dealId: string, docId: string): P
 /** Removes a file in the deal's folder that was never filed. */
 export async function deleteUnfiledAction(dealId: string, path: string): Promise<DocActionResult> {
   const { supabase } = await staffDeal(dealId);
-  if (!parseDocPath(path, dealId)) return fail("That file isn't in this deal's folder.");
+  const where = parseDocPath(path, dealId);
+  if (!where) return fail("That file isn't in this deal's folder.");
   const { data: row } = await supabase.from("deal_documents").select("id").eq("path", path).maybeSingle();
   if (row) return fail("That file is filed; delete it from the list instead.");
-  const { error } = await supabase.storage.from("deal-docs").remove([path]);
-  if (error) return fail("Couldn't delete the file. Try again.");
+  const bucket = supabase.storage.from("deal-docs");
+  await bucket.remove([path]);
+  if (!(await isGone(bucket, path))) return fail("Couldn't delete the file. Try again.");
+  await audit(supabase, dealId, "unfiled_deleted", null, where.name);
   refresh(dealId);
   return { ok: true, message: "Deleted." };
 }
@@ -191,6 +240,8 @@ export async function checkDocumentAction(dealId: string, source: "deal" | "memb
     const type = sniffType(bytes.subarray(0, 12));
     if (!type) return { ok: false, error: "The assistant reads PDFs, JPGs, PNGs and WebP images only." };
     if (bytes.length > MAX_DOC_BYTES) return { ok: false, error: "The file is too large for the assistant (20 MB at most)." };
+    const pages = type === "application/pdf" ? countPdfPages(bytes) : null;
+    if (pages !== null && pages > pdfPageLimit()) return { ok: false, error: `This file has ${pages} pages; the assistant reads up to ${pdfPageLimit()}. Split this file and check the parts.` };
 
     const result = await runAi(aiDeps(supabase), DOCUMENT_CHECK, { parts: checkInput(deal.seller_type, { type, base64: bytes.toString("base64") }), dealId });
     if (!result.ok) return { ok: false, error: result.message };

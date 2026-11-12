@@ -37,7 +37,8 @@ export interface ModelResult {
   usage: Usage;
 }
 
-export type ModelErrorKind = "rate_limited" | "overloaded" | "bad_request" | "auth" | "network" | "other";
+/** "too_large": the request (usually a PDF) has too many pages or is too big for the model. */
+export type ModelErrorKind = "rate_limited" | "overloaded" | "bad_request" | "too_large" | "auth" | "network" | "other";
 
 export class ModelError extends Error {
   constructor(

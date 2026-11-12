@@ -90,6 +90,12 @@ describe("deal documents (0032)", () => {
       expect(await as("agent", (q) => doc(q, { path: `deal/${DEAL}/x.pdf`, shared: true }))).toHaveLength(1);
     });
 
+    it("only the two allowed places: a third folder, a capitalised Staff/ or a deeper path is rejected", async () => {
+      for (const path of [`deal/${DEAL}/tmp/x.pdf`, `deal/${DEAL}/Staff/x.pdf`, `deal/${DEAL}/staff/a/b.pdf`, `deal/${DEAL}/a/b/c.pdf`]) {
+        for (const shared of [true, false]) await expect(as("agent", (q) => doc(q, { path, shared }))).rejects.toThrow(/check constraint/);
+      }
+    });
+
     it("sharing moves the path; the deal and uploader can't be changed; checklist keys are checked", async () => {
       const id = await seed(`deal/${DEAL}/staff/a-x.pdf`);
       expect(await as("agent", (q) => q(`update deal_documents set path = $2, shared = true where id = $1 returning shared`, [id, `deal/${DEAL}/x.pdf`]))).toEqual([{ shared: true }]);
@@ -138,6 +144,33 @@ describe("deal documents (0032)", () => {
     });
   });
 
+  describe("the audit log", () => {
+    const log = (who: Who, action = "document_shared", deal = DEAL) =>
+      as(who, (q) => q(`select public.log_deal_document_action($1, $2, $3, 'rpa.pdf')`, [deal, action, "b9000000-0000-4000-8000-0000000032b9"]));
+
+    it("staff on the deal write share, stop sharing and delete; only admins read the log", async () => {
+      // Each as() call rolls back, so write and read inside one call.
+      const agentSees = await as("agent", async (q) => {
+        for (const a of ["document_shared", "document_unshared", "document_deleted", "unfiled_deleted"])
+          await q(`select public.log_deal_document_action($1, $2, $3, 'rpa.pdf')`, [DEAL, a, "b9000000-0000-4000-8000-0000000032b9"]);
+        return q(`select id from staff_audit where ref_table = 'deal_documents'`);
+      });
+      expect(agentSees).toEqual([]);
+      const admin = await as("admin", async (q) => {
+        await q(`select public.log_deal_document_action($1, 'document_deleted', $2, 'rpa.pdf')`, [DEAL, "b9000000-0000-4000-8000-0000000032b9"]);
+        return q(`select action, actor_id, ref_id, detail from staff_audit where ref_table = 'deal_documents'`);
+      });
+      expect(admin).toEqual([{ action: "document_deleted", actor_id: U.admin, ref_id: "b9000000-0000-4000-8000-0000000032b9", detail: { deal: DEAL, file: "rpa.pdf" } }]);
+    });
+
+    it("refused for staff without deal access, the seller, the public and unknown actions", async () => {
+      await expect(log("agent2")).rejects.toThrow(/not_allowed/);
+      await expect(log("seller")).rejects.toThrow(/not_allowed/);
+      await expect(log("anon")).rejects.toThrow(/permission denied/);
+      await expect(log("agent", "document_viewed")).rejects.toThrow(/bad_action/);
+    });
+  });
+
   describe("deal-docs storage", () => {
     const put = (bucket: string, name: string) => t.query(`insert into storage.objects (bucket_id, name) values ($1, $2)`, [bucket, name]);
     const see = (who: Who, bucket = "deal-docs") => as(who, (q) => q<{ name: string }>(`select name from storage.objects where bucket_id = $1 order by name`, [bucket])).then((r) => r.map((o) => o.name));
@@ -161,6 +194,14 @@ describe("deal documents (0032)", () => {
       await put("deal-docs", `deal/${DEAL}/staff/private.pdf`);
       expect(await as("seller", (q) => q(`delete from storage.objects returning name`))).toEqual([]);
       expect(await as("agent", (q) => q(`delete from storage.objects returning name`))).toHaveLength(1);
+    });
+
+    it("the seller reads only files directly in the deal's folder (an allowlist)", async () => {
+      for (const name of [`deal/${DEAL}/tmp/x.pdf`, `deal/${DEAL}/Staff/x.pdf`, `deal/${DEAL}/a/b/c.pdf`, `deal/${DEAL}/staff/y.pdf`]) await put("deal-docs", name);
+      await put("deal-docs", `deal/${DEAL}/shared.pdf`);
+      expect(await see("seller")).toEqual([`deal/${DEAL}/shared.pdf`]);
+      expect(await see("agent")).toHaveLength(5);
+      expect(await see("agent2")).toEqual([]);
     });
 
     it("receipt uploads stay staff-only", async () => {

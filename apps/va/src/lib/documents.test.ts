@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkDealFile, checkReceiptFile, freeName, isOwnReceiptUpload, missingByDeal, parseDocPath, safeFileName, sniffType, staffDocPath } from "./documents";
+import { checkDealFile, checkReceiptFile, countPdfPages, freeName, isOwnReceiptUpload, loadMissing, missingByDeal, originalName, parseDocPath, safeFileName, sniffType, staffDocPath } from "./documents";
 
 // S6b PR 7a: file checks, storage paths and the missing count. Fictional ids.
 
@@ -48,6 +48,13 @@ describe("paths", () => {
     expect(parseDocPath(`deal/${DEAL}/rpa.pdf`, DEAL)).toEqual({ shared: true, name: "rpa.pdf" });
   });
 
+  it("file_name keeps the name as uploaded, without control characters or slashes", () => {
+    expect(originalName("Seller Disclosures (signed) – final.PDF", "x.pdf")).toBe("Seller Disclosures (signed) – final.PDF");
+    expect(originalName("../../a\u0000b/c.pdf", "x.pdf")).toBe(".. .. a b c.pdf");
+    expect(originalName("   ", "fallback.pdf")).toBe("fallback.pdf");
+    expect(originalName("y".repeat(300), "x.pdf")).toHaveLength(200);
+  });
+
   it("refuse anything outside this deal's folder", () => {
     expect(parseDocPath(`deal/d2000000-0000-4000-8000-0000000032d2/rpa.pdf`, DEAL)).toBeNull();
     expect(parseDocPath(`deal/${DEAL}/other/rpa.pdf`, DEAL)).toBeNull();
@@ -67,6 +74,26 @@ describe("paths", () => {
     expect(isOwnReceiptUpload(`deal/${DEAL}/uploads/${ME}/${U}.exe`, DEAL, ME)).toBe(false);
     expect(isOwnReceiptUpload(`deal/${DEAL}/${U}.jpg`, DEAL, ME)).toBe(false);
   });
+});
+
+describe("PDF pages", () => {
+  const enc = (t: string) => new TextEncoder().encode(t);
+  it("reads the page tree's /Count, else counts /Type /Page objects", () => {
+    expect(countPdfPages(enc("%PDF-1.4\n1 0 obj << /Type /Pages /Kids [3 0 R] /Count 742 >> endobj\n2 0 obj << /Type /Pages /Count 2 >> endobj"))).toBe(742);
+    expect(countPdfPages(enc("%PDF-1.4\n<< /Count 12 /Type /Pages >>"))).toBe(12);
+    expect(countPdfPages(enc("%PDF-1.4\n<< /Type /Page >> << /Type /Page >> << /Type /Page /Parent 1 0 R >>"))).toBe(3);
+  });
+  it("is unknown when the page tree is compressed", () => {
+    expect(countPdfPages(enc("%PDF-1.5\n1 0 obj << /Type /ObjStm /N 40 /Filter /FlateDecode >> stream xyz endstream"))).toBeNull();
+  });
+});
+
+it("missing documents are skipped quietly when the documents table isn't there yet (before 0032)", async () => {
+  const table = (name: string) => ({
+    select: () => ({ in: async () => (name === "deal_documents" ? { data: null, error: { code: "PGRST205", message: "not found" } } : { data: [], error: null }) }),
+  });
+  const supabase = { from: table } as unknown as Parameters<typeof loadMissing>[0];
+  expect(await loadMissing(supabase, [{ id: "a", address: "1 Fixture Way", seller_type: "normal" }])).toEqual([]);
 });
 
 it("missing documents per deal count files, the seller's tagged uploads and not-needed marks", () => {

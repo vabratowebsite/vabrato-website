@@ -2331,6 +2331,10 @@ export type Database = {
           original_list_price: number
         }[]
       }
+      log_deal_document_action: {
+        Args: { p_action: string; p_deal: string; p_document: string; p_file: string }
+        Returns: undefined
+      }
       mark_alerts_seen: { Args: never; Returns: number }
       mark_lead_replied: { Args: { p_lead: string }; Returns: undefined }
       mark_messages_read: { Args: { p_member: string }; Returns: number }
