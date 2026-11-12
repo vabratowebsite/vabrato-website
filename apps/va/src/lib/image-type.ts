@@ -1,8 +1,9 @@
 // Agent photo uploads: the file's first bytes decide what it is, not its name
 // or the browser's content type. JPEG, PNG and WebP only (no SVG: it can
-// carry script), 5 MB at most (the agent-photos bucket limit, 0024).
+// carry script). 4 MB at most: the photo travels through a server action, and
+// Vercel refuses request bodies over 4.5 MB (the bucket itself allows 5 MB, 0024).
 
-export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 export type PhotoType = { ext: "jpg" | "png" | "webp"; mime: "image/jpeg" | "image/png" | "image/webp" };
 
@@ -20,7 +21,7 @@ export type PhotoCheck = { ok: true; type: PhotoType } | { ok: false; error: str
 
 export function checkPhoto(size: number, head: Uint8Array): PhotoCheck {
   if (size === 0) return { ok: false, error: "Choose a photo to upload." };
-  if (size > MAX_PHOTO_BYTES) return { ok: false, error: "The photo must be 5 MB or smaller." };
+  if (size > MAX_PHOTO_BYTES) return { ok: false, error: "The photo must be 4 MB or smaller." };
   const type = sniffImage(head);
   if (!type) return { ok: false, error: "Upload a JPEG, PNG or WebP photo." };
   return { ok: true, type };

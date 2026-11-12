@@ -155,3 +155,11 @@ export interface AiUsageToday {
   requests_limit: number;
   tokens_limit: number;
 }
+
+/** ai_month_summary() (0027), admins only. Costs in millionths of a dollar. */
+export interface AiMonthSummary {
+  budget_usd: number;
+  spent_micros: number;
+  requests: number;
+  by_feature: { feature: string; requests: number; cost_micros: number; not_ok: number }[];
+}

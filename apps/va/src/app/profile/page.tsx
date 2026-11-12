@@ -90,7 +90,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                   New photo
                 </label>
                 <p id="photo-hint" className={`${mutedCls} mt-1`}>
-                  JPEG, PNG or WebP, up to 5 MB. A portrait (4:5) works best.
+                  JPEG, PNG or WebP, up to 4 MB. A portrait (4:5) works best.
                 </p>
                 <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required aria-describedby="photo-hint" className="mt-2 block font-body text-body-sm text-ink" />
               </div>

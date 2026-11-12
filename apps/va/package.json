@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
+    "@vabrato/ai": "workspace:*",
     "@vabrato/db": "workspace:*",
     "@vabrato/lib": "workspace:*",
     "@vabrato/ui": "workspace:*",

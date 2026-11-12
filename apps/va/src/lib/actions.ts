@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
-  DEFAULT_CONTINGENCIES,
   STAFF_ROLES,
   buildSellerNotificationRows,
   createServiceSupabase,
@@ -47,6 +46,7 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
     daysToClose: input.days_to_close,
     sellerType: input.seller_type,
     rentBackDays: input.rent_back_days,
+    contingencies: input.contingencies,
   });
 
   const { data: deal, error: dealError } = await supabase
@@ -79,14 +79,17 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
     })),
   );
 
-  const { error: contingencyError } = await supabase.from("deal_contingencies").insert(
-    DEFAULT_CONTINGENCIES.map((c) => ({
-      deal_id: deal.id,
-      kind: c.kind,
-      offset_days: c.offsetDays,
-      due_date: schedule.timeline.contingencyRemovals.find((r) => r.kind === c.kind)?.dueDate,
-    })),
-  );
+  // The contingencies entered on the form (none for an all-cash, as-is offer).
+  const { error: contingencyError } = input.contingencies.length
+    ? await supabase.from("deal_contingencies").insert(
+        input.contingencies.map((c) => ({
+          deal_id: deal.id,
+          kind: c.kind,
+          offset_days: c.offsetDays,
+          due_date: schedule.timeline.contingencyRemovals.find((r) => r.kind === c.kind)?.dueDate,
+        })),
+      )
+    : { error: null };
 
   if (taskError || contingencyError) {
     // Deal exists but the schedule didn't fully land — surface it rather than

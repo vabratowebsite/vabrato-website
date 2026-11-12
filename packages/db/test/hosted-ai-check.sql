@@ -40,6 +40,8 @@ begin
   j := public.ai_begin('staff_check_feature'); out := out || jsonb_build_object('master_off', j);
   reset role;
 
+  -- 0027: the master switch needs the Zero Data Retention confirmation on record.
+  update app_settings set ai_zdr_confirmed_at = coalesce(ai_zdr_confirmed_at, now());
   update feature_flags set enabled = true where key = 'ai_enabled';
   update app_settings set ai_daily_requests_member = 1;
 

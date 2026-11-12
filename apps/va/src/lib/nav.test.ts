@@ -13,6 +13,7 @@ describe("console nav", () => {
       "/listings",
       "/open-houses",
       "/mls",
+      "/assistant",
       "/content",
       "/featured",
       "/reports",
