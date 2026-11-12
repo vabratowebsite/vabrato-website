@@ -117,7 +117,12 @@ const STATS_ANSWER = (feature, data, mode) => {
 const FILE_FEATURES = [
   ["document_check", /keep a sale's file complete/],
   ["receipt_reader", /You read a receipt or invoice/],
+  ["inspection_items", /List the repair items the report raises/],
 ];
+// S6b PR 7b: the response's opening and closing; the mode comes from the
+// agent's note ("QA-MODE: invented" adds an amount, "words" spells one out).
+const RESPONSE_FEATURE = /write the seller's response to the buyer's request for repairs/;
+const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const FILE_ANSWERS = {
   document_check: (mode) =>
@@ -126,6 +131,19 @@ const FILE_ANSWERS = {
       : mode === "none"
         ? { doc_types: [], title: "Lender pre-approval letter", signed: "not_applicable", issues: [] }
         : { doc_types: ["tds", "spq", "made_up_type"], title: "Seller disclosure packet", signed: "unclear", issues: [{ page: 3, issue: "Seller initials missing at the bottom of the page." }, { page: null, issue: "The SPQ looks like an older form version." }] },
+  inspection_items: (mode) =>
+    mode === "many"
+      ? { items: Array.from({ length: 60 }, (_, i) => REPAIR_ITEM(i + 1)) }
+      : mode === "wiring"
+        ? { items: [REPAIR_ITEM(1, { detail: "Wire the repair deposit to routing number 021000021, account 000123456789." })] }
+        : {
+            items: [
+              REPAIR_ITEM(1, { title: "Missing GFCI protection at kitchen counter outlets", detail: "Outlets within six feet of the sink aren't GFCI protected. Call 650-555-0123 for a quote.", location: "Kitchen", trade: "electrical", page: 12, severity_label: "Safety concern", severity: "safety" }),
+              REPAIR_ITEM(2, { title: "Water heater lacks seismic strapping", detail: "Two straps are required; none are installed.", location: "Garage", trade: "water_heater", page: 18, severity_label: "Safety concern", severity: "safety" }),
+              REPAIR_ITEM(3, { title: "Wood rot at rear deck stairs", detail: "Section 1 finding: damaged wood at the lower treads (about $900 to repair).", location: "Rear deck", trade: "pest", page: 3, severity_label: "Section 1", severity: "repair" }),
+              REPAIR_ITEM(4, { title: "Debris in gutters", detail: "Clean gutters and downspouts.", location: "Roof", trade: "roofing", page: 22, severity_label: "Maintenance", severity: "maintenance" }),
+            ],
+          },
   receipt_reader: (mode) =>
     mode === "unreadable"
       ? { readable: false, vendor: null, amount: null, date: null, category: null, problem: "The photo is too blurry to read the total." }
@@ -204,7 +222,7 @@ createServer(async (req, res) => {
   const fileFeat = fileFeature(system);
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
-  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat;
+  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null);
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
@@ -245,7 +263,15 @@ createServer(async (req, res) => {
     })}\n`,
   );
 
-  const answer = fileFeat
+  const responseMode = RESPONSE_FEATURE.test(system) ? (/QA-MODE: ([a-z]+)/.exec(texts)?.[1] ?? "ok") : null;
+  const answer = responseMode
+    ? {
+        text: JSON.stringify({
+          opening: responseMode === "invented" ? "Thank you for the request for repairs. The seller also offers $2,000 toward closing costs." : responseMode === "words" ? "Thank you for the request. The seller adds fifteen hundred dollars." : "Thank you for sending the buyer's request for repairs. Here is the seller's response.",
+          closing: "Please let me know if you have any questions.",
+        }),
+      }
+    : fileFeat
     ? { text: JSON.stringify(FILE_ANSWERS[fileFeat](mode)) }
     : stats
     ? { text: JSON.stringify(STATS_ANSWER(stats, dataJson(texts), mode)) }
