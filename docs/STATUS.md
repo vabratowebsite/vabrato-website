@@ -661,8 +661,9 @@ document checks, receipts, calendar drafts).
     file matched the tested one. The security advisor's only new entry is
     `can_work_draft_target` (signed-in users can call it; it only says
     whether the caller works a given lead or deal); nothing new is open to
-    the public. The four switches are off and the daily purge job
-    (`vabrato-purge-ai-drafts`, 11:41 UTC) is scheduled.
+    the public. The four switches are off. The migration schedules the
+    daily purge (`vabrato-purge-ai-drafts`, 11:41 UTC) when pg_cron is
+    installed, as it is on hosted; the hosted check confirms the job.
     `packages/db/test/hosted-drafts-check.sql` (rolled back) passes locally;
     its hosted run is still to do (the Supabase connector's confirmation
     prompt timed out).
