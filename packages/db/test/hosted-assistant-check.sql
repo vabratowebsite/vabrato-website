@@ -9,7 +9,7 @@
 -- message carries the results as JSON, and the abort rolls back every row,
 -- flag, setting and alert it changed. Needs at least one admin profile.
 --
--- Expected (2026-11-12):
+-- Expected, and seen on hosted (2026-11-12, one admin):
 --   flags_before "ai_enabled=false,ai_staff_contract_reader=false"
 --   sql_turns_on_without_zdr "denied: zdr_not_confirmed"
 --   agent_confirms_zdr, agent_sets_flag, agent_month_summary "denied: admin_only"

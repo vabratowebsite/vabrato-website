@@ -617,8 +617,13 @@ document checks, receipts, calendar drafts).
     public. Both AI flags are off and no confirmation is recorded.
     `packages/db/test/hosted-assistant-check.sql` (rolled back; ZDR gate,
     admin-only controls, budget alerts and pause, the staging folder, and a
-    VA creating a deal) passes on the local stack; its hosted run is still
-    to do (the Supabase connector's confirmation prompt timed out).
+    VA creating a deal) passed on hosted (2026-11-12, one admin): the gate
+    held even for direct SQL; non-admins were refused; one 80% alert and one
+    100% alert reached the admin only, and the next request was paused; each
+    person's staging folder was theirs alone; a VA created a deal with its
+    tasks and contingencies, and the read-back that broke it before still
+    fails as expected. Everything rolled back: flags off, no confirmation,
+    $100 budget, no runs, alerts, test accounts, deals or uploads left.
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches
