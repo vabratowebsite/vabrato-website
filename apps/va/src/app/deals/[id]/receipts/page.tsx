@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import { fmtShort } from "@vabrato/lib";
-import { KpiTile, Panel, Pill } from "@vabrato/ui/web";
+import { KpiTile, Panel, Pill, WiringBanner } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { DealShell } from "@/components/deal-shell";
 import { linkDanger, mutedCls } from "@/components/ui";
 import { deleteReceiptAction } from "@/lib/actions";
+import { aiKeyConfigured } from "@/lib/ai";
+import { aiFeaturesOn } from "@/lib/ai-flags";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -26,15 +28,17 @@ export default async function DealReceiptsPage({ params }: { params: Promise<{ i
   const supabase = await supabaseServer();
   const { data: receipts } = await supabase.from("receipts").select("*").eq("deal_id", id).order("receipt_date", { ascending: false });
   const all = receipts ?? [];
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_receipt_reader"]);
   const reimburse = all.reduce((sum, r) => sum + Number(r.amount), 0);
 
   return (
     <DealShell profile={profile} deal={deal} done={done} total={total} active="receipts">
+      <WiringBanner />
       <div className="grid gap-6 lg:grid-cols-3">
         <KpiTile value={money(reimburse)} label={`Reimbursement total · ${all.length} receipt${all.length === 1 ? "" : "s"}`} />
         <div className="lg:col-span-2">
           <Panel title="Add a receipt">
-            <ReceiptForm dealId={deal.id} />
+            <ReceiptForm dealId={deal.id} readerOn={ai.ai_staff_receipt_reader && aiKeyConfigured()} />
           </Panel>
         </div>
       </div>
@@ -58,7 +62,16 @@ export default async function DealReceiptsPage({ params }: { params: Promise<{ i
               <tbody>
                 {all.map((r) => (
                   <tr key={r.id} className="border-b border-line last:border-b-0">
-                    <td className="py-2 pr-4">{r.vendor}</td>
+                    <td className="py-2 pr-4">
+                      {r.storage_path ? (
+                        <a href={`/deals/${deal.id}/file?b=receipts&p=${encodeURIComponent(r.storage_path)}`} className="text-navy underline">
+                          {r.vendor}
+                          <span className="sr-only"> (open the receipt file)</span>
+                        </a>
+                      ) : (
+                        r.vendor
+                      )}
+                    </td>
                     <td className="py-2 pr-4 text-muted">{fmtShort(r.receipt_date)}</td>
                     <td className="py-2 pr-4">{r.category}</td>
                     <td className="py-2 pr-4"><Pill tone="neutral">{r.source}</Pill></td>

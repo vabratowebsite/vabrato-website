@@ -15,6 +15,7 @@ import {
   todayISO,
 } from "@vabrato/lib";
 import { parseDealForm } from "@/lib/deal-schema";
+import { isOwnReceiptUpload } from "@/lib/documents";
 import { parseReceiptForm } from "@/lib/receipt-schema";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -26,6 +27,8 @@ export async function signOutAction() {
 
 export interface FormState {
   error: string | null;
+  /** Set after a successful save, so a form can reset itself. */
+  ok?: boolean;
 }
 
 /**
@@ -230,6 +233,15 @@ export async function addReceiptAction(
   if (parsed.error !== null) return { error: parsed.error };
 
   const supabase = await supabaseServer();
+  // An attached file (S6b PR 7a): only one the person uploaded to their own
+  // folder on this deal.
+  const file = String(form.get("storage_path") ?? "");
+  let storagePath: string | null = null;
+  if (file) {
+    const profile = await getProfile(supabase);
+    if (!profile || !isOwnReceiptUpload(file, dealId, profile.id)) return { error: "Attach the receipt again." };
+    storagePath = file;
+  }
   const { error } = await supabase.from("receipts").insert({
     deal_id: dealId,
     vendor: parsed.data.vendor,
@@ -237,16 +249,19 @@ export async function addReceiptAction(
     category: parsed.data.category,
     receipt_date: parsed.data.receipt_date,
     source: "manual",
+    storage_path: storagePath,
   });
   if (error) return { error: error.message };
   revalidatePath(`/deals/${dealId}/receipts`);
-  return { error: null };
+  return { error: null, ok: true };
 }
 
 export async function deleteReceiptAction(receiptId: string, dealId: string) {
   const supabase = await supabaseServer();
-  const { error } = await supabase.from("receipts").delete().eq("id", receiptId);
+  const { data: rows, error } = await supabase.from("receipts").delete().eq("id", receiptId).select("storage_path");
   if (error) console.error("[deleteReceipt]", error.message);
+  const path = rows?.[0]?.storage_path;
+  if (path) await supabase.storage.from("receipts").remove([path]);
   revalidatePath(`/deals/${dealId}/receipts`);
 }
 

@@ -19,7 +19,8 @@ export default async function DocumentsPage() {
   const dealDocs = await Promise.all(
     (deals ?? []).map(async (d) => {
       const { data } = await supabase.storage.from("deal-docs").list(`deal/${d.id}`, { limit: 100, sortBy: { column: "name", order: "asc" } });
-      return { deal: d, files: (data ?? []).filter((f) => f.name && !f.name.startsWith(".")) };
+      // Folder entries (no id), such as the staff-only folder, are never listed.
+      return { deal: d, files: (data ?? []).filter((f) => f.id && f.name && !f.name.startsWith(".")) };
     }),
   );
 
