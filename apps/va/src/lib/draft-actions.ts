@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import type { AiDraftKind } from "@vabrato/db";
+import type { AiDraftKind, EmailDraftKind } from "@vabrato/db";
 import { runAi } from "@vabrato/ai";
 import { STAFF_ROLES, computeCoe, getProfile } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
@@ -60,7 +60,7 @@ export async function writeDraftAction(raw: WriteDraftInput): Promise<DraftResul
     if (!aiKeyConfigured()) return { ok: false, error: "The assistant isn't set up yet: it has no API key. Ask an admin." };
     const sender = profile.full_name || null;
 
-    let kind: AiDraftKind;
+    let kind: EmailDraftKind;
     let row: { lead_id?: string; deal_id?: string; vendor_id?: string };
     let parts;
     let dealId: string | null = null;

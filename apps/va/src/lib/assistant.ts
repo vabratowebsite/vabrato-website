@@ -63,6 +63,18 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     what: "On this page: ask in plain words about your own transactions, tasks, leads and messages, and get an answer with links to the records it's based on.",
     where: { href: "/assistant", label: "Assistant" },
   },
+  {
+    flag: "ai_staff_listing_kit",
+    name: "Listing launch kits",
+    what: "For one of our own listings: the MLS description, three social posts, a \"just listed\" email and a printable flyer, from the public listing facts and your notes. You edit and approve it, then copy or print.",
+    where: { href: "/listings", label: "Our listings" },
+  },
+  {
+    flag: "ai_staff_presentations",
+    name: "Presentations",
+    what: "Listing and buyer presentations to print: the assistant writes the pages; your profile, Vabrato's services and the usual timeline come from our records. Never any pricing.",
+    where: { href: "/presentations", label: "Presentations" },
+  },
 ];
 
 export const MASTER_FLAG = "ai_enabled";

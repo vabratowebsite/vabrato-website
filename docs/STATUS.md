@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 (listing launch kits, listing and buyer presentations; 0030) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -508,13 +508,15 @@ document checks, receipts, calendar drafts).
      notes to to-dos moved to PR 7, owner decision 2026-11-12.)
   4. Daily briefing, member activity summary, plain questions about the
      console's data.
-  5. Listing launch kit, market update and CMA write-up, presentations as
-     printable pages.
-  6. Document checks: missing documents by seller type, inspection report
+  5. Listing launch kit and printable listing and buyer presentations.
+  6. Market update (through Mark's content approval; public only with
+     `public_stats`) and CMA write-up, on test data behind the sold-data
+     switches. (Split from 5, owner decision 2026-11-12.)
+  7. Document checks: missing documents by seller type, inspection report
      to repair request, what changed in a counter-offer, receipts.
-  7. Appointment drafts (calendar file first; Google Calendar once that
+  8. Appointment drafts (calendar file first; Google Calendar once that
      connection is built), and call notes to to-dos and a follow-up draft.
-  8. QA: screens, accessibility, and an optional live test run against the
+  9. QA: screens, accessibility, and an optional live test run against the
      real model (costs money; only with approval).
 - **PR 1 (foundations, migration 0026):**
   - `packages/ai` is the only code that calls the model (ESLint and a guard
@@ -718,6 +720,41 @@ document checks, receipts, calendar drafts).
     (0029 only adds rows). All nine AI switches on hosted are off.
   - **Not in this PR:** a morning email of the briefing, stored briefings,
     questions about MLS market data (market updates come in PR 5).
+- **PR 5 (launch kits and presentations; migration 0030, not yet on
+  hosted):**
+  - **Listing launch kit** (Our listings → "Launch kit", our own listings
+    only): the MLS description (up to 1,000 characters, no contact details
+    or links), a headline, Instagram, Facebook and LinkedIn posts, a "just
+    listed" email and flyer text, from the listing's public facts and the
+    agent's note. The agent edits every part and approves; then copies each
+    part where it goes, or prints the flyer. The flyer's facts (address,
+    price, rooms, size, photo) and the agent's name and phone come from our
+    records, never from the assistant; a draft has no flyer.
+  - **Presentations** (Reports → Presentations): listing (for a seller) and
+    buyer. The assistant writes up to 6 sections; our records add the
+    agent's card (name, title, bio, phone), Vabrato's services and the usual
+    escrow timeline from the schedule engine (days 0, 7, 8, 30). No pricing
+    (a CMA section comes with PR 6). Approved, then printed or saved as PDF.
+  - **Rules:** each person's kits and presentations are their own; admins
+    see approved ones; a kit only for one of our own listings; approved text
+    is frozen. Every part passes the Fair Housing and payment checks again
+    at approval. A note with lockbox or access details is refused. Never
+    sent to the model: private remarks, showing or lockbox details, owner or
+    agent contacts, client details beyond a first name the agent types.
+  - **Database:** 0030 extends `ai_drafts` (three kinds, `listing_key`,
+    structured `content`, `print`), with its own policies; 0028's lead and
+    deal draft rules are unchanged. The 30-day purge covers the new kinds.
+  - **Tests:** 10 database tests (`ai-kits.test.ts`), 13 for the features.
+    Browser QA `scripts/qa/s6b-kits.mjs`: 34 checks pass on the local stack
+    with the fake Claude (another brokerage's listing has no kit; an MLS
+    description with a phone number can't be approved; flyer and
+    presentation print views; another agent gets a 404). The PR 2 (64),
+    PR 3 (42) and PR 4 (28) scripts still pass. Screenshots in
+    `docs/screenshots/s6b-kits/`.
+  - **After merge:** apply 0030 on your OK, then
+    `packages/db/test/hosted-kits-check.sql` (rolled back; passes locally).
+  - **Not in this PR:** posting to social networks or the MLS, sending the
+    email blast, AI images, CMA in presentations (PR 6).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

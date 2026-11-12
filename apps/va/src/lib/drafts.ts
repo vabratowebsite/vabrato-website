@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { AiDraftKind } from "@vabrato/db";
+import type { EmailDraftKind } from "@vabrato/db";
 import { fairHousingBlocks, listingForAi, paymentInstructionMatches, type AiFeature, type InputPart } from "@vabrato/ai";
 import { MAX_BODY, MAX_SUBJECT, firstName } from "./draft-kinds";
 import { payloadRows } from "./leads";
@@ -17,7 +17,7 @@ Write as that person, in the first person, and sign with the first name given. B
 
 Answer with a JSON object: "subject" (a short email subject, under 80 characters) and "body" (the email text, plain text with blank lines between paragraphs, ending with the sign-off).`;
 
-const KIND_RULES: Record<AiDraftKind, string> = {
+const KIND_RULES: Record<EmailDraftKind, string> = {
   lead_reply: `This is a first reply to someone who contacted Vabrato through the website. Thank them, answer what they asked if the facts given answer it, and suggest one clear next step (a call, a showing, a valuation visit). If they asked about a specific listing, you may mention its features from the listing facts given; never describe who the home or area would suit.`,
   open_house_followup: `This is a follow-up to someone who signed in at one of Vabrato's open houses. Thank them for visiting, mention the home briefly from the listing facts given, and offer help: a second look, disclosures, or questions. If they said they already work with an agent, keep it short and courteous and don't try to win them over.`,
   escrow_update: `This is an update for the seller on their sale, written from the transaction's task list. Say where things stand: what's done recently, what's coming up in the next two weeks with the dates given, and the close of escrow date. Keep dates exactly as given and don't add deadlines. If a contingency removal date is coming up, say the buyer's side is due to remove it then. Don't mention money amounts.`,
@@ -33,7 +33,7 @@ const DRAFT_SCHEMA = {
 const Draft = z.object({ subject: z.string().max(400), body: z.string().min(1).max(16000) }).strict();
 export type DraftText = z.infer<typeof Draft>;
 
-const feature = (kind: AiDraftKind): AiFeature<DraftText> => ({
+const feature = (kind: EmailDraftKind): AiFeature<DraftText> => ({
   key: `staff_${kind}`,
   system: `${SHARED}\n\n${KIND_RULES[kind]}`,
   effort: "medium",
@@ -41,7 +41,7 @@ const feature = (kind: AiDraftKind): AiFeature<DraftText> => ({
   output: { kind: "json", jsonSchema: DRAFT_SCHEMA, parse: (v) => Draft.parse(v) },
 });
 
-export const DRAFT_FEATURES: Record<AiDraftKind, AiFeature<DraftText>> = {
+export const DRAFT_FEATURES: Record<EmailDraftKind, AiFeature<DraftText>> = {
   lead_reply: feature("lead_reply"),
   open_house_followup: feature("open_house_followup"),
   escrow_update: feature("escrow_update"),

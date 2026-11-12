@@ -3,6 +3,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
 import { MlsAttribution } from "@/components/mls-attribution";
 import { mutedCls } from "@/components/ui";
+import { aiFeaturesOn } from "@/lib/ai-flags";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen } from "@/lib/today";
@@ -31,6 +32,7 @@ export default async function OurListings() {
     supabase.rpc("has_full_mls_access"),
     supabase.rpc("mls_last_updated"),
   ]);
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_listing_kit"]);
   const keys = (listings ?? []).map((l) => l.listing_key);
   const { data: fullRows } = full && keys.length ? await supabase.from("mls_listing_full").select("listing_key, data").in("listing_key", keys) : { data: [] };
   const fullBy = new Map((fullRows ?? []).map((r) => [r.listing_key, (r.data ?? {}) as Record<string, unknown>]));
@@ -66,6 +68,11 @@ export default async function OurListings() {
                     {l.living_area ? ` · ${Number(l.living_area).toLocaleString("en-US")} sq ft` : ""} · updated {fmtWhen(l.modification_ts)}
                     {next ? ` · next open house ${fmtWhen(next)}` : ""}
                   </p>
+                  {ai.ai_staff_listing_kit && (
+                    <a href={`/listings/${encodeURIComponent(l.listing_key)}/kit`} className="mt-1 inline-flex min-h-[44px] items-center font-body text-body-sm text-navy underline">
+                      Launch kit<span className="sr-only"> for {address}</span>
+                    </a>
+                  )}
                   {f && (
                     <dl className="mt-2 grid gap-2 border-l-2 border-navy pl-3 sm:grid-cols-2">
                       {typeof f.PrivateRemarks === "string" && (

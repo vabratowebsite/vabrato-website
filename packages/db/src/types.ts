@@ -146,7 +146,10 @@ export interface MarketStats {
 
 export type AiRun = Tables["ai_runs"]["Row"];
 export type AiDraft = Tables["ai_drafts"]["Row"];
-export type AiDraftKind = "lead_reply" | "open_house_followup" | "escrow_update" | "vendor_request";
+/** The email drafts (0028). */
+export type EmailDraftKind = "lead_reply" | "open_house_followup" | "escrow_update" | "vendor_request";
+/** Every kind of draft: emails (0028), launch kits and presentations (0030). */
+export type AiDraftKind = EmailDraftKind | "listing_kit" | "listing_presentation" | "buyer_presentation";
 export type AiDraftStatus = "draft" | "approved" | "discarded";
 /** ai_begin(feature, deal) (0026). */
 export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "daily_requests" | "daily_tokens" | "monthly_budget" };
