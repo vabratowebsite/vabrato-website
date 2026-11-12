@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 (listing launch kits, listing and buyer presentations; 0030) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -720,8 +720,7 @@ document checks, receipts, calendar drafts).
     (0029 only adds rows). All nine AI switches on hosted are off.
   - **Not in this PR:** a morning email of the briefing, stored briefings,
     questions about MLS market data (market updates come in PR 5).
-- **PR 5 (launch kits and presentations; migration 0030, not yet on
-  hosted):**
+- **PR 5 (launch kits and presentations; migration 0030, merged as #34):**
   - **Listing launch kit** (Our listings → "Launch kit", our own listings
     only): the MLS description (up to 1,000 characters, no contact details
     or links), a headline, Instagram, Facebook and LinkedIn posts, a "just
@@ -751,8 +750,15 @@ document checks, receipts, calendar drafts).
     presentation print views; another agent gets a 404). The PR 2 (64),
     PR 3 (42) and PR 4 (28) scripts still pass. Screenshots in
     `docs/screenshots/s6b-kits/`.
-  - **After merge:** apply 0030 on your OK, then
-    `packages/db/test/hosted-kits-check.sql` (rolled back; passes locally).
+  - **On hosted (2026-11-12):** 0030 applied after checking that main's
+    file matched the tested one and that the three constraints it replaces
+    had the expected names. `hosted-kits-check.sql` (rolled back) passed: a
+    kit for our own listing allowed, another brokerage's refused; a
+    presentation allowed; a member and the public refused; another agent
+    sees nothing; the admin sees the kit only once approved; approved
+    content frozen; no print before approval; a lead draft still needs a
+    lead. The security advisor shows nothing new. All 11 AI switches on
+    hosted are off.
   - **Not in this PR:** posting to social networks or the MLS, sending the
     email blast, AI images, CMA in presentations (PR 6).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,

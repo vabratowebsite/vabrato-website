@@ -7,7 +7,7 @@
 -- ends with RAISE EXCEPTION: the "error" message carries the results as JSON,
 -- and the abort rolls back every row it added. Needs at least one admin.
 --
--- Expected (2026-11-12):
+-- Expected, and seen on hosted (2026-11-12):
 --   flags "ai_staff_listing_kit=false,ai_staff_presentations=false"
 --   kit_own "allowed", kit_other "denied…row-level security", presentation "allowed"
 --   buyer_presentation_by_member "denied…", anon_kit "denied"
