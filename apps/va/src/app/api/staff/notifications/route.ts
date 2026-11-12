@@ -7,6 +7,8 @@ import { supabaseServer } from "@/lib/supabase-server";
 // Never cached.
 
 const NO_STORE = { "Cache-Control": "private, no-store" };
+// Alerts that go somewhere other than their table's usual page.
+const KIND_LINKS: Record<string, string> = { ai_budget: "/assistant" };
 const LINKS: Record<string, (refId: string | null) => string> = {
   leads: (id) => (id ? `/leads/${id}` : "/leads"),
   messages: (id) => (id ? `/messages/${id}` : "/messages"),
@@ -31,7 +33,7 @@ export async function GET() {
     id: n.id,
     kind: n.kind,
     title: n.title,
-    href: (LINKS[n.ref_table ?? ""] ?? (() => "/"))(n.ref_id),
+    href: KIND_LINKS[n.kind] ?? (LINKS[n.ref_table ?? ""] ?? (() => "/"))(n.ref_id),
     createdAt: n.created_at,
     unread: !n.read_at,
   }));

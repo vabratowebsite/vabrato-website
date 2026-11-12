@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations (`packages/ai`, migration 0026; PR open, not on hosted). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 (assistant page, AI settings, contract reader; 0027) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -541,8 +541,75 @@ document checks, receipts, calendar drafts).
   - Tests use a scripted stand-in for the model (no network, no cost): 13
     database tests and 55 in `packages/ai`, including six prompt-injection
     fixtures.
-  - Not yet built: the alert when the monthly budget is nearly used (PR 2),
-    and the live test against the real model (PR 8).
+  - Not yet built at PR 1: the alert when the monthly budget is nearly used
+    (done in PR 2), and the live test against the real model (PR 8).
+  - On hosted (2026-11-12): 0026 applied; the advisor shows nothing new
+    beyond the expected notices for the four new functions (each checks
+    the caller). `packages/db/test/hosted-ai-check.sql` (rolled back,
+    fictional agent and buyer) confirmed: nothing runs while the master
+    switch is off; staff features are staff-only and member features
+    member-only; the daily limit and a zero monthly budget both stop
+    requests; a run is closed once, by the person who started it; only
+    admins read the usage log or change limits; the public can call none
+    of it. Hosted has no usage rows and `ai_enabled` is off.
+- **PR 2 (assistant page, AI settings, contract reader; migration 0027,
+  not yet on hosted):**
+  - **Assistant page** (`/assistant`, all staff): whether it's on, what it
+    can do, and the person's own use today. Admins also see what's needed
+    before it can be turned on (the API key, shown as set or not and never
+    its value; the Zero Data Retention confirmation), the switches, this
+    month's spend and requests by feature, and the limits.
+  - **Zero Data Retention gate:** the master switch can't be turned on,
+    from the console or directly in SQL, until an admin records Anthropic's
+    written confirmation and where it's filed (`confirm_ai_zdr`, audited).
+    Switches (`set_ai_flag`) and limits are admin-only and audited.
+  - **Budget alert:** admins get one in-console alert when a request takes
+    the month past 80% of the budget and one when it reaches it (the
+    assistant then pauses until the budget is raised or the month ends).
+  - **Contract reader** (flag `ai_staff_contract_reader`, off): on New
+    transaction, a VA uploads the ratified contract (PDF, up to 20 MB). The
+    browser puts it in the VA's own staging folder in `deal-docs` (Vercel
+    caps request bodies at 4.5 MB), the server sends it inline to the model
+    and deletes the staging folder whether the read worked or not. The
+    answer fills the form: address, seller and seller type, acceptance
+    date, days to close (or worked out from a closing date), price,
+    rent-back and the four contingencies, each with "From the contract,
+    page N" and a short quote under the field. Waived contingencies are
+    blanked; anything missing or out of range is left at the usual value
+    with a note. The escrow number is never filled. Nothing is saved until
+    the person creates the transaction, and the deadlines come from the
+    form, through the schedule engine, as before.
+  - **Intake form:** contingency days are now on the form (usual days
+    filled in, blank means none, as for an all-cash offer); previously every
+    deal got the fixed defaults.
+  - **Fix found by the QA (on main since S1):** only admins could create a
+    transaction. For agents and VAs the insert succeeded but reading the new
+    row back in the same statement failed RLS (`has_deal_access` runs on
+    the statement's snapshot, which doesn't hold the new row yet). The
+    console now makes the deal id itself and doesn't read the row back.
+    Hosted only has an admin account, so nobody hit it.
+  - **Tests:** 9 database tests for 0027, 6 for creating deals as each
+    staff role (`console-deals.test.ts`), 9 for the contract reader's
+    answer handling, 6 for the assistant helpers, 8 for the intake schema.
+    `pnpm typecheck`, `pnpm lint`, `pnpm test` (959 tests) pass.
+  - **Browser QA** (`scripts/qa/s6b-assistant.mjs`, 64 checks, all pass on
+    the local stack with a fake Claude server, so no key and no cost):
+    off by default; the ZDR gate; switches and audit; a VA reads a
+    fictional contract and the request is checked (the key, one inline PDF,
+    a JSON schema, no tools, no file upload, Claude Opus 5.5 with the
+    Opus 4.8 fallback); the VA corrects a value and the deal holds what
+    they confirmed; an all-cash offer; an answer with wiring details is not
+    shown, an answer in the wrong shape isn't used, a refusal says so; no
+    staged file survives; the month view, the 80% and 100% alerts, the
+    pause and resume; the daily limit; master switch off; the console
+    called nothing but the Messages endpoint and the key never reached a
+    page. axe at 1440 and 390 px on every new screen. Screenshots in
+    `docs/screenshots/s6b/`.
+  - **Not proven yet:** a real model call (needs the key and ZDR), and how
+    long a real read of a long contract takes against Vercel's 300-second
+    limit (`maxDuration = 300` on `/deals/new`).
+  - **After merge:** apply 0027 to hosted on your OK (check the name of the
+    `staff_notifications` kind constraint there first).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches
@@ -709,3 +776,15 @@ project is paused. Re-link the Supabase CLI from `packages/db`
   with `--workspace-concurrency=1` or `NEXT_TELEMETRY_DISABLED=1`.
 - supabase-js ≥2.108 changed SupabaseClient generics; keep @supabase/ssr at
   ^0.12 and regenerate db types rather than hand-writing them.
+- Under RLS, `insert ... returning` (supabase-js `insert().select()`) checks
+  the new row against the table's SELECT policy. If that policy calls a
+  STABLE function that looks the row up again (`has_deal_access`), the
+  function can't see it yet and the insert fails with "new row violates
+  row-level security policy". Make the id in the app and don't read back,
+  or test the insert as a non-admin role.
+- React 19 resets an uncontrolled form after every server action, including
+  one that returns an error, so typed values are lost. Put browser checks
+  (`required`, `min`, `max`) on the fields so a bad submit never reaches the
+  action, or keep the fields controlled.
+- A `<select>` wrapped inside its `<label>` gets the options' text in its
+  name. Use `htmlFor` and an id.

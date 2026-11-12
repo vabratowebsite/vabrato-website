@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_CONTINGENCIES } from "@vabrato/lib";
 import { parseDealForm } from "./deal-schema";
 
 function form(entries: Record<string, string>): FormData {
@@ -31,7 +32,32 @@ describe("parseDealForm", () => {
       days_to_close: 15,
       rent_back_days: 0,
       sale_price: 1175000,
+      contingencies: [
+        { kind: "insurance", offsetDays: 7 },
+        { kind: "financing", offsetDays: 7 },
+        { kind: "appraisal", offsetDays: 8 },
+        { kind: "property_condition", offsetDays: 8 },
+      ],
     });
+  });
+
+  it("uses the contingency days entered, and drops blank or zero ones", () => {
+    const result = parseDealForm(form({ ...VALID, cont_insurance: "", cont_financing: "21", cont_appraisal: "0", cont_property_condition: " 10 " }));
+    expect(result.error).toBeNull();
+    expect(result.data?.contingencies).toEqual([
+      { kind: "financing", offsetDays: 21 },
+      { kind: "property_condition", offsetDays: 10 },
+    ]);
+    const cash = parseDealForm(form({ ...VALID, cont_insurance: "", cont_financing: "", cont_appraisal: "", cont_property_condition: "" }));
+    expect(cash.data?.contingencies).toEqual([]);
+  });
+
+  it("matches the schedule engine's standard contingencies when the form has none", () => {
+    expect(parseDealForm(form(VALID)).data?.contingencies).toEqual(DEFAULT_CONTINGENCIES);
+  });
+
+  it("rejects contingency days that aren't whole numbers from 0 to 60", () => {
+    for (const bad of ["61", "-3", "7.5", "ten"]) expect(parseDealForm(form({ ...VALID, cont_financing: bad })).error, bad).toMatch(/Loan contingency/);
   });
 
   it("treats blank optional fields as empty/null", () => {

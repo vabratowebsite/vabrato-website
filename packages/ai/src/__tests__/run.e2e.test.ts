@@ -66,6 +66,7 @@ describe("runAi: the guarded pipeline", () => {
     t = await createTestDb();
     await createUser(t, AGENT, { role: "agent" });
     await createUser(t, BUYER);
+    await t.exec(`update app_settings set ai_zdr_confirmed_at = now()`);
     await t.exec(`insert into feature_flags (key, description, enabled) values ('ai_staff_test_summary', 'test', true), ('ai_staff_test_dates', 'test', true), ('ai_member_test_ask', 'test', true)`);
   });
   afterAll(() => t.close());

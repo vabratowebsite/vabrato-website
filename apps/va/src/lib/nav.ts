@@ -8,6 +8,7 @@ export type ConsolePage =
   | "members"
   | "listings"
   | "mls"
+  | "assistant"
   | "messages"
   | "open-houses"
   | "content"
@@ -44,6 +45,7 @@ export function consoleNav(current: ConsolePage | null, counts: { unreadMessages
         item("listings", "Our listings", "/listings"),
         item("open-houses", "Open houses", "/open-houses"),
         item("mls", "MLS sync", "/mls"),
+        item("assistant", "Assistant", "/assistant"),
       ],
     },
     { label: "Website", items: [item("content", "Content", "/content"), item("featured", "Featured listings", "/featured")] },

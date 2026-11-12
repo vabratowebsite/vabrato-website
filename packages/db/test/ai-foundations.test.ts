@@ -51,6 +51,7 @@ describe("AI foundations (0026)", () => {
     await createUser(t, U.buyer2);
     await t.exec(`
       insert into feature_flags (key, description) values ('ai_${STAFF}', 'test only'), ('ai_${MEMBER}', 'test only');
+      update app_settings set ai_zdr_confirmed_at = now();
       insert into deals (id, address, ratification_date, agent_id, created_by) values ('${DEAL}', '1 Fictional Way', current_date, '${U.agent}', '${U.agent}');
     `);
   });
