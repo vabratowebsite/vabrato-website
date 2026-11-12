@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028) in review. No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -624,7 +624,7 @@ document checks, receipts, calendar drafts).
     tasks and contingencies, and the read-back that broke it before still
     fails as expected. Everything rolled back: flags off, no confirmation,
     $100 budget, no runs, alerts, test accounts, deals or uploads left.
-- **PR 3 (drafts; migration 0028, not yet on hosted):**
+- **PR 3 (drafts; migration 0028, merged as #30):**
   - Four drafts, each behind its own switch (off): **lead replies** and
     **open-house follow-ups** on the lead page, **escrow updates** for the
     seller and **vendor quote requests** on the deal page. The person can
@@ -657,8 +657,15 @@ document checks, receipts, calendar drafts).
     mailto, redaction). Browser QA `scripts/qa/s6b-drafts.mjs`: 42 checks
     pass on the local stack with the fake Claude server; the PR 2 script
     (64) still passes. Screenshots in `docs/screenshots/s6b-drafts/`.
-  - **After merge:** apply 0028 on your OK, then
-    `packages/db/test/hosted-drafts-check.sql` (rolled back; passes locally).
+  - **On hosted (2026-11-12):** 0028 applied after checking that main's
+    file matched the tested one. The security advisor's only new entry is
+    `can_work_draft_target` (signed-in users can call it; it only says
+    whether the caller works a given lead or deal); nothing new is open to
+    the public. The four switches are off and the daily purge job
+    (`vabrato-purge-ai-drafts`, 11:41 UTC) is scheduled.
+    `packages/db/test/hosted-drafts-check.sql` (rolled back) passes locally;
+    its hosted run is still to do (the Supabase connector's confirmation
+    prompt timed out).
   - **Not in this PR:** sending from the console through Resend, follow-ups
     for a whole open house at once, call notes to to-dos (PR 7), drafts for
     members (S5b).
