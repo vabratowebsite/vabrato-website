@@ -4,6 +4,7 @@ import { Panel, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
 import { ApprovedDrafts } from "@/components/approved-drafts";
+import { AppointmentStarter, CallNotesPanel, TodoList } from "@/components/calls";
 import { DraftPanel } from "@/components/draft-panel";
 import { ConsoleShell } from "@/components/console-shell";
 import { btnPrimary, inputCls, labelCls, mutedCls } from "@/components/ui";
@@ -14,6 +15,7 @@ import { STATUS_LABEL, fmtDuration, payloadRows } from "@/lib/leads";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen, leadKindLabel } from "@/lib/today";
+import { appointmentsFor, todosFor } from "@/lib/todos";
 
 // One lead: contact details (staff only, behind sign-in), the request, owner
 // and status, notes, and how fast the alert email went out. RLS: the acting
@@ -37,8 +39,9 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
     supabase.rpc("is_acting_lead_admin"),
     supabase.from("notifications").select("template_key, created_at, sent_at, status, attempts").like("dedupe_key", `%:${id}:%`).order("created_at"),
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
-    draftsFor(supabase, profile.id, { lead_id: id }, [draftKind]),
+    draftsFor(supabase, profile.id, { lead_id: id }, [draftKind, "call_followup", "appointment"]),
   ]);
+  const [todos, appointments] = await Promise.all([todosFor(supabase, { lead_id: id }), drafts.on.appointment ? appointmentsFor(supabase, profile.id, { lead_id: id }) : Promise.resolve([])]);
   // A portal message only when this person may write to that member (assigned to them, or an admin).
   const { data: canMessage } = lead.profile_id ? await supabase.rpc("can_see_member", { p_profile: lead.profile_id }) : { data: false };
   const people = new Map((agents ?? []).map((a) => [a.id, a.full_name || a.email]));
@@ -122,8 +125,9 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
             )}
           </Panel>
 
-          {(drafts.on[draftKind] || drafts.approved.length > 0) && (
+          {(drafts.on[draftKind] || drafts.on.call_followup || drafts.on.appointment || drafts.approved.length > 0) && (
             <Panel title="Assistant">
+              <div className="space-y-8">
               {drafts.on[draftKind] ? (
                 <DraftPanel
                   heading={DRAFT_KINDS[draftKind].heading}
@@ -137,7 +141,19 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
               ) : (
                 <p className={mutedCls}>The assistant&apos;s {DRAFT_KINDS[draftKind].name.toLowerCase()} are off.</p>
               )}
+              {drafts.on.call_followup && (
+                <CallNotesPanel target={{ kind: "lead", id }} initialFollowup={drafts.open.call_followup ?? null} emailTo={[lead.email]} portal={Boolean(lead.profile_id && canMessage)} />
+              )}
+              {drafts.on.appointment && <AppointmentStarter target={{ kind: "lead", id }} appointments={appointments} />}
+              </div>
               <ApprovedDrafts drafts={drafts.approved} />
+            </Panel>
+          )}
+
+          {todos.ready && (
+            <Panel title={`To-dos (${todos.todos.length})`}>
+              <p className={`${mutedCls} mb-3`}>For staff only: the person who contacted us never sees these.</p>
+              <TodoList target={{ kind: "lead", id }} todos={todos.todos} empty="No open to-dos." />
             </Panel>
           )}
 

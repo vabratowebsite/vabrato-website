@@ -123,6 +123,46 @@ const FILE_FEATURES = [
 // S6b PR 7b: the response's opening and closing; the mode comes from the
 // agent's note ("QA-MODE: invented" adds an amount, "words" spells one out).
 const RESPONSE_FEATURE = /write the seller's response to the buyer's request for repairs/;
+// S6b PR 8: call notes and appointment drafts; the mode comes from the
+// person's notes or sentence ("QA-MODE: …").
+const CALL_FEATURE = /after a phone call/;
+const APPT_FEATURE = /set up an appointment/;
+const todayIn = (texts) => /\((\d{4}-\d{2}-\d{2})\)/.exec(texts)?.[1] ?? new Date().toISOString().slice(0, 10);
+const plusDays = (iso, n) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const CALL_ANSWER = (mode) => ({
+  todos: [
+    { title: "Send the HOA documents to the buyer's agent", due_in_days: 1 },
+    { title: "Book the stager for a walkthrough, call 650-555-0123", due_in_days: 3 },
+    { title: "Send the HOA documents to the buyer's agent", due_in_days: 2 },
+    { title: "Confirm the final walkthrough time", due_in_days: null },
+  ],
+  followup:
+    mode === "nofollowup"
+      ? null
+      : mode === "wiring"
+        ? { subject: "Deposit", body: "Hi Dana,\n\nWire the deposit to routing number 021000021, account 000123456789.\n\nAvery" }
+        : { subject: "Thanks for the call", body: "Hi Dana,\n\nThanks for the call today. I'll send the HOA documents tomorrow and book the stager this week.\n\nAvery" },
+});
+const APPT_ANSWER = (mode, texts) => {
+  const today = todayIn(texts);
+  // "Next Tuesday" from today's date in the request.
+  const dow = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const tuesday = plusDays(today, ((2 - dow + 7) % 7) || 7);
+  return {
+    title: "Final walkthrough",
+    date: mode === "past" ? plusDays(today, -1) : tuesday,
+    start: mode === "notime" ? null : "15:00",
+    minutes: 45,
+    location: "the property",
+    with: "Dana",
+    subject: "Final walkthrough on [when]",
+    body: "Hi Dana,\n\nJust confirming our final walkthrough on [when] at the property. It should take about 45 minutes.\n\nAvery",
+  };
+};
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const FILE_ANSWERS = {
@@ -244,7 +284,8 @@ createServer(async (req, res) => {
   const fileFeat = fileFeature(system);
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
-  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null);
+  const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
+  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
@@ -286,7 +327,9 @@ createServer(async (req, res) => {
   );
 
   const responseMode = RESPONSE_FEATURE.test(system) ? (/QA-MODE: ([a-z]+)/.exec(texts)?.[1] ?? "ok") : null;
-  const answer = responseMode
+  const answer = callsFeat
+    ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
+    : responseMode
     ? {
         text: JSON.stringify({
           opening: responseMode === "invented" ? "Thank you for the request for repairs. The seller also offers $2,000 toward closing costs." : responseMode === "words" ? "Thank you for the request. The seller adds fifteen hundred dollars." : "Thank you for sending the buyer's request for repairs. Here is the seller's response.",

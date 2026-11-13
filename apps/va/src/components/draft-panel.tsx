@@ -46,9 +46,11 @@ export interface DraftPanelProps {
   noteHint: string;
   /** Text to start the note with (S6b PR 7b: a trade's repair items). */
   initialNote?: string;
+  /** Edit, approve and send an existing draft only; no "Write draft" form (S6b PR 8: call follow-ups). */
+  editOnly?: boolean;
 }
 
-export function DraftPanel({ heading, target, initial, emailTo, portal, vendors, noteLabel, noteHint, initialNote }: DraftPanelProps) {
+export function DraftPanel({ heading, target, initial, emailTo, portal, vendors, noteLabel, noteHint, initialNote, editOnly }: DraftPanelProps) {
   const uid = useId();
   const [draft, setDraft] = useState<DraftView | null>(initial);
   const [subject, setSubject] = useState(initial?.subject ?? "");
@@ -135,7 +137,9 @@ export function DraftPanel({ heading, target, initial, emailTo, portal, vendors,
         {heading}
       </h3>
 
-      {!draft || draft.status === "discarded" ? (
+      {editOnly && (!draft || draft.status === "discarded") ? (
+        <p className={mutedCls}>{draft ? "Discarded. It's deleted after 30 days." : "No draft."}</p>
+      ) : !draft || draft.status === "discarded" ? (
         <div className="space-y-3">
           {draft?.status === "discarded" && <p className={mutedCls}>The last draft was discarded. It&apos;s deleted after 30 days.</p>}
           {isVendor && (
@@ -246,9 +250,11 @@ export function DraftPanel({ heading, target, initial, emailTo, portal, vendors,
                   {busy === "portal" ? "Sending…" : "Send as portal message"}
                 </button>
               )}
-              <button type="button" onClick={startOver} className={btnSecondary}>
-                Write another
-              </button>
+              {!editOnly && (
+                <button type="button" onClick={startOver} className={btnSecondary}>
+                  Write another
+                </button>
+              )}
             </div>
           )}
           {draft.status === "approved" && to.length === 0 && <p className={mutedCls}>There&apos;s no email address on file, so add the recipient in your email.</p>}

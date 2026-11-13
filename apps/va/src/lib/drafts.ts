@@ -177,7 +177,7 @@ const fmtDateTime = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 /** Access details the person might type into their note; they never go to the model (SPEC <ai_rules>). */
-const ACCESS_DETAILS = /\b(?:lock\s?box|key\s?safe|supra|gate\s+code|door\s+code|garage\s+code|alarm\s+code|access\s+code|showing\s+instructions?|key\s+is\s+(?:under|in|behind))\b/i;
+export const ACCESS_DETAILS = /\b(?:lock\s?box|key\s?safe|supra|gate\s+code|door\s+code|garage\s+code|alarm\s+code|access\s+code|showing\s+instructions?|key\s+is\s+(?:under|in|behind))\b/i;
 
 /**
  * The person's own note, ready to send: access details are refused (they add

@@ -5,11 +5,13 @@ import { OwnerChip, Panel, WiringBanner, cx, focusLight } from "@vabrato/ui/web"
 import { AccessDenied } from "@/components/access-denied";
 import { ApprovedDrafts } from "@/components/approved-drafts";
 import { DealShell } from "@/components/deal-shell";
+import { AppointmentStarter, CallNotesPanel, TodoList } from "@/components/calls";
 import { DraftPanel } from "@/components/draft-panel";
 import { linkAction, linkDanger, mutedCls } from "@/components/ui";
 import { removeMemberAction, toggleTaskAction } from "@/lib/actions";
 import { dueState, fmtShort } from "@/lib/dates";
 import { draftsFor } from "@/lib/draft-data";
+import { appointmentsFor, todosFor } from "@/lib/todos";
 import { DRAFT_KINDS } from "@/lib/draft-kinds";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
@@ -40,14 +42,16 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
   const [{ data: tasks }, { data: members }, drafts] = await Promise.all([
     supabase.from("tasks").select("*").eq("deal_id", id).order("due_date").order("offset_days"),
     supabase.from("deal_members").select("profile_id, member_role, profiles(email, full_name)").eq("deal_id", id),
-    draftsFor(supabase, profile.id, { deal_id: id }, ["escrow_update", "vendor_request"]),
+    draftsFor(supabase, profile.id, { deal_id: id }, ["escrow_update", "vendor_request", "call_followup", "appointment"]),
   ]);
+  const [todos, appointments] = await Promise.all([todosFor(supabase, { deal_id: id }), drafts.on.appointment ? appointmentsFor(supabase, profile.id, { deal_id: id }) : Promise.resolve([])]);
   const all = tasks ?? [];
   const sellers = (members ?? []).filter((m) => m.member_role === "seller");
   const { data: vendors } = drafts.on.vendor_request
     ? await supabase.from("vendors").select("id, name, role, email").order("preferred", { ascending: false }).order("name")
     : { data: [] };
-  const showAssistant = drafts.on.escrow_update || drafts.on.vendor_request || drafts.approved.length > 0;
+  const showAssistant = drafts.on.escrow_update || drafts.on.vendor_request || drafts.on.call_followup || drafts.on.appointment || drafts.approved.length > 0;
+  const sellerEmails = sellers.map((m) => m.profiles?.email ?? "").filter(Boolean);
 
   return (
     <DealShell profile={profile} deal={deal} done={done} total={total} active="tasks">
@@ -87,6 +91,13 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
         <p className={`${mutedCls} mb-4`}>Link this sale to its listing to show the seller weekly views, saves, tour requests and open-house visitors in their portal.</p>
         <ListingKeyForm dealId={deal.id} current={deal.listing_key} />
       </Panel>
+
+      {todos.ready && (
+        <Panel title={`Staff to-dos (${todos.todos.length})`}>
+          <p className={`${mutedCls} mb-3`}>For staff only: the seller never sees these. The schedule&apos;s tasks below are separate.</p>
+          <TodoList target={{ kind: "deal", id: deal.id }} todos={todos.todos} empty="No open to-dos." />
+        </Panel>
+      )}
 
       {PHASES.map(({ key, label }) => {
         const set = all.filter((t) => t.phase === key);
@@ -129,6 +140,8 @@ export default async function DealPage({ params }: { params: Promise<{ id: strin
                 noteHint="For example: a quote for the section 1 items in the pest report, before March 20. Don't type lockbox codes or how to get in; add those to the email yourself."
               />
             )}
+            {drafts.on.call_followup && <CallNotesPanel target={{ kind: "deal", id: deal.id }} initialFollowup={drafts.open.call_followup ?? null} emailTo={sellerEmails} portal={sellers.length > 0} />}
+            {drafts.on.appointment && <AppointmentStarter target={{ kind: "deal", id: deal.id }} appointments={appointments} />}
           </div>
           <ApprovedDrafts drafts={drafts.approved} />
         </Panel>
