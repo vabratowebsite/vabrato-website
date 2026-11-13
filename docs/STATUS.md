@@ -1074,8 +1074,8 @@ document checks, receipts, calendar drafts).
   - **Also:** the deal tabs row now wraps, so deal pages no longer scroll
     sideways at 390 px (the Repairs tab had pushed it past phone width;
     7a and 7b screenshots regenerated). The console's Today page still
-    scrolls sideways at 390 px (leads table, MLS feed, automations): a
-    separate fix.
+    scrolled sideways at 390 px (leads table, MLS feed, automations):
+    fixed separately, see "Today fits phone width" below.
   - **Tests:**
     - 7 database tests (`doc-checks.test.ts`): the stamp is always the
       caller and now, re-checks re-stamp, no clearing or half checks, an
@@ -1100,6 +1100,30 @@ document checks, receipts, calendar drafts).
     passes locally).
   - **Not in this PR:** editing deal terms (a non-AI "Edit deal terms"
     comes later); appointments and call notes (PR 8).
+- **Today fits phone width (WCAG 1.4.10 Reflow; no migration):** the
+  console's Today page rendered 554 px wide at a 390 px viewport. The
+  leads table already scrolled in its own labelled region
+  (`tabindex=0`), but the panel grid's implicit `auto` column grew to
+  the table's 480 px minimum and took the MLS feed and Automations panels
+  with it. The grid now uses `minmax(0, …)` tracks (`grid-cols-1`, and
+  `minmax(0,1.4fr) minmax(0,1fr)` from `lg`), and the MLS feed and
+  Automations rows put the label above the value below `sm`. The 1440 px
+  layout is unchanged (screenshots match pixel for pixel apart from a
+  timestamp).
+  - **QA:** `scripts/qa/s6b-summaries.mjs` now checks
+    `document.documentElement.scrollWidth` on Today at 390 and 320 px and
+    that the leads table region is keyboard-reachable. On the local stack
+    it fails without the fix (554 px at both widths) and passes with it
+    (390 and 320 px). axe on Today, /assistant and /members/[id] is clean at
+    1440 and 390 px; axe alone doesn't catch reflow, which is why the
+    width check exists. `today-briefing` screenshots regenerated.
+  - **Known, not from this fix:** in the same script, "the admin's
+    briefing covers more transactions and leads" fails (`D: 1`; the
+    admin gets 2 leads and more tasks, but only one
+    transaction). It fails the same way without this change. The
+    fixture's second deal closes 40 days out, and the briefing only
+    includes transactions closing within 14 days (30 with missing
+    documents), so the check or its fixture needs a look.
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

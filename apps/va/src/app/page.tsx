@@ -18,6 +18,9 @@ import { feedRows, fmtWhen, leadKindLabel, shortName, type SyncHealth, type Sync
 export const dynamic = "force-dynamic";
 
 const TONE = { green: "text-green", red: "text-red", ink: "text-ink" } as const;
+// Label/value rows (MLS feed, Automations): label above value on phones,
+// side by side from sm up, as before.
+const rowCls = "flex flex-col gap-0.5 py-2 sm:flex-row sm:flex-wrap sm:justify-between sm:gap-2";
 
 export default async function Today() {
   const { profile, isStaff } = await requireSignIn();
@@ -80,10 +83,13 @@ export default async function Today() {
         </Panel>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      {/* minmax(0, …) tracks: without them the leads table's min width (it
+          scrolls inside its own region) widened the whole column, and the
+          page scrolled sideways at phone width (WCAG 1.4.10 Reflow). */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Panel title="Newest leads">
           {recent.data?.length ? (
-            <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Newest leads table">
+            <div className="max-w-full overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Newest leads table">
               <table className="w-full min-w-[480px] font-body text-body-sm text-ink">
                 <thead>
                   <tr className="border-b border-line text-left text-label uppercase tracking-label text-muted">
@@ -140,7 +146,7 @@ export default async function Today() {
           <Panel title="MLS feed">
             <dl className="divide-y divide-line font-body text-body-sm">
               {feed.map((r) => (
-                <div key={r.label} className="flex flex-wrap justify-between gap-2 py-2">
+                <div key={r.label} className={rowCls}>
                   <dt className="text-ink">{r.label}</dt>
                   <dd className={`font-medium ${TONE[r.tone]}`}>{r.value}</dd>
                 </div>
@@ -169,7 +175,7 @@ export default async function Today() {
 
 function Row({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
   return (
-    <div className="flex flex-wrap justify-between gap-2 py-2">
+    <div className={rowCls}>
       <dt className="text-ink">{label}</dt>
       <dd className={ok === undefined ? "text-ink" : ok ? "font-medium text-green" : "font-medium text-red"}>{value}</dd>
     </div>

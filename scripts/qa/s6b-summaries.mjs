@@ -140,6 +140,16 @@ try {
   check("briefing: a record the assistant made up gets no link", (await av.getByText("Something the assistant made up.").isVisible()) && (await av.getByRole("link", { name: "Something the assistant made up." }).count()) === 0);
   check("briefing: Vera's transaction isn't in Avery's briefing", (await av.getByText(/77 Fictional Court/).count()) === 0);
   await axeAll(av, "/ (briefing)");
+  // WCAG 1.4.10 Reflow: Today (briefing, missing documents, newest leads, MLS
+  // feed, automations) fits phone width; the leads table scrolls in its own region.
+  for (const width of [390, 320]) {
+    await av.setViewportSize({ width, height: 900 });
+    const sideScroll = await av.evaluate(() => document.documentElement.scrollWidth);
+    check(`Today at ${width} px: no sideways scrolling`, sideScroll <= width, `${sideScroll}px`);
+  }
+  const leadsRegion = av.getByRole("region", { name: "Newest leads table" });
+  check("Today: the leads table scrolls in a labelled region a keyboard can reach", (await leadsRegion.getAttribute("tabindex")) === "0");
+  await av.setViewportSize({ width: 1440, height: 900 });
   await shots(av, "today-briefing");
 
   // 3. The lead admin's briefing covers more.
