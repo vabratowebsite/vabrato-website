@@ -30,9 +30,9 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
+| S5b | Member AI assistant (Ask Vabrato) | Not started; next (owner decisions 2026-11-12 and 2026-11-13); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 open (final QA, the live test, the Fair Housing and Today fixes; no migration; the live run waits on the owner). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -490,7 +490,7 @@ comes after S6, by decision; the console has no AI code.
   - pg_net and pg_cron are available on the hosted project but not installed
     (PR 2a installs them).
 
-### S6b staff AI assistant, the VA assistant (in progress)
+### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
 Owner decision 2026-11-12: build the VA assistant first, then the client
 assistant (S5b). Both run on one foundation. SPEC `<ai_rules>` now lists the
@@ -1204,8 +1204,8 @@ document checks, receipts, calendar drafts).
     all off). Security advisor: nothing new (no definer function).
   - **Not in this PR:** Google Calendar (integrations PR); to-dos in the
     daily briefing; the live test against the real model (PR 9).
-- **PR 9 (final QA, the live test, two fixes; no migration; owner answers
-  2026-11-13):**
+- **PR 9 (final QA, the live test, two fixes; no migration; merged
+  2026-11-13; owner answers 2026-11-13):**
   - **Owner decisions:**
     - The live test is built here and run only on the owner's go-ahead.
     - It covers every feature once.
@@ -1332,20 +1332,31 @@ document checks, receipts, calendar drafts).
       - **Checked:** 150 loads with the switches on, now with no console
         errors; it was 1 in 48 before.
   - **The 9 feature QA scripts rerun:** all pass: assistant 64, drafts 42, summaries 28, kits 34, market and CMA 24, documents 47, repairs 36, counter checks 32, calls and appointments 35.
-  - **Not in this PR:** the live run itself. It needs the owner's go-ahead
-    and a key (below). Its report and the Console-checked spend come as a
-    follow-up commit on this PR.
+  - **Not in this PR:** the live run itself. Owner decision 2026-11-13: it
+    runs just before the first AI switch goes on, not now (below).
 - **Needs you:**
-  - **The live run:**
-    - In the Anthropic Console, create a workspace "vabrato-live-test" with
-      a $10 spend limit, and a key in that workspace only.
-    - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live` in
-      your own shell. The key can't be injected into this cloud session:
-      `api.anthropic.com` bypasses the session's proxy.
-    - Send me `docs/qa/s6b-live-run.json`. I compare it with the Console's
-      usage for the workspace and record both here.
-    - Revoke the key and archive the workspace afterwards.
+  - **The live run** (owner decision 2026-11-13: just before the first
+    switch goes on):
+    - **Why then:** nothing reaches users while every switch is off, and the
+      model, its prices or the prompts may change by then, so the run that
+      counts is the last one before turning features on. Meanwhile the CI
+      coverage test keeps the harness complete: a new AI feature without a
+      live call fails the build.
+    - **Optional before S5b** (it reuses `packages/ai`): if a key is handy,
+      a two-call check costs well under $1:
+      `LIVE_AI=1 LIVE_AI_ONLY=contract_reader,lead_reply ANTHROPIC_API_KEY=… pnpm --filter va test:live`.
+    - **The full run:**
+      - In the Anthropic Console, create a workspace "vabrato-live-test"
+        with a $10 spend limit, and a key in that workspace only.
+      - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live` in
+        your own shell. The key can't be injected into a cloud session:
+        `api.anthropic.com` bypasses the session's proxy.
+      - Send `docs/qa/s6b-live-run.json`. It's compared with the Console's
+        usage for the workspace, and both are recorded here in a small
+        docs PR.
+      - Revoke the key and archive the workspace afterwards.
   - **Before any switch goes on:**
+    - the full live run above, passing;
     - an Anthropic API key (`ANTHROPIC_API_KEY` on the console, later the
       website);
     - Anthropic's written Zero Data Retention confirmation;
