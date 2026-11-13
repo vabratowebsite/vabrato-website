@@ -33,7 +33,12 @@ const RULES: Rule[] = [
   // Familial status.
   { level: "block", pattern: /\b(?:perfect|ideal|great|suited|suitable)\s+for\s+(?:a\s+)?(?:young\s+)?(?:famil(?:y|ies)|couples?|singles?|bachelors?|newlyweds?|empty[-\s]nesters?|retirees?|kids|children|young\s+professionals?|professionals?|students?|seniors?)\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\b(?:family|kid|child)[-\s]?friendly\s+(?:neighbou?rhood|area|community|street|town|city)\b/gi, reason: PEOPLE },
-  { level: "block", pattern: /\b(?:no|without)\s+(?:kids|children)\b/gi, reason: PEOPLE },
+  // "no kids", "no young children"; not "no children's play structure".
+  { level: "block", pattern: /\b(?:no|without)\s+(?:young\s+)?(?:kids|children)\b(?!['’]s)/gi, reason: PEOPLE },
+  // "no families (with kids)", "not for families"; plural only, so "no family room" passes.
+  { level: "block", pattern: /\b(?:no|without|not\s+for)\s+(?:young\s+)?families\b/gi, reason: PEOPLE },
+  { level: "block", pattern: /\bnot\s+(?:suitable|suited|ideal|good|great|safe|right|meant|intended)\s+for\s+(?:young\s+)?(?:kids|children|famil(?:y|ies))\b(?!['’]s)/gi, reason: PEOPLE },
+  { level: "block", pattern: /\b(?:kids|children|families)\s+(?:are\s+)?not\s+(?:allowed|permitted|welcome)\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\badults?\s+only\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\b(?:mature|older|young)\s+(?:couples?|individuals?|persons?|people|residents|neighbou?rs|crowd)\b/gi, reason: PEOPLE },
   // Race, color, national origin, religion.

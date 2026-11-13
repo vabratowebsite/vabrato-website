@@ -120,7 +120,7 @@ describe("approving a kit", () => {
 
   it("steering wording in any part, wiring details, or a missing required part block approval", () => {
     expect(partsProblems("listing_kit", { ...ok, linkedin: "Ideal for retirees." }).join(" ")).toMatch(/Fair Housing: reword "Ideal for retirees"/i);
-    expect(partsProblems("listing_kit", { ...ok, email_body: "Wire instructions: routing 021000021 account 000123456789" }).join(" ")).toMatch(/wiring/);
+    expect(partsProblems("listing_kit", { ...ok, email_body: "Wire instructions: routing 999999999 account 000123456789" }).join(" ")).toMatch(/wiring/);
     expect(partsProblems("listing_kit", { ...ok, flyer_blurb: "" }).join(" ")).toMatch(/Fill in "Flyer: short description"/);
   });
 

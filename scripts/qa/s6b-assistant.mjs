@@ -232,7 +232,7 @@ try {
   // 5. Answers that must not be shown or used.
   await v.goto(`${VA}/deals/new`);
   reader = await read(v, contract("wiring"));
-  check("an answer with wiring details isn't shown", (await reader.getByRole("alert").filter({ hasText: "contained payment or wiring details" }).isVisible()) && !(await v.content()).includes("021000021"));
+  check("an answer with wiring details isn't shown", (await reader.getByRole("alert").filter({ hasText: "contained payment or wiring details" }).isVisible()) && !(await v.content()).includes("999999999"));
   check("…and the form is untouched", (await value(v, "Property address (required)")) === "" && (await v.getByRole("region", { name: /AI draft/ }).count()) === 0);
   reader = await read(v, contract("invalid"));
   check("an answer in the wrong shape isn't used", await reader.getByRole("alert").filter({ hasText: "The assistant's answer wasn't usable" }).isVisible());

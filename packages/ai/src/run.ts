@@ -159,12 +159,16 @@ export async function runAi<T = never>(deps: AiDeps, feature: AiFeature<T>, inpu
     await close({ status: "error" });
     return fail(e instanceof ModelError && (e.kind === "rate_limited" || e.kind === "overloaded") ? "busy" : e instanceof ModelError && e.kind === "too_large" ? "too_large" : "error");
   }
+  // Every billed attempt counts: with the server-side fallback, the declined
+  // attempt can be billed too (its usage is in result.attempts).
+  const attempts = result.attempts?.length ? result.attempts : [{ model: result.model, usage: result.usage }];
+  const sum = (f: (u: (typeof attempts)[number]["usage"]) => number) => attempts.reduce((n, a) => n + f(a.usage), 0);
   const spent = {
     model: result.model,
-    inputTokens: result.usage.inputTokens + result.usage.cacheWriteTokens,
-    outputTokens: result.usage.outputTokens,
-    cacheReadTokens: result.usage.cacheReadTokens,
-    costMicros: costMicros(result.model, result.usage),
+    inputTokens: sum((u) => u.inputTokens + u.cacheWriteTokens),
+    outputTokens: sum((u) => u.outputTokens),
+    cacheReadTokens: sum((u) => u.cacheReadTokens),
+    costMicros: attempts.reduce((n, a) => n + costMicros(a.model, a.usage), 0),
   };
   const done = async (status: FinishInfo["status"]) => {
     await close({ status, ...spent });

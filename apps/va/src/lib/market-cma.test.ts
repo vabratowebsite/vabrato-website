@@ -81,7 +81,7 @@ describe("market updates", () => {
   it("steering wording or wiring details aren't shown", async () => {
     const steer = await ask(MARKET_UPDATE, { parts: marketInput(STATS) }, { title: "x", excerpt: "x", body_md: "A safe, family-friendly neighborhood for young families." });
     expect(steer.result).toMatchObject({ ok: false, reason: "fair_housing_output" });
-    const wire = await ask(MARKET_UPDATE, { parts: marketInput(STATS) }, { title: "x", excerpt: "x", body_md: "Wire instructions: routing 021000021 account 000123456789" });
+    const wire = await ask(MARKET_UPDATE, { parts: marketInput(STATS) }, { title: "x", excerpt: "x", body_md: "Wire instructions: routing 999999999 account 000123456789" });
     expect(wire.result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 });

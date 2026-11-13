@@ -85,7 +85,7 @@ describe("call notes", () => {
   });
 
   it("a follow-up with wiring details is refused", async () => {
-    const { result } = await ask(CALL_NOTES, { instruction: "Seller asked how to send the deposit", parts: callNotesInput(DEAL_TARGET, null, TODAY) }, { todos: [], followup: { subject: "Deposit", body: "Wire the deposit to routing number 021000021, account 000123456789." } });
+    const { result } = await ask(CALL_NOTES, { instruction: "Seller asked how to send the deposit", parts: callNotesInput(DEAL_TARGET, null, TODAY) }, { todos: [], followup: { subject: "Deposit", body: "Wire the deposit to routing number 999999999, account 000123456789." } });
     expect(result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 });
@@ -150,7 +150,7 @@ describe("appointment drafts", () => {
     expect(appointmentProblems(a.fields, a.subject, `${a.body}\n[parking]`, TODAY)).toEqual(["Fill in or remove [parking]."]);
     expect(appointmentProblems(a.fields, a.subject, `${a.body}\nText me at 650-555-0123.`, TODAY)[0]).toMatch(/phone numbers/);
     expect(appointmentProblems(a.fields, a.subject, `${a.body}\nThe lockbox is on the side gate.`, TODAY)[0]).toMatch(/lockbox/);
-    expect(appointmentProblems(a.fields, a.subject, `${a.body}\nWire the deposit to routing 021000021 account 000123456789.`, TODAY).join(" ")).toMatch(/wiring/);
+    expect(appointmentProblems(a.fields, a.subject, `${a.body}\nWire the deposit to routing 999999999 account 000123456789.`, TODAY).join(" ")).toMatch(/wiring/);
     expect(appointmentProblems(a.fields, a.subject, a.body, "2026-11-18")).toEqual(["Pick a date from today to a year ahead."]);
   });
 

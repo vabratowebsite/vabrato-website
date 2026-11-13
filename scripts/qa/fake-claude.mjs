@@ -40,7 +40,7 @@ const ANSWERS = {
   ok: () => ({ text: JSON.stringify(reading()) }),
   cash: () => ({ text: JSON.stringify(reading({ contingencies: { loan: cont(null, true), appraisal: cont(null, true), investigation: cont(7), insurance: cont(null) }, notes: ["All-cash offer: no loan or appraisal contingency (page 2)."] })) }),
   // An answer carrying payment details: the console must refuse to show it.
-  wiring: () => ({ text: JSON.stringify(reading({ notes: ["Wire the deposit to routing number 021000021, account 000123456789."] })) }),
+  wiring: () => ({ text: JSON.stringify(reading({ notes: ["Wire the deposit to routing number 999999999, account 000123456789."] })) }),
   // Valid JSON that isn't the shape asked for.
   invalid: () => ({ text: JSON.stringify({ hello: "world" }) }),
   refusal: () => ({ text: "", stop: "refusal" }),
@@ -144,7 +144,7 @@ const CALL_ANSWER = (mode) => ({
     mode === "nofollowup"
       ? null
       : mode === "wiring"
-        ? { subject: "Deposit", body: "Hi Dana,\n\nWire the deposit to routing number 021000021, account 000123456789.\n\nAvery" }
+        ? { subject: "Deposit", body: "Hi Dana,\n\nWire the deposit to routing number 999999999, account 000123456789.\n\nAvery" }
         : { subject: "Thanks for the call", body: "Hi Dana,\n\nThanks for the call today. I'll send the HOA documents tomorrow and book the stager this week.\n\nAvery" },
 });
 const APPT_ANSWER = (mode, texts) => {
@@ -168,7 +168,7 @@ const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?
 const FILE_ANSWERS = {
   document_check: (mode) =>
     mode === "wiring"
-      ? { doc_types: ["rpa"], title: "Purchase agreement", signed: "yes", issues: [{ page: 2, issue: "Wire the deposit to routing number 021000021, account 000123456789." }] }
+      ? { doc_types: ["rpa"], title: "Purchase agreement", signed: "yes", issues: [{ page: 2, issue: "Wire the deposit to routing number 999999999, account 000123456789." }] }
       : mode === "none"
         ? { doc_types: [], title: "Lender pre-approval letter", signed: "not_applicable", issues: [] }
         : { doc_types: ["tds", "spq", "made_up_type"], title: "Seller disclosure packet", signed: "unclear", issues: [{ page: 3, issue: "Seller initials missing at the bottom of the page." }, { page: null, issue: "The SPQ looks like an older form version." }] },
@@ -176,7 +176,7 @@ const FILE_ANSWERS = {
     mode === "many"
       ? { items: Array.from({ length: 60 }, (_, i) => REPAIR_ITEM(i + 1)) }
       : mode === "wiring"
-        ? { items: [REPAIR_ITEM(1, { detail: "Wire the repair deposit to routing number 021000021, account 000123456789." })] }
+        ? { items: [REPAIR_ITEM(1, { detail: "Wire the repair deposit to routing number 999999999, account 000123456789." })] }
         : {
             items: [
               REPAIR_ITEM(1, { title: "Missing GFCI protection at kitchen counter outlets", detail: "Outlets within six feet of the sink aren't GFCI protected. Call 650-555-0123 for a quote.", location: "Kitchen", trade: "electrical", page: 12, severity_label: "Safety concern", severity: "safety" }),
@@ -254,7 +254,7 @@ const DRAFT_TEXT = {
 };
 const DRAFT_ANSWERS = {
   ok: (f) => ({ text: JSON.stringify(DRAFT_TEXT[f]) }),
-  wiring: (f) => ({ text: JSON.stringify({ ...DRAFT_TEXT[f], body: "Wire the deposit to routing number 021000021, account 000123456789." }) }),
+  wiring: (f) => ({ text: JSON.stringify({ ...DRAFT_TEXT[f], body: "Wire the deposit to routing number 999999999, account 000123456789." }) }),
   steering: (f) => ({ text: JSON.stringify({ ...DRAFT_TEXT[f], body: "This home is perfect for young families." }) }),
   invalid: () => ({ text: JSON.stringify({ hello: "world" }) }),
   refusal: () => ({ text: "", stop: "refusal" }),
@@ -342,13 +342,13 @@ createServer(async (req, res) => {
     ? { text: JSON.stringify(STATS_ANSWER(stats, dataJson(texts), mode)) }
     : kit
     ? mode === "wiring"
-      ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, email_body: "Wire the deposit to routing number 021000021, account 000123456789." } : { ...PRESENTATION_ANSWER(kit), sections: [{ heading: "Deposit", paragraphs: ["Wire instructions: routing 021000021 account 000123456789"] }] }) }
+      ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, email_body: "Wire the deposit to routing number 999999999, account 000123456789." } : { ...PRESENTATION_ANSWER(kit), sections: [{ heading: "Deposit", paragraphs: ["Wire instructions: routing 999999999 account 000123456789"] }] }) }
       : mode === "steering"
         ? { text: JSON.stringify(kit === "listing_kit" ? { ...KIT_ANSWER, facebook: "This home is perfect for young families." } : PRESENTATION_ANSWER(kit)) }
         : { text: JSON.stringify(kit === "listing_kit" ? KIT_ANSWER : PRESENTATION_ANSWER(kit)) }
     : summary
     ? mode === "wiring"
-      ? { text: JSON.stringify(summary === "data_questions" ? { answer: "Wire the deposit to routing number 021000021, account 000123456789.", refs: [], not_in_data: false } : summary === "member_summary" ? { summary: "Wire instructions: routing 021000021 account 000123456789", looking_for: [], next_steps: [] } : { headline: "Wire instructions: routing 021000021 account 000123456789", sections: [] }) }
+      ? { text: JSON.stringify(summary === "data_questions" ? { answer: "Wire the deposit to routing number 999999999, account 000123456789.", refs: [], not_in_data: false } : summary === "member_summary" ? { summary: "Wire instructions: routing 999999999 account 000123456789", looking_for: [], next_steps: [] } : { headline: "Wire instructions: routing 999999999 account 000123456789", sections: [] }) }
       : { text: JSON.stringify(SUMMARY_ANSWERS[summary](refs, texts)) }
     : feature
       ? (DRAFT_ANSWERS[mode] ?? DRAFT_ANSWERS.ok)(feature)
@@ -356,12 +356,22 @@ createServer(async (req, res) => {
   // "QA-MODE: slow" holds the answer, so a browser test can press Stop mid-run.
   if (mode === "slow") await new Promise((r) => setTimeout(r, 2500));
   const usage = { input_tokens: 61000, output_tokens: 900, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
+  // S6b PR 9: "QA-FALLBACK" in the request: report a server-side fallback, the
+  // way the API does (usage.iterations: the declined attempt and the answer).
+  const fallback = /QA-FALLBACK/.test(texts);
+  const answeredBy = fallback ? (body.fallbacks?.[0]?.model ?? "claude-opus-4-8") : body.model;
+  const iterations = fallback
+    ? [
+        { type: "message", model: null, input_tokens: 61000, output_tokens: 300, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, cache_creation: null },
+        { type: "fallback_message", model: answeredBy, input_tokens: 61000, output_tokens: 900, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, cache_creation: null },
+      ]
+    : null;
   res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
-  send(res, "message_start", { message: { id: "msg_qa_local", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { ...usage, output_tokens: 1 } } });
+  send(res, "message_start", { message: { id: "msg_qa_local", type: "message", role: "assistant", model: answeredBy, content: [], stop_reason: null, stop_sequence: null, usage: { ...usage, output_tokens: 1 } } });
   send(res, "content_block_start", { index: 0, content_block: { type: "text", text: "" } });
   for (let i = 0; i < answer.text.length; i += 400) send(res, "content_block_delta", { index: 0, delta: { type: "text_delta", text: answer.text.slice(i, i + 400) } });
   send(res, "content_block_stop", { index: 0 });
-  send(res, "message_delta", { delta: { stop_reason: answer.stop ?? "end_turn", stop_sequence: null }, usage: { output_tokens: usage.output_tokens } });
+  send(res, "message_delta", { delta: { stop_reason: answer.stop ?? "end_turn", stop_sequence: null }, usage: { output_tokens: usage.output_tokens, ...(iterations ? { iterations } : {}) } });
   send(res, "message_stop", {});
   res.end();
 }).listen(PORT, "127.0.0.1", () => console.log(`fake Claude on http://127.0.0.1:${PORT}, logging to ${LOG}`));

@@ -87,7 +87,7 @@ describe("what a counter-offer comparison sends", () => {
   });
 
   it("an answer with wiring details is refused", async () => {
-    const { result } = await ask(COUNTER_CHANGES, { parts: counterInput(TERMS, { type: "application/pdf", base64: INJECTION_PDF }) }, ANSWER({ other_changes: [{ page: 1, change: "Wire funds to routing 021000021 account 000123456789" }] }));
+    const { result } = await ask(COUNTER_CHANGES, { parts: counterInput(TERMS, { type: "application/pdf", base64: INJECTION_PDF }) }, ANSWER({ other_changes: [{ page: 1, change: "Wire funds to routing 999999999 account 000123456789" }] }));
     expect(result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 });

@@ -15,3 +15,6 @@ packages/db/supabase/.temp
 
 .DS_Store
 Thumbs.db
+
+# live AI test output: answers and fake/partial reports (S6b PR 9); fictional, never committed
+apps/va/.live-ai/

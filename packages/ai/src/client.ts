@@ -34,7 +34,14 @@ export interface ModelResult {
   stop: "end" | "max_tokens" | "refusal" | "other";
   /** The model that answered (the fallback model after a decline). */
   model: string;
+  /** Usage of the attempt that produced the answer (the API's top-level usage). */
   usage: Usage;
+  /**
+   * Every attempt the API ran and may bill, from `usage.iterations`: with
+   * the server-side fallback, a declined attempt can be billed as well as the
+   * one that answered. Absent when the API reports a single attempt.
+   */
+  attempts?: { model: string; usage: Usage }[];
 }
 
 /** "too_large": the request (usually a PDF) has too many pages or is too big for the model. */

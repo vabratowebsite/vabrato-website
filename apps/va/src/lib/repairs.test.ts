@@ -113,13 +113,13 @@ describe("repair items", () => {
   it("approval runs the Fair Housing, wiring and contact checks on the items", () => {
     expect(itemsProblems([ITEM()])).toEqual([]);
     expect(itemsProblems([ITEM({ detail: "Not suitable for the handicapped" })]).join(" ")).toMatch(/Fair Housing/);
-    expect(itemsProblems([ITEM({ detail: "Wiring instructions: routing 021000021 account 000123456789" })]).join(" ")).toMatch(/wiring details/);
+    expect(itemsProblems([ITEM({ detail: "Wiring instructions: routing 999999999 account 000123456789" })]).join(" ")).toMatch(/wiring details/);
     expect(itemsProblems([ITEM({ location: "call 650-555-0123" })]).join(" ")).toMatch(/phone numbers/);
     expect(itemsProblems([])).toEqual(["Add at least one item."]);
   });
 
   it("an answer with bank wiring details is refused", async () => {
-    const { result } = await ask(INSPECTION_ITEMS, { parts: itemsInput({ type: "application/pdf", base64: INJECTION_PDF }) }, { items: [answerItem({ detail: "Wire funds to routing 021000021 account 000123456789" })] });
+    const { result } = await ask(INSPECTION_ITEMS, { parts: itemsInput({ type: "application/pdf", base64: INJECTION_PDF }) }, { items: [answerItem({ detail: "Wire funds to routing 999999999 account 000123456789" })] });
     expect(result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 });
@@ -129,7 +129,7 @@ describe("inspection words pass the checks; bank details don't", () => {
     expect(paymentInstructionMatches(t)).toEqual([]);
   });
   it("wiring check blocks bank details", () => {
-    expect(paymentInstructionMatches("Wiring instructions: routing 021000021 account 000123456789").length).toBeGreaterThan(0);
+    expect(paymentInstructionMatches("Wiring instructions: routing 999999999 account 000123456789").length).toBeGreaterThan(0);
   });
   it.each(["Master bedroom window does not open.", "In-law unit water heater lacks strapping.", "Install grab bars in the hall bath.", "Handrail missing on the basement stairs.", "Family room outlet is loose."])("Fair Housing passes: %s", (t) => {
     expect(fairHousingBlocks(t)).toEqual([]);

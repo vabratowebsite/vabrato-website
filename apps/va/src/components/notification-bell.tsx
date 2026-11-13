@@ -18,9 +18,10 @@ interface Item {
   unread: boolean;
 }
 
-const client = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: true } } });
-
 export function NotificationBell() {
+  // One client per bell, never module-level: on the server a module-level
+  // client is one cache shared by every request (TanStack's Next.js advice).
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: true } } }));
   return (
     <QueryClientProvider client={client}>
       <Bell />
@@ -50,6 +51,12 @@ function Bell() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["staff-notifications"] }),
   });
 
+  // The server renders the bell with no alerts. The count waits until after
+  // hydration, so the first browser render always matches the server's HTML
+  // (S6b PR 9: an intermittent hydration error when alerts were already loaded).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     setPermission(typeof Notification === "undefined" ? "unsupported" : Notification.permission);
   }, []);
@@ -72,7 +79,7 @@ function Bell() {
     }
   }, [data]);
 
-  const unread = data?.unread ?? 0;
+  const unread = mounted ? (data?.unread ?? 0) : 0;
   return (
     <div className="relative">
       <button
