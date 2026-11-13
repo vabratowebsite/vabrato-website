@@ -10,7 +10,7 @@ import { CMA_WRITEUP, MARKET_UPDATE, cmaInput, marketInput, type CmaFacts } from
 import { INSPECTION_ITEMS, REPAIR_RESPONSE, itemsInput, responseInput, toItems, type DecisionRow } from "../lib/repairs";
 import { DAILY_BRIEFING, DATA_QUESTIONS, MEMBER_SUMMARY, memberParts, type MemberFacts } from "../lib/summaries";
 import { buildSnapshot, snapshotParts, type WorkRows } from "../lib/work-snapshot";
-import { textPdf } from "./pdf";
+import { textPdf } from "@vabrato/lib";
 
 // The live test's calls (S6b PR 9): every AiFeature value once, in order,
 // each with fictional input and the checks run on its answer. The coverage

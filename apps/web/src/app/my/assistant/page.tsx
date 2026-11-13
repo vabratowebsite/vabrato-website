@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { Panel } from "@vabrato/ui/web";
 import { MEMBER_AI_FEATURES, memberFeatureKey } from "@vabrato/lib";
-import { AskVabrato } from "@/member/components/AskVabrato";
+import { AskVabrato, type DocOption } from "@/member/components/AskVabrato";
+import { docRef, listMemberDocuments } from "@/member/documents-list";
 import { MemberShell } from "@/member/components/MemberShell";
 import { aiKeyConfigured } from "@/member/ai";
 import { memberAiStatus } from "@/member/ai-status";
@@ -15,9 +16,19 @@ import { requirePortalMember } from "@/member/session";
 
 const Usage = z.object({ requests: z.number(), requests_limit: z.number() }).partial();
 
-export default async function AssistantPage() {
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function AssistantPage({ searchParams }: Props) {
   const member = await requirePortalMember("/my/assistant");
-  const [{ on }, usage] = await Promise.all([memberAiStatus(member.supabase), member.supabase.rpc("ai_usage_today")]);
+  const [{ on }, usage, sp] = await Promise.all([memberAiStatus(member.supabase), member.supabase.rpc("ai_usage_today"), searchParams]);
+  // "Summarize a document" lists what the member can open; HEIC photos can't be read.
+  const docs: DocOption[] = [];
+  if (on.includes("ai_member_summarize")) {
+    const { uploads, deals } = await listMemberDocuments(member);
+    for (const u of uploads) if (u.content_type !== "image/heic") docs.push({ ref: docRef.upload(u.id), label: u.name });
+    for (const d of deals) for (const f of d.files) docs.push({ ref: docRef.deal(f.path), label: `${f.name} (shared for ${d.deal.address})` });
+  }
+  const initialDoc = typeof sp.doc === "string" ? sp.doc : undefined;
   const kinds = MEMBER_AI_FEATURES.filter((f) => on.includes(f.flag)).map((f) => memberFeatureKey(f.flag).replace("member_", "") as AskKind);
   const u = Usage.safeParse(usage.data ?? {});
   const limit = u.success ? (u.data.requests_limit ?? 0) : 0;
@@ -53,7 +64,7 @@ export default async function AssistantPage() {
             </h2>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Answers are written by AI and can be wrong. Check anything important with your agent.</li>
-              <li>Nothing you type here is kept: leaving this page clears it. Your agent doesn&apos;t see your questions.</li>
+              <li>Nothing you type here is kept, and summaries aren&apos;t stored: leaving this page clears them. Your agent doesn&apos;t see your questions, only to-dos you choose to add.</li>
               <li>It never gives legal, tax or wiring advice. Always call your escrow officer to verify wiring instructions.</li>
             </ul>
           </section>
@@ -62,7 +73,7 @@ export default async function AssistantPage() {
               Ask Vabrato isn&apos;t available on your account right now.
             </p>
           ) : (
-            <AskVabrato kinds={kinds} left={left} limit={limit} />
+            <AskVabrato kinds={kinds} left={left} limit={limit} docs={docs} initialDoc={initialDoc} />
           )}
         </>
       )}

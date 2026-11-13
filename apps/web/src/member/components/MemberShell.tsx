@@ -30,7 +30,7 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow, unseen, unread, ai] = await Promise.all([
+  const [agent, vow, unseen, unread, ai, todoCount] = await Promise.all([
     assignedAgent(member.supabase, member.profile.agent_id),
     flagEnabled("vow_enabled"),
     buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
@@ -42,8 +42,13 @@ export async function MemberShell({
       .is("read_at", null)
       .then((r) => r.count ?? 0),
     memberAiStatus(member.supabase),
+    member.supabase
+      .from("member_todos")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", member.profile.id)
+      .then((r) => r.count ?? 0),
   ]);
-  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0 }).map((g) => ({
+  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0, todos: ai.on.includes("ai_member_summarize") || todoCount > 0 }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current, ...(it.count ? { count: it.count } : {}) })),
   }));

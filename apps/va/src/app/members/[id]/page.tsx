@@ -7,7 +7,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { MemberSummaryPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
-import { setMemberAgentAction } from "@/lib/member-actions";
+import { decideMemberTodoAction, setMemberAgentAction } from "@/lib/member-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen, leadKindLabel } from "@/lib/today";
@@ -35,7 +35,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   if (!m) notFound();
 
   const ai = await aiFeaturesOn(supabase, ["ai_staff_member_summary"]);
-  const [saved, searches, tracked, tours, docs, deals, deletion, agents, acting] = await Promise.all([
+  const [saved, searches, tracked, tours, docs, deals, deletion, agents, acting, todos] = await Promise.all([
     supabase.from("saved_homes").select("listing_key, created_at").eq("profile_id", id).order("created_at", { ascending: false }).limit(50),
     supabase.from("saved_searches").select("id, name, frequency").eq("profile_id", id).order("created_at", { ascending: false }),
     supabase.from("tracked_properties").select("id, address, status").eq("buyer_id", id).order("created_at", { ascending: false }),
@@ -45,7 +45,10 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
     supabase.from("account_deletion_requests").select("status, requested_at").eq("profile_id", id).order("requested_at", { ascending: false }).limit(1),
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
     supabase.rpc("is_acting_lead_admin"),
+    supabase.from("member_todos").select("id, title, source_name, page, status, created_at").eq("profile_id", id).order("created_at", { ascending: true }).limit(300),
   ]);
+  const pendingTodos = (todos.data ?? []).filter((t) => t.status === "pending");
+  const todoCount = (s: string) => (todos.data ?? []).filter((t) => t.status === s).length;
   const agentName = (aid: string | null) => (aid ? (aid === profile.id ? "You" : (agents.data ?? []).find((a) => a.id === aid)?.full_name || "Staff") : "None");
 
   return (
@@ -155,6 +158,43 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
               <p className={mutedCls}>Mark (or Viv while Mark is away) assigns agents.</p>
             )}
           </Panel>
+
+          {(todos.data?.length ?? 0) > 0 && (
+            <Panel title="Suggested to-dos">
+              <p className={`${mutedCls} mb-3`}>
+                From the member&apos;s assistant (Ask Vabrato). The member added these; approving puts them on their to-do list in the portal. {todoCount("approved")} approved, {todoCount("declined")} declined so far.
+              </p>
+              {pendingTodos.length ? (
+                <ul className="divide-y divide-line font-body text-body-sm text-ink">
+                  {pendingTodos.map((t) => (
+                    <li key={t.id} className="grid gap-2 py-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-2">
+                          {t.title}
+                          <Pill tone="gold">Waiting</Pill>
+                        </p>
+                        <p className={mutedCls}>
+                          {t.source_name ? `From ${t.source_name}${t.page ? `, p. ${t.page}` : ""} · ` : ""}added {fmtWhen(t.created_at)}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <ActionForm action={decideMemberTodoAction.bind(null, m.id)} submitLabel="Approve" submitAriaLabel={`Approve: ${t.title}`}>
+                          <input type="hidden" name="todo" value={t.id} />
+                          <input type="hidden" name="decision" value="approve" />
+                        </ActionForm>
+                        <ActionForm action={decideMemberTodoAction.bind(null, m.id)} submitLabel="Decline" submitAriaLabel={`Decline: ${t.title}`} secondary>
+                          <input type="hidden" name="todo" value={t.id} />
+                          <input type="hidden" name="decision" value="decline" />
+                        </ActionForm>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={mutedCls}>Nothing waiting.</p>
+              )}
+            </Panel>
+          )}
 
           <Panel title="Requests from this member">
             {tours.data?.length ? (

@@ -23,8 +23,8 @@ describe("member assistant coverage", () => {
     expect(ALL.map((f) => f.key).sort()).toEqual(MEMBER_AI_FEATURES.map((f) => memberFeatureKey(f.flag)).sort());
   });
 
-  it("call ids are unique, and the sentence search carries the injection", () => {
+  it("call ids are unique, and the sentence search and the document carry injections", () => {
     expect(new Set(LIVE_CALLS.map((c) => c.id)).size).toBe(LIVE_CALLS.length);
-    expect(LIVE_CALLS.filter((c) => c.injection).map((c) => c.id)).toEqual(["search"]);
+    expect(LIVE_CALLS.filter((c) => c.injection).map((c) => c.id).sort()).toEqual(["search", "summarize"]);
   });
 });

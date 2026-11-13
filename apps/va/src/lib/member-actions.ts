@@ -87,3 +87,20 @@ export async function handleDeletionAction(requestId: string, form: FormData) {
     .eq("status", "pending");
   revalidatePath("/members/deletions");
 }
+
+/**
+ * Approve or decline a to-do a member added from Ask Vabrato (S5b PR 2,
+ * 0037 decide_member_todo: staff who can see the member, pending only;
+ * audited). The form carries the to-do and the decision.
+ */
+export async function decideMemberTodoAction(memberId: string, _prev: MemberActionState, form: FormData): Promise<MemberActionState> {
+  const { supabase } = await staffClient();
+  const member = MemberId.safeParse(memberId);
+  const todo = MemberId.safeParse(form.get("todo"));
+  const approve = form.get("decision") === "approve";
+  if (!member.success || !todo.success) return { error: "That to-do wasn't found." };
+  const { error } = await supabase.rpc("decide_member_todo", { p_id: todo.data, p_approve: approve });
+  if (error) return { error: /not_found/.test(error.message) ? "That to-do was already decided, or isn't for a member you work with." : "Couldn't save that." };
+  revalidatePath(`/members/${member.data}`);
+  return { error: null, ok: approve ? "Approved: it's on the member's to-do list." : "Declined." };
+}
