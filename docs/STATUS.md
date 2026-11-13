@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). Next: PR 2 (summarize a document, suggested to-dos). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 open (summarize a document, suggested to-dos, My to-dos; 0037). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -615,6 +615,90 @@ with the member daily limits, and the site-wide monthly budget.
     - the same conditions as S6b: the live run, Zero Data Retention, then
       `ai_enabled` and each switch.
     - These two features send no MLS listing data and no member documents.
+- **PR 2 (summarize a document, suggested to-dos, "My to-dos"; migration
+  0037, not yet on hosted; owner answers 2026-11-13):**
+  - **Owner answers:**
+    - **"My to-dos":** a new list in `/my` for buyers and sellers. A to-do
+      the member adds waits for their agent's approval, then becomes a normal
+      to-do they tick off. The deal's schedule tasks are untouched.
+    - **"Delete my assistant data"** removes waiting and declined to-dos;
+      approved ones stay until the member deletes them.
+    - **Agent alert:** the console bell only, no email.
+    - **Length limit:** 50 pages per document.
+  - **Summarize a document** (switch `ai_member_summarize`):
+    - **Which documents:** the member's own uploads, files their Vabrato
+      team uploaded for them, and for sellers the files the transaction desk
+      shared on their deal. Everything is read with the member's own
+      account, so another member's file is never found.
+    - **Refused before anything is sent** (so it doesn't use up a question):
+      HEIC (iPhone photos), with a clear message to upload a PDF or JPG;
+      files over 20 MB; over 50 pages; and large PDFs whose pages can't be
+      counted.
+    - **The answer:** up to 8 summary points and 6 questions, each with page
+      references, and up to 8 suggested to-dos.
+      - Our code removes emails, phone numbers and links, keeps only page
+        numbers within the file, trims lengths and drops repeated to-dos.
+      - Wiring details and Fair Housing wording are never shown.
+      - Contract dates are proposals to confirm with the agent.
+      - Nothing about neighborhoods or people, and no value opinions.
+    - **The page:** a third mode on `/my/assistant` with a list of the
+      member's documents, and "Summarize" links on `/my/documents`. Each
+      question has "Ask my agent", and the to-dos are checkboxes with "Add
+      to my to-dos".
+    - **Not kept:** summaries and questions; only to-dos the member adds.
+  - **`member_todos` (0037):**
+    - **Who:** the member and staff who can see them (`can_see_member`)
+      read; only the member adds (pending, never approved or done) and
+      deletes.
+    - **Functions:** `set_my_todo_done` (the member, approved only),
+      `decide_member_todo` (staff who can see the member, waiting only;
+      audited) and `delete_my_assistant_data`.
+    - **Limits:** 50 waiting and 300 in all per member.
+    - **Alert:** one bell alert (`member_todo`) to the member's agent, else
+      the lead router, else the admins; no second alert while one is unread.
+  - **"My to-dos" (`/my/todos`):** "To do" (approved, tick off), "Waiting
+    for your agent" and "Your agent declined these", each with its source
+    and page, plus "Delete my assistant data". It's in the Assistant menu
+    group when summarizing is on or the member has to-dos.
+  - **Console:** a "Suggested to-dos" panel on `/members/[id]` (approve or
+    decline each waiting one), the member switch on `/assistant`, and the
+    bell linking to the member's page.
+  - **Also:**
+    - `textPdf` moved to `packages/lib` (both live tests use it).
+    - The documents list is shared between `/my/documents` and the
+      assistant.
+    - Found in passing: the console's document features don't check page
+      references against the file's real length; the member feature does.
+  - **Tests:**
+    - 22 database tests (`member-todos.test.ts`) and
+      `hosted-member-todos-check.sql`, which passes locally.
+    - 15 feature tests, covering:
+      - the file checks (HEIC, 51 pages, size, unreadable, uncounted);
+      - document references;
+      - page clamping, contacts removed and repeats dropped;
+      - wiring and Fair Housing answers blocked;
+      - the deal-file run;
+      - an extra field refused.
+    - **The website's live test:** 3 calls; the new one is a fictional
+      four-page inspection report with an injection page. The fake run is 3
+      of 3 ok, and the console's is unchanged (20 of 20).
+    - Browser QA `scripts/qa/s5b-documents.mjs`: 53 checks pass on the
+      local stack with the fake Claude and the storage shim. They cover:
+      - off by default, and the console switch;
+      - a buyer summarizing their own upload and a team upload, with page
+        references, questions and de-duplicated to-dos;
+      - wiring, Fair Housing, contacts and out-of-range pages handled;
+      - the 51-page file refused; HEIC and other members' files never
+        offered;
+      - the bell alert linking to the member; the agent approving one and
+        declining one (audited); the buyer ticking one and deleting their
+        assistant data;
+      - a seller summarizing a shared deal file (run against the deal);
+      - axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+    - `s5b-assistant.mjs` (65), `s5-qa.mjs` (100) and `s6b-documents.mjs`
+      (47) still pass. Screenshots in `docs/screenshots/s5b-documents/`.
+  - **After merge:** apply 0037 on your OK, then
+    `packages/db/test/hosted-member-todos-check.sql` (rolled back).
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
@@ -1603,7 +1687,7 @@ with the code (timeline: 5 tests, now in packages/lib).
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 1,267 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
+Tests: 1,304 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
 apps/web and apps/va (`pnpm test`).
 
 ### Blocked / waiting

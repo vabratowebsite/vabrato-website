@@ -1166,6 +1166,51 @@ export type Database = {
         }
         Relationships: []
       }
+      member_todos: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          detail: string | null
+          done: boolean
+          done_at: string | null
+          id: string
+          page: number | null
+          profile_id: string
+          source_name: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          detail?: string | null
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          page?: number | null
+          profile_id: string
+          source_name?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          detail?: string | null
+          done?: boolean
+          done_at?: string | null
+          id?: string
+          page?: number | null
+          profile_id?: string
+          source_name?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           body: string
@@ -2305,8 +2350,8 @@ export type Database = {
       ai_usage_today: { Args: never; Returns: Json }
       can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
-      can_work_lead: { Args: { p_lead: string }; Returns: boolean }
       can_work_draft_target: { Args: { p_deal: string; p_lead: string }; Returns: boolean }
+      can_work_lead: { Args: { p_lead: string }; Returns: boolean }
       check_sync_health: { Args: never; Returns: string }
       claim_due_notifications: {
         Args: { p_batch?: number }
@@ -2333,6 +2378,8 @@ export type Database = {
           table_name: string
         }[]
       }
+      decide_member_todo: { Args: { p_approve: boolean; p_id: string }; Returns: undefined }
+      delete_my_assistant_data: { Args: never; Returns: number }
       flag_enabled: { Args: { p_key: string }; Returns: boolean }
       has_deal_access: { Args: { p_deal_id: string }; Returns: boolean }
       has_full_mls_access: { Args: never; Returns: boolean }
@@ -2455,8 +2502,8 @@ export type Database = {
         }[]
       }
       publish_content: { Args: { p_revision: string }; Returns: string }
-      purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
       purge_ai_drafts: { Args: never; Returns: number }
+      purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
       purge_old_leads: { Args: { p_months?: number }; Returns: number }
       reassign_lead: { Args: { p_agent: string; p_lead: string }; Returns: undefined }
       record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }
@@ -2559,6 +2606,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       set_mls_sync_live: { Args: { p_live: boolean }; Returns: undefined }
+      set_my_todo_done: { Args: { p_done: boolean; p_id: string }; Returns: undefined }
       set_tour_status: {
         Args: { p_lead: string; p_status: Database["public"]["Enums"]["tour_status"] }
         Returns: undefined

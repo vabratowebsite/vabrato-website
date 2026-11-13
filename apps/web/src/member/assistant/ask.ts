@@ -1,7 +1,9 @@
 import { runAi, type AiDeps, type AiFailure } from "@vabrato/ai";
 import { HOME_TYPES, parseSearchParams, toQueryString, type HomeType, type SearchFilters } from "@/lib/search-params";
-import { EXPLAIN_TERM, SEARCH_BY_SENTENCE, searchParts, type SearchAnswer } from "./features";
-import { ASK_LIMITS, type AskCard, type AskKind } from "./kinds";
+import { EXPLAIN_TERM, SEARCH_BY_SENTENCE, SUMMARIZE_DOCUMENT, searchParts, type SearchAnswer } from "./features";
+import type { MemberFile } from "./files";
+import { ASK_LIMITS, type AskCard, type AskKind, type TextKind } from "./kinds";
+import { summaryView } from "./summary";
 
 // Ask Vabrato's two first features end to end, given the pipeline's deps
 // (the actions pass the member's own; tests pass a fake model and store).
@@ -25,7 +27,7 @@ export const MEMBER_MESSAGES: Record<AiFailure, string> = {
 };
 
 /** The member's words, tidied: one line, within the limit. Null when empty. */
-export function cleanQuestion(text: unknown, kind: AskKind): string | null {
+export function cleanQuestion(text: unknown, kind: TextKind): string | null {
   const s = String(text ?? "")
     .replace(/[\u0000-\u001f\u007f]+/g, " ")
     .replace(/\s+/g, " ")
@@ -117,4 +119,24 @@ export function filterChips(f: SearchFilters, sold: boolean, cities: { slug: str
   const sort = SORT_LABELS[f.sort];
   if (sort) chips.push(sort);
   return chips;
+}
+
+/** File-specific wording where the general one would mislead. */
+const FILE_FAILURES: Partial<Record<AiFailure, string>> = {
+  too_large: "This document is too long for Ask Vabrato to read in one go. Your agent can help with it.",
+  invalid_output: "The summary didn't come through properly. Please try again.",
+};
+
+/** Summarize one of the member's documents (already loaded and checked by files.ts). */
+export async function summarizeDocument(deps: AiDeps, file: MemberFile): Promise<AskCard> {
+  const question = `Summarize: ${file.name}`;
+  const r = await runAi(deps, SUMMARIZE_DOCUMENT, {
+    parts: [{ type: "text", text: `The member's document: "${file.name}"${file.pages ? `, ${file.pages} page${file.pages === 1 ? "" : "s"}` : ""}.` }, file.part],
+    dealId: file.dealId,
+  });
+  if (!r.ok) return error("summarize", question, FILE_FAILURES[r.reason] ?? MEMBER_MESSAGES[r.reason]);
+  if (!r.data) return error("summarize", question, FILE_FAILURES.invalid_output!);
+  const view = summaryView(r.data, file.pages);
+  if (!view.points.length) return error("summarize", question, "Ask Vabrato couldn't find anything to summarize in this file. If it's a scan, try a clearer copy, or ask your agent.");
+  return { kind: "summary", question, docName: file.name, pages: file.pages, ...view };
 }

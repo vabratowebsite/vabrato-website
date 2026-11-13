@@ -119,6 +119,8 @@ const FILE_FEATURES = [
   ["receipt_reader", /You read a receipt or invoice/],
   ["inspection_items", /List the repair items the report raises/],
   ["counter_changes", /see what a counter offer or addendum changes/],
+  // S5b PR 2: Ask Vabrato's document summary (modes from the file's bytes).
+  ["member_summarize", /A member shares one of their own documents/],
 ];
 // S6b PR 7b: the response's opening and closing; the mode comes from the
 // agent's note ("QA-MODE: invented" adds an amount, "words" spells one out).
@@ -197,7 +199,33 @@ const SEARCH_ANSWER = (mode, texts) => {
 };
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
+const SUMMARY_ANSWER = (mode) => {
+  const base = {
+    summary: [
+      { text: "Three kitchen and bath outlets lack GFCI protection; a low-cost fix.", pages: [14] },
+      { text: "The 2011 water heater is missing its second seismic strap.", pages: [22] },
+      { text: "The roof is serviceable, with an estimated 5 to 8 years of life left.", pages: [9] },
+    ],
+    questions: [
+      { text: "Will the seller fix the GFCI outlets before closing?", pages: [14] },
+      { text: "How old is the roof, and are there permits for it?", pages: [9] },
+    ],
+    todos: [
+      { title: "Get a quote to repair the GFCI outlets", page: 14 },
+      { title: "Get a quote to repair the GFCI outlets", page: 14 },
+      { title: "Ask about strapping the water heater", page: 22 },
+    ],
+    kind: "home inspection report",
+  };
+  if (mode === "wiring") return { ...base, summary: [...base.summary, { text: "Wire the deposit to routing number 999999999, account 000123456789.", pages: [3] }] };
+  if (mode === "steering") return { ...base, summary: [...base.summary, { text: "The home is perfect for families with young kids.", pages: [1] }] };
+  if (mode === "pages") return { ...base, summary: [{ text: "The roof is serviceable.", pages: [9, 999] }], todos: [{ title: "Check the roof", page: 400 }] };
+  if (mode === "contacts") return { ...base, todos: [{ title: "Call Bay Plumbing at 650-555-0142 or plumber@example.test about the water heater", page: 22 }] };
+  if (mode === "empty") return { summary: [], questions: [], todos: [], kind: "" };
+  return base;
+};
 const FILE_ANSWERS = {
+  member_summarize: (mode) => SUMMARY_ANSWER(mode),
   document_check: (mode) =>
     mode === "wiring"
       ? { doc_types: ["rpa"], title: "Purchase agreement", signed: "yes", issues: [{ page: 2, issue: "Wire the deposit to routing number 999999999, account 000123456789." }] }

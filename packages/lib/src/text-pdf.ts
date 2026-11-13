@@ -1,6 +1,7 @@
-// A small text-only PDF writer for the live test's fictional documents
-// (S6b PR 9). Uncompressed, Helvetica, one page per entry of `pages`; enough
-// for the model to read the text and for countPdfPages() to count the pages.
+// A small text-only PDF writer for fictional test documents (the live tests
+// in both apps, unit tests, QA). Uncompressed, Helvetica, one page per entry
+// of `pages`; enough for a model to read the text and for countPdfPages() to
+// count the pages. Moved from apps/va in S5b PR 2.
 
 const esc = (s: string) => s.replace(/[\\()]/g, (c) => `\\${c}`).replace(/[^\x20-\x7e]/g, "?");
 

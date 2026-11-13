@@ -3,8 +3,9 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { AIDraftLabel, SparkleIcon } from "@vabrato/ui/web";
 import { Markdown } from "@vabrato/ui/markdown";
-import { askExplainAction, askSearchAction } from "@/app/my/assistant/actions";
+import { addTodosAction, askExplainAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
 import { ASK_LIMITS, askMyAgentHref, type AskCard, type AskKind } from "../assistant/kinds";
+import { pagesLabel } from "../assistant/summary";
 
 // Ask Vabrato (mockup 11, S5b PR 1). Answers stay in this page's memory only:
 // leaving the page clears them, and nothing is stored (owner decision
@@ -23,14 +24,28 @@ const MODES: Record<AskKind, { label: string; field: string; hint: string; butto
     hint: "For example: 3-bed house in San Carlos under $2.5M.",
     button: "Make the search",
   },
+  summarize: {
+    label: "Summarize a document",
+    field: "Which document",
+    hint: "Up to 50 pages: PDFs, JPGs, PNGs or WebP images (not iPhone photos, HEIC). Pick from your documents.",
+    button: "Summarize",
+  },
 };
+
+export interface DocOption {
+  /** "upload:<id>" or "deal:<path>" */
+  ref: string;
+  label: string;
+}
 
 const linkBtn =
   "inline-flex min-h-[44px] items-center justify-center px-4 font-body text-label font-medium uppercase tracking-label focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 
-export function AskVabrato({ kinds, left, limit }: { kinds: AskKind[]; left: number; limit: number }) {
-  const [mode, setMode] = useState<AskKind>(kinds[0]!);
+export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kinds: AskKind[]; left: number; limit: number; docs?: DocOption[]; initialDoc?: string }) {
+  const startDoc = initialDoc && docs.some((d) => d.ref === initialDoc) ? initialDoc : undefined;
+  const [mode, setMode] = useState<AskKind>(startDoc && kinds.includes("summarize") ? "summarize" : kinds[0]!);
   const [text, setText] = useState("");
+  const [doc, setDoc] = useState(startDoc ?? docs[0]?.ref ?? "");
   const [cards, setCards] = useState<(AskCard & { id: number })[]>([]);
   const [remaining, setRemaining] = useState(left);
   const [pending, start] = useTransition();
@@ -38,25 +53,27 @@ export function AskVabrato({ kinds, left, limit }: { kinds: AskKind[]; left: num
   const newest = useRef<HTMLHeadingElement>(null);
   const uid = useId();
   const m = MODES[mode];
-  const max = ASK_LIMITS[mode];
+  const max = mode === "summarize" ? 0 : ASK_LIMITS[mode];
+  const ready = mode === "summarize" ? Boolean(doc) : Boolean(text.trim());
 
   // Focus moves to each new answer, so it's read out once (not a live region).
   useEffect(() => newest.current?.focus(), [cards.length]);
 
   function ask(e: React.FormEvent) {
     e.preventDefault();
-    const question = text.trim();
-    if (!question || pending) return;
+    const question = mode === "summarize" ? `Summarize: ${docs.find((d) => d.ref === doc)?.label ?? "a document"}` : text.trim();
+    if (!ready || pending) return;
     start(async () => {
       let card: AskCard;
       try {
-        card = mode === "explain" ? await askExplainAction(question) : await askSearchAction(question);
+        card = mode === "explain" ? await askExplainAction(question) : mode === "search" ? await askSearchAction(question) : await askSummarizeAction(doc);
+        if (mode === "summarize" && card.kind === "error") card = { ...card, question };
       } catch {
         card = { kind: "error", feature: mode, question, message: "Something went wrong. Please try again." };
       }
       setCards((c) => [...c, { ...card, id: next.current++ }]);
       setRemaining((r) => Math.max(0, r - 1));
-      if (card.kind !== "error") setText("");
+      if (card.kind !== "error" && mode !== "summarize") setText("");
     });
   }
 
@@ -76,31 +93,65 @@ export function AskVabrato({ kinds, left, limit }: { kinds: AskKind[]; left: num
             </div>
           </fieldset>
         )}
-        <div>
-          <label htmlFor={`${uid}-q`} className="block text-body-sm font-medium text-ink">
-            {m.field}
-          </label>
-          <p id={`${uid}-hint`} className="mt-1 text-caption text-muted">
-            {m.hint}
-          </p>
-          <textarea
-            id={`${uid}-q`}
-            value={text}
-            onChange={(e) => setText(e.target.value.slice(0, max))}
-            maxLength={max}
-            rows={3}
-            required
-            aria-describedby={`${uid}-hint ${uid}-count`}
-            className="mt-2 block w-full border border-muted bg-white px-3 py-2 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
-          />
-          <p id={`${uid}-count`} className="mt-1 text-caption text-muted">
-            {text.length} of {max} characters
-          </p>
-        </div>
+        {mode === "summarize" ? (
+          <div>
+            <label htmlFor={`${uid}-doc`} className="block text-body-sm font-medium text-ink">
+              {m.field}
+            </label>
+            <p id={`${uid}-hint`} className="mt-1 text-caption text-muted">
+              {m.hint}
+            </p>
+            {docs.length ? (
+              <select
+                id={`${uid}-doc`}
+                value={doc}
+                onChange={(e) => setDoc(e.target.value)}
+                aria-describedby={`${uid}-hint`}
+                className="mt-2 block min-h-[44px] w-full max-w-xl border border-muted bg-white px-3 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
+              >
+                {docs.map((d) => (
+                  <option key={d.ref} value={d.ref}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="mt-2 text-body-sm text-ink">
+                You don&apos;t have a document Ask Vabrato can read yet.{" "}
+                <a href="/my/documents" className="text-navy underline">
+                  Upload one in Documents
+                </a>
+                .
+              </p>
+            )}
+          </div>
+        ) : (
+          <div>
+            <label htmlFor={`${uid}-q`} className="block text-body-sm font-medium text-ink">
+              {m.field}
+            </label>
+            <p id={`${uid}-hint`} className="mt-1 text-caption text-muted">
+              {m.hint}
+            </p>
+            <textarea
+              id={`${uid}-q`}
+              value={text}
+              onChange={(e) => setText(e.target.value.slice(0, max))}
+              maxLength={max}
+              rows={3}
+              required
+              aria-describedby={`${uid}-hint ${uid}-count`}
+              className="mt-2 block w-full border border-muted bg-white px-3 py-2 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
+            />
+            <p id={`${uid}-count`} className="mt-1 text-caption text-muted">
+              {text.length} of {max} characters
+            </p>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-4">
           <button
             type="submit"
-            disabled={pending || !text.trim() || remaining === 0}
+            disabled={pending || !ready || remaining === 0}
             className="inline-flex min-h-[44px] items-center justify-center gap-2 bg-navy px-6 text-label font-medium uppercase tracking-label text-white hover:bg-navy-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy disabled:opacity-60"
           >
             <SparkleIcon size={14} />
@@ -111,7 +162,7 @@ export function AskVabrato({ kinds, left, limit }: { kinds: AskKind[]; left: num
           </p>
           {pending && (
             <p role="status" className="text-body-sm text-ink">
-              Writing…
+              {mode === "summarize" ? "Reading the document…" : "Writing…"}
             </p>
           )}
         </div>
@@ -166,6 +217,7 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
       </div>
     );
   }
+  if (card.kind === "summary") return <SummaryAnswer card={card} heading={heading} />;
   return (
     <div className="space-y-4 border border-line bg-soft p-4 font-body sm:p-6">
       <AIDraftLabel />
@@ -188,6 +240,101 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
       <a href={card.href} className={`${linkBtn} bg-navy text-white hover:bg-navy-deep`}>
         Run this search
       </a>
+    </div>
+  );
+}
+
+type SummaryCard = Extract<AskCard, { kind: "summary" }>;
+
+function SummaryAnswer({ card, heading }: { card: SummaryCard; heading: (text: string) => React.ReactNode }) {
+  const uid = useId();
+  const [picked, setPicked] = useState<boolean[]>(() => card.todos.map(() => false));
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, start] = useTransition();
+  const added = result?.ok === true;
+  const ref = (pages: number[]) => (pages.length ? <span className="text-muted"> ({pagesLabel(pages)})</span> : null);
+
+  function add() {
+    const todos = card.todos.filter((_, i) => picked[i]);
+    if (!todos.length) return setResult({ ok: false, text: "Tick at least one to-do to add." });
+    start(async () => {
+      const r = await addTodosAction(card.docName, todos).catch(() => ({ ok: false as const, error: "We couldn't add those. Please try again." }));
+      setResult(r.ok ? { ok: true, text: `Added ${r.added} to-do${r.added === 1 ? "" : "s"}. Your agent approves them first; they're in My to-dos.` } : { ok: false, text: r.error });
+    });
+  }
+
+  return (
+    <div className="space-y-5 border border-line bg-soft p-4 font-body text-body-sm text-ink sm:p-6">
+      <AIDraftLabel />
+      {heading(`Summary of ${card.docName}${card.pages ? ` (${card.pages} page${card.pages === 1 ? "" : "s"})` : ""}`)}
+      {card.docKind && <p className="text-caption text-muted">It looks like: {card.docKind}</p>}
+      <ul className="list-disc space-y-2 pl-5">
+        {card.points.map((p, i) => (
+          <li key={i}>
+            {p.text}
+            {ref(p.pages)}
+          </li>
+        ))}
+      </ul>
+      {card.questions.length > 0 && (
+        <section aria-labelledby={`${uid}-q`} className="space-y-2">
+          <h3 id={`${uid}-q`} className="font-medium">
+            Questions to ask
+          </h3>
+          <ul className="space-y-2">
+            {card.questions.map((q, i) => (
+              <li key={i} className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2">
+                <span>
+                  {q.text}
+                  {ref(q.pages)}
+                </span>
+                <a href={askMyAgentHref(q.text)} className="inline-flex min-h-[44px] items-center px-2 text-navy underline">
+                  Ask my agent<span className="sr-only">: {q.text}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {card.todos.length > 0 && (
+        <fieldset className="space-y-2" disabled={added || saving}>
+          <legend className="font-medium">Suggested to-dos</legend>
+          <p className="text-caption text-muted">Tick the ones you want. Your agent sees and approves to-dos you add.</p>
+          {card.todos.map((t, i) => (
+            <label key={i} className="flex min-h-[44px] items-start gap-3 py-1">
+              <input
+                type="checkbox"
+                checked={picked[i] ?? false}
+                onChange={(e) => setPicked((p) => p.map((v, j) => (j === i ? e.target.checked : v)))}
+                className="mt-1 h-5 w-5 flex-none accent-navy"
+              />
+              <span>
+                {t.title}
+                {t.page ? <span className="text-muted"> (p. {t.page})</span> : null}
+              </span>
+            </label>
+          ))}
+          {!added && (
+            <button type="button" onClick={add} className={`${linkBtn} bg-navy text-white hover:bg-navy-deep disabled:opacity-60`}>
+              Add to my to-dos
+            </button>
+          )}
+        </fieldset>
+      )}
+      {result && (
+        <p role={result.ok ? "status" : "alert"} className={result.ok ? "text-green" : "font-medium text-red"}>
+          {result.text}
+          {result.ok && (
+            <>
+              {" "}
+              <a href="/my/todos" className="text-navy underline">
+                Open My to-dos
+              </a>
+            </>
+          )}
+        </p>
+      )}
+      <p className="text-caption text-muted">Written by AI from your document and can be wrong. Not legal, engineering or tax advice. Your agent sees to-dos you add, not this summary.</p>
     </div>
   );
 }

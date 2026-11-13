@@ -1,7 +1,9 @@
 import { Panel, WiringBanner } from "@vabrato/ui/web";
 import { DeleteDocumentButton, DocumentUploader } from "@/member/components/DocumentUploader";
 import { MemberShell } from "@/member/components/MemberShell";
+import { memberAiStatus } from "@/member/ai-status";
 import { sizeLabel } from "@/member/documents";
+import { docRef, listMemberDocuments } from "@/member/documents-list";
 import { requirePortalMember } from "@/member/session";
 import { fmtDay } from "@/member/view";
 
@@ -11,17 +13,14 @@ import { fmtDay } from "@/member/view";
 // the wiring banner is shown (CLAUDE.md, review item 8).
 export default async function DocumentsPage() {
   const member = await requirePortalMember("/my/documents");
-  const { supabase, profile } = member;
-  const [{ data: docs }, { data: deals }] = await Promise.all([
-    supabase.from("member_documents").select("id, name, size_bytes, content_type, uploaded_by, created_at").order("created_at", { ascending: false }),
-    supabase.from("deals").select("id, address").eq("status", "active"),
-  ]);
-  const dealDocs = await Promise.all(
-    (deals ?? []).map(async (d) => {
-      const { data } = await supabase.storage.from("deal-docs").list(`deal/${d.id}`, { limit: 100, sortBy: { column: "name", order: "asc" } });
-      // Folder entries (no id), such as the staff-only folder, are never listed.
-      return { deal: d, files: (data ?? []).filter((f) => f.id && f.name && !f.name.startsWith(".")) };
-    }),
+  const { profile } = member;
+  const [{ uploads: docs, deals: dealDocs }, ai] = await Promise.all([listMemberDocuments(member), memberAiStatus(member.supabase)]);
+  // Ask Vabrato can summarize a file (S5b PR 2): not iPhone photos (HEIC), which it can't read.
+  const canSummarize = ai.on.includes("ai_member_summarize");
+  const summarizeLink = (ref: string, name: string) => (
+    <a href={`/my/assistant?doc=${encodeURIComponent(ref)}`} className="inline-flex min-h-[44px] items-center px-2 text-body-sm text-navy underline">
+      Summarize<span className="sr-only"> {name}</span>
+    </a>
   );
 
   return (
@@ -43,7 +42,10 @@ export default async function DocumentsPage() {
                       {d.uploaded_by && d.uploaded_by !== profile.id ? " by your Vabrato team" : ""}
                     </p>
                   </div>
-                  {d.uploaded_by === profile.id && <DeleteDocumentButton id={d.id} name={d.name} />}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canSummarize && d.content_type !== "image/heic" && summarizeLink(docRef.upload(d.id), d.name)}
+                    {d.uploaded_by === profile.id && <DeleteDocumentButton id={d.id} name={d.name} />}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -57,10 +59,11 @@ export default async function DocumentsPage() {
           {files.length ? (
             <ul className="divide-y divide-line font-body text-body-sm text-ink">
               {files.map((f) => (
-                <li key={f.name} className="py-3">
-                  <a href={`/api/my/deal-docs?path=${encodeURIComponent(`deal/${deal.id}/${f.name}`)}`} className="font-medium text-navy underline">
+                <li key={f.name} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <a href={`/api/my/deal-docs?path=${encodeURIComponent(f.path)}`} className="font-medium text-navy underline">
                     {f.name}
                   </a>
+                  {canSummarize && summarizeLink(docRef.deal(f.path), f.name)}
                 </li>
               ))}
             </ul>

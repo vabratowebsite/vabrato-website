@@ -14,6 +14,8 @@ const LINKS: Record<string, (refId: string | null) => string> = {
   messages: (id) => (id ? `/messages/${id}` : "/messages"),
   app_settings: () => "/settings",
   notifications: () => "/",
+  // A member's suggested to-dos (S5b PR 2): their page in the console.
+  profiles: (id) => (id ? `/members/${id}` : "/members"),
 };
 
 async function staff() {

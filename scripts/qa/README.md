@@ -234,3 +234,23 @@ The website has its own live test: `apps/web/src/live/live-ai.live.ts`, run with
 - It shares its helpers with the console's live test through `@vabrato/ai/live`.
 - It never runs in CI.
 - `apps/web/src/member/assistant/coverage.test.ts` (in CI) fails if a member AI feature has no live call, or no switch on the console.
+
+`s5b-documents.mjs` covers Ask Vabrato's document summary and "My to-dos" (S5b PR 2):
+- **Off by default:** no Summarize links and no My to-dos in the menu.
+- **Switch:** an admin turns "Summarize a document (members)" on in the console.
+- **A buyer summarizes** their own upload and a file their team uploaded for them:
+  - page references only within the file;
+  - questions with "Ask my agent";
+  - suggested to-dos with repeats dropped and phone numbers removed.
+- **Never shown or offered:**
+  - wiring or Fair Housing wording in a summary;
+  - a 51-page file (refused, with nothing sent);
+  - HEIC photos and another member's files.
+- **To-dos:**
+  - added to-dos wait for the agent, with one bell alert linking to the member's page;
+  - the agent approves one and declines one in the console;
+  - the buyer ticks the approved one, and "Delete my assistant data" removes the declined one only.
+- **A seller** summarizes a file the transaction desk shared; the run is recorded against the deal.
+- **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: ok|wiring|steering|contacts|pages|empty` in the fictional PDFs; the page count comes from the `/Count` they declare. It needs migrations up to 0037, the QA storage shim (`STORAGE_DIR`), `SERVICE_KEY`, `CLAUDE_LOG` and `REVALIDATE_SECRET`. After applying a new migration locally, run `notify pgrst, 'reload schema'` so the local API sees new tables. Screenshots go to `docs/screenshots/s5b-documents/`; everything it adds is removed, and every switch and setting it touches is put back.

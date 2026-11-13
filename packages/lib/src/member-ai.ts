@@ -24,6 +24,11 @@ export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
     name: "Search by sentence",
     what: "Turns a sentence (\"3-bed house in San Carlos under $2.5M\") into the website's normal search filters. The member sees the filters and runs or saves the search themselves. Nothing is kept.",
   },
+  {
+    flag: "ai_member_summarize",
+    name: "Summarize a document",
+    what: "Summarizes one of the member's documents (their uploads, or files their agent shared; 50 pages at most) with page references, and suggests questions and to-dos. The summary isn't kept. To-dos the member adds wait for their agent's approval on the member's page here.",
+  },
 ];
 
 /** The pipeline's feature key for a member switch ("ai_member_explain" → "member_explain"). */

@@ -21,3 +21,4 @@ export * from "./deal-documents";
 export * from "./ics";
 export * from "./pdf-pages";
 export * from "./member-ai";
+export * from "./text-pdf";
