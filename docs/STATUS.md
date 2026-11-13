@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 open (the Ask Vabrato page, explain a term, search by sentence; 0036). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). Next: PR 2 (summarize a document, suggested to-dos). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -532,7 +532,7 @@ with the member daily limits, and the site-wide monthly budget.
      in a sandbox; flyers approved by the agent.
   7. Final QA and the member calls in the live run.
 - **PR 1 (Ask Vabrato page, explain a term, search by sentence; migration
-  0036, not yet on hosted):**
+  0036, merged as #49, on hosted 2026-11-13):**
   - **Switches:** 0036 adds `ai_member_explain` and `ai_member_search`,
     both off. Admins switch them on the console's /assistant page, in a
     new "Member assistant (Ask Vabrato)" panel. Each runs only while the
@@ -594,8 +594,21 @@ with the member daily limits, and the site-wide monthly budget.
       keyboard, and page loads sending nothing. `s5-qa.mjs` (100) and
       `s6b-assistant.mjs` (64) still pass. Screenshots in
       `docs/screenshots/s5b-assistant/`.
-  - **After merge:** apply 0036 on your OK, then
-    `packages/db/test/hosted-member-assistant-check.sql` (rolled back).
+  - **On hosted (2026-11-13):** 0036 applied after checking that main's
+    file matched the tested one byte for byte and that hosted ended at
+    0035 with no member switches. `hosted-member-assistant-check.sql`
+    (rolled back) passed:
+    - both switches arrive off, and nothing runs while they're off;
+    - with them on, a buyer and a seller may start a run, and a third
+      request past a limit of 2 is refused (`daily_requests`);
+    - an agent is refused (`not_allowed`), a buyer can't switch them
+      (`admin_only`), and the public can't call `ai_begin`;
+    - members see no usage rows.
+    Nothing was left behind: no check accounts or runs, the Zero Data
+    Retention confirmation still unset, the member limit back at 30, and
+    all 21 feature switches and the master switch off. Security advisor:
+    nothing new (same findings and counts as before; 0036 adds no
+    function).
   - **Needs you, when switching on:**
     - `ANTHROPIC_API_KEY` on the website's Vercel project (the console has
       its own);
