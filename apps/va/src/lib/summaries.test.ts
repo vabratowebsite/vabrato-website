@@ -91,7 +91,7 @@ describe("the daily briefing", () => {
   });
 
   it("a briefing with wiring details isn't shown", async () => {
-    const { result } = await ask(DAILY_BRIEFING, { parts: snapshotParts(snapshot, "briefing") }, { headline: "Wire instructions: routing 021000021 account 000123456789", sections: [] });
+    const { result } = await ask(DAILY_BRIEFING, { parts: snapshotParts(snapshot, "briefing") }, { headline: "Wire instructions: routing 999999999 account 000123456789", sections: [] });
     expect(result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 });

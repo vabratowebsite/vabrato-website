@@ -4,7 +4,7 @@
 
 export { runAi, type AiDeps, type AiFailure, type AiFeature, type AiInput, type AiLogEvent, type AiOutput, type AiResult, type FeatureKey, type InputPart } from "./run";
 export { ModelError, type Citation, type Effort, type ModelClient, type ModelPart, type ModelRequest, type ModelResult } from "./client";
-export { anthropicClient } from "./anthropic";
+export { anthropicClient, attemptsFrom } from "./anthropic";
 export { supabaseAiStore, type AiStore, type FinishInfo } from "./store";
 export { listingForAi, stripNeverSend } from "./listing-fields";
 export { FALLBACK_MODEL, MODEL, costMicros, pdfPageLimit, type Usage } from "./models";

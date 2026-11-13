@@ -9,5 +9,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // The live AI test has its own config and never runs here (S6b PR 9).
+    exclude: ["src/live/**", "node_modules/**"],
   },
 });

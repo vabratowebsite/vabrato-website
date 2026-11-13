@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { ModelError, type Citation, type ModelClient, type ModelPart, type ModelRequest, type ModelResult } from "./client";
-import { FALLBACK_MODEL, MODEL } from "./models";
+import { FALLBACK_MODEL, MODEL, type Usage } from "./models";
 
 // The only file that talks to the Claude API (a guard test and ESLint keep it
 // that way). Server-side only: the key comes from ANTHROPIC_API_KEY.
@@ -33,8 +33,23 @@ function toModelError(e: unknown): ModelError {
   return new ModelError("other", "unexpected error");
 }
 
-export function anthropicClient(opts: { apiKey?: string } = {}): ModelClient {
-  const client = new Anthropic(opts.apiKey ? { apiKey: opts.apiKey } : {});
+/** Billed usage per attempt, from `usage.iterations` (fallback and the attempt it replaced). */
+export function attemptsFrom(iterations: Anthropic.Beta.BetaIterationsUsage | null | undefined): { model: string; usage: Usage }[] | undefined {
+  const runs = (iterations ?? []).filter((i): i is Anthropic.Beta.BetaMessageIterationUsage | Anthropic.Beta.BetaFallbackMessageIterationUsage => i.type === "message" || i.type === "fallback_message");
+  if (runs.length === 0) return undefined;
+  return runs.map((i) => ({
+    // A first attempt without a model name ran on the model we asked for.
+    model: i.model ?? MODEL,
+    usage: { inputTokens: i.input_tokens, outputTokens: i.output_tokens, cacheReadTokens: i.cache_read_input_tokens ?? 0, cacheWriteTokens: i.cache_creation_input_tokens ?? 0 },
+  }));
+}
+
+/**
+ * `maxRetries`: the SDK retries 408/409/429/5xx and connection errors twice
+ * by default; a test that must not spend more than planned passes 0.
+ */
+export function anthropicClient(opts: { apiKey?: string; maxRetries?: number } = {}): ModelClient {
+  const client = new Anthropic({ ...(opts.apiKey ? { apiKey: opts.apiKey } : {}), ...(opts.maxRetries !== undefined ? { maxRetries: opts.maxRetries } : {}) });
   return {
     async generate(req: ModelRequest): Promise<ModelResult> {
       try {
@@ -76,6 +91,7 @@ export function anthropicClient(opts: { apiKey?: string } = {}): ModelClient {
             cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
             cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
           },
+          ...(attemptsFrom(message.usage.iterations) ? { attempts: attemptsFrom(message.usage.iterations) } : {}),
         };
       } catch (e) {
         throw toModelError(e);

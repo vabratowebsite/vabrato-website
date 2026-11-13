@@ -151,7 +151,7 @@ describe("document checks are recorded", () => {
   });
 
   it("a refused answer records nothing", async () => {
-    answer = { ...CHECKED, issues: [{ page: 1, issue: "Wire funds to routing 021000021 account 000123456789" }] };
+    answer = { ...CHECKED, issues: [{ page: 1, issue: "Wire funds to routing 999999999 account 000123456789" }] };
     expect(await checkDocumentAction(DEAL, "deal", DOC.counter)).toMatchObject({ ok: false });
     expect(db.deal_documents!.find((d) => d.id === DOC.counter)).toMatchObject({ check_signed: null });
   });

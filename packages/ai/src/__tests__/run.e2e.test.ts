@@ -154,7 +154,7 @@ describe("runAi: the guarded pipeline", () => {
     });
 
     it("if the model obeyed and wrote wiring details, the answer isn't shown", async () => {
-      const r = await runAi({ store: storeFor(AGENT), model: fakeModel("Per the document: routing 021000021, account 123456789012."), log }, SUMMARY, {
+      const r = await runAi({ store: storeFor(AGENT), model: fakeModel("Per the document: routing 999999999, account 123456789012."), log }, SUMMARY, {
         instruction: "Summarize the notes.",
         parts: [{ type: "data", label: "Notes", text: INJECTIONS[1] }],
       });

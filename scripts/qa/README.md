@@ -165,3 +165,38 @@ It needs migration 0027 and a storage shim on `/storage/v1` that supports upload
 `s6b-counter-checks.mjs` covers "What changed" in a counter offer and "Check unchecked documents" (S6b PR 7c) with a fictional deal and its recorded terms, ten fictional PDFs filed as in 7a (two typed as counter offers) and one fictional seller upload: off by default; What changed only next to counter offers, one inline PDF and our terms as data, the table marking what differs (ours), redacted quotes, "shown only" with the deal's terms unchanged and nothing stored, an unsigned one flagged; the batch question with the count and number of requests, Cancel sending nothing, 11 files checked 10 then 1 (oldest first, the seller's upload last), each stamped with the agent and never the issue text, suggested types saved, Stop after the current file (`QA-MODE: slow`); no sideways scrolling at 390 px; an agent without deal access getting a 404. Needs migrations up to 0034, `SERVICE_KEY`, `CLAUDE_LOG` and `STORAGE_DIR`. Screenshots go to `docs/screenshots/s6b-counter-checks/`; everything it adds is removed at the end.
 
 `s6b-calls-appointments.mjs` covers call notes, appointment drafts and staff to-dos (S6b PR 8) with a fictional deal, seller and lead: off by default (the to-do lists still there); call notes on a deal with suggestions de-duplicated and redacted, two ticked and added, the follow-up approved and the notes stored nowhere; call notes on a lead saved as a lead note only when ticked; an appointment from a sentence (next Tuesday, 3 PM, 45 minutes), a changed time blocking approval until the email says it, the calendar file in UTC, the confirmation copied, a past date left blank; to-dos added, done and deleted, and listed on Today; an agent without access getting a 404; no sideways scrolling at 390 px. Modes come from `QA-MODE: …` in the notes or sentence. Needs migrations up to 0035, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s6b-calls-appointments/`; everything it adds is removed at the end.
+
+### S6b final QA (PR 9)
+
+`s6b-final.mjs` is the console-wide sweep. It signs in as each role: the lead admin (admin, MLS-verified), the backup agent with the lead admin not away and then away, an unverified agent, the VA, the TC, and a buyer (who must get "No access"). Fictional records are seeded by SQL: a deal with documents, a repair list and response, appointments, a lead, a CMA, a presentation and a launch kit. It visits every console page twice, first with all AI switches off and then with them all on. Each page is checked for its status, axe (WCAG 2.2 AA tags) at 1440 and 390 px, no sideways scrolling at 390 and 320 px, and no console errors. Pages that should be a 404 may log their own 404. A keyboard pass Tabs through the new interactive pages, checking that every control is reachable with a visible focus and that there is no trap; date and time inputs take several Tabs, which is expected. The fake Claude's request log must not grow during page loads. It needs migrations up to 0035, `SERVICE_KEY` and `CLAUDE_LOG`. The report and a few screenshots go to `docs/screenshots/s6b-final/`; everything it adds is removed at the end.
+
+### Live test against the real model (`test:live`)
+
+`apps/va/src/live/live-ai.live.ts` runs every AI feature once (20 calls covering the 19 switches) through the same `runAi()` pipeline the console uses, with fictional input. It never runs in CI or in `pnpm test`: it has its own config (`vitest.live.config.ts`), and it refuses to start when `CI` is set.
+
+- **Fake mode** uses the local fake on :4020 and costs nothing:
+
+```bash
+LIVE_AI_FAKE=1 pnpm --filter va test:live
+```
+
+- **Live mode** sends real requests and costs money. Run it only with the owner's go-ahead, and only with a dedicated, spend-limited key in your own shell (see STATUS):
+
+```bash
+LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live
+```
+
+- **Spending cap:** `LIVE_AI_BUDGET_USD` (default $5 live). Before each call, the test refuses it if what has been spent plus that call's worst case would pass the cap; that call is reported "not run".
+- **Re-running some calls:** use `LIVE_AI_ONLY=<call id>,…`.
+- **Hard fails:**
+  - a model call that doesn't end ok;
+  - wiring or contact details in what a person would see;
+  - the injection canary in any raw answer;
+  - an expected refusal that doesn't happen;
+  - spend over the cap.
+- **Findings:** semantic checks (the price read from the counter, the appointment date) are reported, not failed.
+- **Where results go:**
+  - A full live run writes metadata only to `docs/qa/s6b-live-run.json`.
+  - Fake and partial runs write to `apps/va/.live-ai/`, which is gitignored and also holds the raw answers.
+
+`apps/va/src/lib/feature-coverage.test.ts` runs in `pnpm test` and CI. It finds every exported AI feature by shape and fails if one has no live call, or if the calls' switches differ from the 19 on /assistant.

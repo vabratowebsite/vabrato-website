@@ -276,7 +276,7 @@ try {
   await upload(av, "Wire memo.pdf", pdf("wiring", "Memo"));
   await av.getByRole("button", { name: /^Check\ this\ document\s*: Wire\ memo\.pdf$/ }).click();
   await waitStatus(av, null, "contained payment or wiring details");
-  check("check: an answer with wiring details isn't shown", (await av.getByText(/021000021/).count()) === 0);
+  check("check: an answer with wiring details isn't shown", (await av.getByText(/999999999/).count()) === 0);
   await av.reload();
   await av.getByRole("button", { name: /^Delete\s*Wire memo\.pdf$/ }).click();
   await waitStatus(av, "Deleted.");

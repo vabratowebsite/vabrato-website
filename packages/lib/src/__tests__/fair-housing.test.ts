@@ -35,6 +35,36 @@ describe("fairHousingIssues (FH-1)", () => {
     expect(fairHousingIssues(text).filter((i) => i.level === "block")).toEqual([]);
   });
 
+  // Familial status (S6b PR 9). The wording list is for Mark to sign off (STATUS).
+  it.each([
+    ["Seller prefers no kids.", "no kids"],
+    ["No children, please.", "No children"],
+    ["Quiet building, no young children.", "no young children"],
+    ["Adults only.", "Adults only"],
+    ["Children not allowed in the unit.", "Children not allowed"],
+    ["Kids are not permitted on the deck.", "Kids are not permitted"],
+    ["No families with kids.", "No families"],
+    ["Not for families.", "Not for families"],
+    ["Not suitable for kids.", "suitable for kids"],
+    ["Not a good fit: not safe for children.", "not safe for children"],
+  ])("blocks familial-status wording %j", (text, match) => {
+    expect(blocks(text).join(" | ")).toContain(match);
+  });
+
+  it.each([
+    "The family room opens onto the deck.",
+    "There's no family room, but the den is large.",
+    "The kids' bedroom has a built-in desk.",
+    "No children's play structure in the yard; the park nearby has one.",
+    "The children's play area in the park nearby is open daily.",
+    "The seller's children will move the furniture on Saturday.",
+    "A single-family home on a quiet street.",
+    "Part of a 55+ community with a clubhouse.",
+    "No family members will attend the walkthrough.",
+  ])("doesn't block ordinary property wording %j", (text) => {
+    expect(blocks(text)).toEqual([]);
+  });
+
   it("warns, without blocking, on words that are usually fine in context", () => {
     expect(warns("Next to St. Example church and a short walk to the park.")).toEqual(["church"]);
     expect(warns("A close-knit street.")).toEqual(["close-knit"]);

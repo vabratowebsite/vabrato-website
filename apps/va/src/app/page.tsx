@@ -89,8 +89,9 @@ export default async function Today() {
         </Panel>
       )}
 
+      {/* min-w-0: grid items default to min-width: auto, which let the leads table widen the page at phone width instead of scrolling in its region. */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <Panel title="Newest leads">
+        <Panel title="Newest leads" className="min-w-0">
           {recent.data?.length ? (
             <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Newest leads table">
               <table className="w-full min-w-[480px] font-body text-body-sm text-ink">
@@ -145,7 +146,7 @@ export default async function Today() {
           </p>
         </Panel>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Panel title="MLS feed">
             <dl className="divide-y divide-line font-body text-body-sm">
               {feed.map((r) => (

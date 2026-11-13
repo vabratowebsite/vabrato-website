@@ -95,7 +95,7 @@ describe("what a lead draft sends", () => {
   });
 
   it("an answer with wiring details is never shown", async () => {
-    const { result } = await sent("lead_reply", { parts: leadParts(lead) }, JSON.stringify({ subject: "Deposit", body: "Wire the deposit to routing number 021000021, account 000123456789." }));
+    const { result } = await sent("lead_reply", { parts: leadParts(lead) }, JSON.stringify({ subject: "Deposit", body: "Wire the deposit to routing number 999999999, account 000123456789." }));
     expect(result).toMatchObject({ ok: false, reason: "payment_instructions" });
   });
 
@@ -178,7 +178,7 @@ describe("approving a draft", () => {
     const fh = approvalProblems("Lovely home", "It's perfect for young families.");
     expect(fh).toHaveLength(1);
     expect(fh[0]).toMatch(/Fair Housing: reword "perfect for young families"/);
-    expect(approvalProblems("Deposit", "Wire instructions: routing 021000021 account 000123456789")[0]).toMatch(/payment or wiring/);
+    expect(approvalProblems("Deposit", "Wire instructions: routing 999999999 account 000123456789")[0]).toMatch(/payment or wiring/);
     expect(approvalProblems("Hi", "   ")).toContain("The email is empty.");
   });
 });

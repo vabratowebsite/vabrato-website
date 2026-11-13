@@ -5,7 +5,7 @@ import { INJECTIONS } from "./injections";
 
 describe("payment and wiring instructions", () => {
   it.each([
-    "Please send funds: routing 021000021, account 123456789012.",
+    "Please send funds: routing 999999999, account 123456789012.",
     "Wiring instructions are below.",
     "Account number: 00012345678",
     "You can Zelle the deposit to the seller.",
@@ -25,7 +25,7 @@ describe("payment and wiring instructions", () => {
   });
 
   it("checks every string in a JSON answer", () => {
-    expect(paymentInstructionMatches({ notes: ["ok", "routing number 021000021"] }).length).toBe(1);
+    expect(paymentInstructionMatches({ notes: ["ok", "routing number 999999999"] }).length).toBe(1);
   });
 });
 
