@@ -7,8 +7,13 @@ import { assignedAgent, requirePortalMember } from "@/member/session";
 // escapes it; no links or HTML are interpreted; review item 9). Staff reply
 // from the agent console. The wiring banner reminds members that wiring
 // instructions never arrive by message (review item 8).
-export default async function MessagesPage() {
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function MessagesPage({ searchParams }: Props) {
   const member = await requirePortalMember("/my/messages");
+  // "Ask my agent" (Ask Vabrato) fills the box; the member still presses Send.
+  const draftParam = (await searchParams).draft;
+  const draft = typeof draftParam === "string" ? draftParam.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").slice(0, 4000) : "";
   const { supabase, profile } = member;
   const [{ data: messages }, agent] = await Promise.all([
     supabase.from("messages").select("id, sender_id, body, created_at").eq("member_id", profile.id).order("created_at", { ascending: true }).limit(200),
@@ -40,7 +45,7 @@ export default async function MessagesPage() {
           ) : (
             <p className="font-body text-body text-ink">No messages yet. Ask your agent anything about homes, tours or your sale.</p>
           )}
-          <MessageForm />
+          <MessageForm defaultValue={draft} />
         </div>
       </Panel>
     </MemberShell>

@@ -200,3 +200,37 @@ LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live
   - Fake and partial runs write to `apps/va/.live-ai/`, which is gitignored and also holds the raw answers.
 
 `apps/va/src/lib/feature-coverage.test.ts` runs in `pnpm test` and CI. It finds every exported AI feature by shape and fails if one has no live call, or if the calls' switches differ from the 19 on /assistant.
+
+## Ask Vabrato, the member assistant (S5b)
+
+`s5b-assistant.mjs` covers the member assistant in `/my` (S5b PR 1) with fictional members, using the fake Claude server as in S6b:
+- **Off by default:** no menu item, the page says it isn't available, and nothing is sent.
+- **Switches:** an admin turns on the two member switches and the master switch on the console's /assistant page.
+- **Explain a term:**
+  - a labelled answer with "Not legal or tax advice";
+  - "Ask my agent" fills Messages but doesn't send;
+  - wiring or Fair Housing wording in an answer isn't shown;
+  - a steering question gets the neutral answer with nothing sent.
+- **Search by sentence:**
+  - the filters as chips, and "Run this search" lands on `/search`;
+  - an unknown city is dropped, and an answer with an extra field isn't used;
+  - sold homes only for a buyer with VOW, on `/my/sold`.
+- **Also:**
+  - the daily limit;
+  - a seller, a both-role member and staff (console notice);
+  - one switch on;
+  - axe at 1440 and 390 px, no sideways scrolling at 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: wiring|steering|refusal|extra|elsewhere` in the member's words.
+
+Setup:
+- Start both apps with `ANTHROPIC_BASE_URL=http://127.0.0.1:4020` and any `ANTHROPIC_API_KEY`.
+- It needs migrations up to 0036, `CLAUDE_LOG`, `MAIL_DIR`, `PGURL` and `REVALIDATE_SECRET`.
+- The fake reports 61,000 tokens a call, so the run raises the member token limit and puts it back.
+
+Screenshots go to `docs/screenshots/s5b-assistant/`. Everything it adds is removed, and every switch and setting it touches is put back.
+
+The website has its own live test: `apps/web/src/live/live-ai.live.ts`, run with `pnpm --filter @vabrato/web test:live`, in fake (`LIVE_AI_FAKE=1`) or live (`LIVE_AI=1`) mode, as in S6b.
+- It shares its helpers with the console's live test through `@vabrato/ai/live`.
+- It never runs in CI.
+- `apps/web/src/member/assistant/coverage.test.ts` (in CI) fails if a member AI feature has no live call, or no switch on the console.

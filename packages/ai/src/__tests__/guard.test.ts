@@ -35,7 +35,7 @@ describe("AI guardrails in the codebase", () => {
   });
 
   it("@vabrato/ai is used only from the member portal and the agent console, on the server", () => {
-    const allowed = [/^apps\/va\/src\//, /^apps\/web\/src\/member\//, /^apps\/web\/src\/app\/my\//, /^apps\/web\/src\/app\/api\/my\//, /^packages\/ai\//];
+    const allowed = [/^apps\/va\/src\//, /^apps\/web\/src\/member\//, /^apps\/web\/src\/app\/my\//, /^apps\/web\/src\/app\/api\/my\//, /^apps\/web\/src\/live\//, /^packages\/ai\//];
     const bad: string[] = [];
     for (const f of files) {
       if (!imports(f.text, "@vabrato/ai")) continue;
@@ -43,6 +43,11 @@ describe("AI guardrails in the codebase", () => {
       if (/^\s*["']use client["']/m.test(f.text)) bad.push(`${f.file}: client component`);
     }
     expect(bad).toEqual([]);
+  });
+
+  it("@vabrato/ai/live (the live test's helpers) is used only by the live tests", () => {
+    const users = files.filter((f) => /["']@vabrato\/ai\/live["']/.test(f.text) && !f.file.endsWith("guard.test.ts")).map((f) => f.file);
+    expect(users.filter((f) => !/^apps\/(va|web)\/src\/live\/[^/]+\.live\.ts$/.test(f) && !f.startsWith("packages/ai/"))).toEqual([]);
   });
 
   it("the API key is never exposed to the browser", () => {

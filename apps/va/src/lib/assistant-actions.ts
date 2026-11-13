@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { runAi } from "@vabrato/ai";
-import { STAFF_ROLES, getProfile } from "@vabrato/lib";
+import { MEMBER_AI_FEATURES, STAFF_ROLES, getProfile } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
 import { ASSISTANT_FEATURES, MASTER_FLAG, aiSettingsError, checkContract, intakeFolder, isOwnIntakePath } from "@/lib/assistant";
 import { CONTRACT_READER, toIntakeProposal } from "@/lib/contract-reader";
@@ -68,7 +68,7 @@ const refresh = () => {
   revalidatePath("/deals/new");
 };
 
-const FLAGS = new Set<string>([MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag)]);
+const FLAGS = new Set<string>([MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)]);
 
 export async function setAiFlagAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await staffClient();

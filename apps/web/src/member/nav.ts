@@ -4,7 +4,7 @@ import { buys, sells, type MemberRole } from "./roles";
 // sections show; Both sees both"). Only pages that exist are listed; later S5
 // PRs add saved homes, searches, tours, documents and messages.
 
-export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "seller-performance" | "documents" | "messages" | "account";
+export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "seller-performance" | "documents" | "messages" | "assistant" | "account";
 
 export interface NavGroup {
   label?: string;
@@ -13,9 +13,10 @@ export interface NavGroup {
 
 /**
  * `vow`: show "Sold near me" (vow_enabled on; the page asks for the terms if
- * needed). `unreadMessages`: badge on Messages.
+ * needed). `unreadMessages`: badge on Messages. `assistant`: show Ask
+ * Vabrato (the master switch and at least one member feature on, S5b).
  */
-export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessages?: number } = {}): NavGroup[] {
+export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessages?: number; assistant?: boolean } = {}): NavGroup[] {
   const groups: NavGroup[] = [];
   if (buys(role)) {
     groups.push({
@@ -49,6 +50,7 @@ export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessage
       { key: "messages", label: "Messages", href: "/my/messages", ...(opts.unreadMessages ? { count: opts.unreadMessages } : {}) },
     ],
   });
+  if (opts.assistant) groups.push({ label: "Assistant", items: [{ key: "assistant", label: "Ask Vabrato", href: "/my/assistant" }] });
   groups.push({
     label: "Explore",
     items: [{ key: "search", label: "Search homes", href: "/search" }, ...(opts.vow && buys(role) ? [{ key: "sold" as const, label: "Sold near me", href: "/my/sold" }] : [])],

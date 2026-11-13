@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | Not started; next (owner decisions 2026-11-12 and 2026-11-13); plan v1 agreed in outline, shares the S6b foundation |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 open (the Ask Vabrato page, explain a term, search by sentence; 0036). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -489,6 +489,119 @@ comes after S6, by decision; the console has no AI code.
     Viv to sign in once.
   - pg_net and pg_cron are available on the hosted project but not installed
     (PR 2a installs them).
+
+### S5b member AI assistant, Ask Vabrato (in progress)
+
+The assistant for buyers and sellers in `/my`. It runs on the S6b foundation:
+`packages/ai`, the master switch and Zero Data Retention gate, `ai_begin`
+with the member daily limits, and the site-wide monthly budget.
+
+- **Owner answers (2026-11-13):**
+  - **Conversations aren't kept.** Each question is answered on its own,
+    and the page clears when the member leaves. Only what the member
+    chooses to keep (a draft, a suggested to-do; later PRs) is stored.
+    "Delete my assistant data" will remove those.
+  - **Placement:** an "Ask Vabrato" page under a new Assistant group in
+    the `/my` menu first. A side panel can come later.
+  - **Suggested to-dos:** the member adds one; it stays "pending" until
+    their agent approves it in the console (mockup 11, PR 2).
+  - **First PR:** "Explain a term" and "Search by sentence".
+  - **Working defaults kept:**
+    - Claude Opus 5.5, with the Opus 4.8 fallback;
+    - member limits of 30 requests and 300,000 tokens a day, within the
+      site's $100 a month;
+    - the agent sees suggestions, never the conversation;
+    - photo-style concepts wait for an image provider.
+- **Plan v2 (7 PRs):**
+  1. The website's wiring, the Ask Vabrato page, "Explain a term" and
+     "Search by sentence" (0036).
+  2. Summarize a document (the member's own uploads and the documents
+     their agent shared), with page references. Suggested questions and
+     to-dos; the agent approves to-dos. HEIC refused with a clear message.
+     "Delete my assistant data".
+  3. Drafts: emails and messages to movers, contractors, the lender or the
+     agent, and buyer offer cover letters. The member copies them or opens
+     them in their own email; "Ask my agent" fills a message. Discarded
+     drafts are deleted after 30 days.
+  4. Compare saved homes and answer questions about a listing, from the
+     fields the member may see (IDX, or VOW once accepted), with the MLS-3
+     opt-outs. Built but off until MLSListings approves AI on MLS data.
+  5. Schedules: a moving plan, a pre-listing checklist, a tour-day order.
+     Dates from a contract are proposals the agent confirms.
+  6. Design: palettes, staging ideas, flyers and social posts as HTML/SVG
+     in a sandbox; flyers approved by the agent.
+  7. Final QA and the member calls in the live run.
+- **PR 1 (Ask Vabrato page, explain a term, search by sentence; migration
+  0036, not yet on hosted):**
+  - **Switches:** 0036 adds `ai_member_explain` and `ai_member_search`,
+    both off. Admins switch them on the console's /assistant page, in a
+    new "Member assistant (Ask Vabrato)" panel. Each runs only while the
+    master switch is on.
+  - **Explain a term:**
+    - It explains a real-estate term in plain language.
+    - It never gives legal, tax or financial advice, a price opinion, or
+      anything about neighborhoods, schools or who lives where.
+    - The page labels the answer and says "Not legal or tax advice".
+    - "Ask my agent" opens Messages with the question filled in; the
+      member still presses Send.
+  - **Search by sentence:**
+    - A sentence ("3-bed house in San Carlos under $2.5M") becomes the
+      website's own search filters, shown as chips. Only our public city
+      list goes with it.
+    - Our code checks every value against the `/search` filter schema:
+      unknown cities are dropped and said, and nothing the search doesn't
+      offer can come through (FH-1).
+    - Sold homes are searched only for a buyer with VOW access (on
+      `/my/sold`); anyone else gets homes for sale and a note.
+    - "Run this search" opens the results. Nothing is searched or saved
+      until the member clicks.
+  - **The page (`/my/assistant`):**
+    - It says that answers are AI-written and can be wrong, that nothing
+      typed is kept and the agent doesn't see questions, and to call
+      escrow to verify wiring.
+    - It shows the questions left today.
+    - Refusals are worded for members. A steering question gets a neutral
+      answer pointing to the school district, the California Department of
+      Education and hud.gov, and nothing is sent.
+    - No streaming: every answer is checked whole (payment details, Fair
+      Housing) before it's shown.
+    - With no switch on, the menu item is hidden and the page says it
+      isn't available yet.
+  - **Shared code:**
+    - `MEMBER_AI_FEATURES` (`packages/lib`) names the member features for
+      both apps.
+    - The live test's helpers moved to `@vabrato/ai/live`. The guard test
+      limits that import to the live tests.
+    - `countPdfPages` moved to `packages/lib`.
+    - Messages accepts a prefilled draft (`?draft=`), cleared after
+      sending.
+  - **Tests:**
+    - 7 database tests (`member-assistant.test.ts`), and
+      `hosted-member-assistant-check.sql`, which passes locally.
+    - 17 feature tests: wiring and Fair Housing answers blocked, steering
+      questions refused with nothing sent, filters checked, sold gated, an
+      extra field refused, injection.
+    - A CI coverage test for member features, a menu test, and 4 tests
+      for the shared live helpers.
+    - The website's live test (`pnpm --filter @vabrato/web test:live`,
+      never in CI): fake run 2 of 2 ok, the injection canary not obeyed,
+      and a tiny cap leaves every call "not run".
+    - Browser QA `scripts/qa/s5b-assistant.mjs`: 65 checks pass on the
+      local stack with the fake Claude. They cover off by default, the
+      console switches, both features and their refusals, sold for a VOW
+      buyer only, the daily limit, buyer, seller, both-role and staff, axe
+      at 1440 and 390 px, no sideways scrolling at 390 and 320 px, the
+      keyboard, and page loads sending nothing. `s5-qa.mjs` (100) and
+      `s6b-assistant.mjs` (64) still pass. Screenshots in
+      `docs/screenshots/s5b-assistant/`.
+  - **After merge:** apply 0036 on your OK, then
+    `packages/db/test/hosted-member-assistant-check.sql` (rolled back).
+  - **Needs you, when switching on:**
+    - `ANTHROPIC_API_KEY` on the website's Vercel project (the console has
+      its own);
+    - the same conditions as S6b: the live run, Zero Data Retention, then
+      `ai_enabled` and each switch.
+    - These two features send no MLS listing data and no member documents.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
@@ -1437,6 +1550,12 @@ with the code (timeline: 5 tests, now in packages/lib).
   listed under S6b; the agent sees assistant suggestions, not a member's
   whole conversation; photo-style room concepts wait for an image provider.
 
+- **2026-11-13 — Ask Vabrato (Rachanee):** members' conversations aren't
+  kept (only what a member chooses to save); the assistant is its own page
+  in `/my` first; a suggested to-do needs the agent's approval; the first
+  PR is "Explain a term" and "Search by sentence". The 2026-11-12 working
+  defaults stay.
+
 ## Where things stand
 
 ### Done and validated live (against the hosted Supabase project)
@@ -1471,7 +1590,7 @@ with the code (timeline: 5 tests, now in packages/lib).
   `apps/va /api/notifications/process` behind `CRON_SECRET`. Returns 503 until
   `RESEND_API_KEY` exists; rows stay `scheduled`.
 
-Tests: 1,234 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
+Tests: 1,267 across packages/db (PGlite RLS and member isolation), packages/lib, packages/ui, packages/mls,
 apps/web and apps/va (`pnpm test`).
 
 ### Blocked / waiting
