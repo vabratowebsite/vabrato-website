@@ -104,7 +104,11 @@ sql(`update profiles set agent_id = '${avery.id}' where id = '${jordan.id}'`);
 sql(`update app_settings set ai_zdr_confirmed_at = now(), ai_zdr_confirmed_by = '${ada.id}', ai_zdr_note = 'QA fixture (fictional)', lead_admin_id = '${ada.id}'`);
 const one = (q) => sql(q).split("\n")[0];
 const dealA = one(`insert into deals (address, seller_type, ratification_date, days_to_close, rent_back_days, sale_price, escrow_number, agent_id, created_by) values ('12 Fictional Lane, San Carlos, CA', 'normal', '${day(-18)}', 30, 0, 2150000, 'QA-ESC-${stamp}', '${avery.id}', '${avery.id}') returning id`);
-const dealB = one(`insert into deals (address, seller_type, ratification_date, days_to_close, rent_back_days, agent_id, created_by) values ('77 Fictional Court, Belmont, CA', 'normal', '${day(-5)}', 45, 0, '${vera.id}', '${vera.id}') returning id`);
+// The briefing only carries transactions closing within 14 days (30 with
+// documents missing; work-snapshot.ts). Vera's deal closes about 10 days out
+// (13 at most once rolled off a weekend or holiday), so it's in the lead
+// admin's briefing and the admin's covers two transactions.
+const dealB = one(`insert into deals (address, seller_type, ratification_date, days_to_close, rent_back_days, agent_id, created_by) values ('77 Fictional Court, Belmont, CA', 'normal', '${day(-30)}', 40, 0, '${vera.id}', '${vera.id}') returning id`);
 sql(`insert into tasks (deal_id, title, owner, phase, offset_days, due_date, done) values
   ('${dealA}', 'Order HOA documents; call Pat at 650-555-0123', 'TC', 'after_ratification', 7, '${day(-2)}', false),
   ('${dealA}', 'Final walk-through', 'Agent', 'closing_week', 29, '${day(11)}', false),

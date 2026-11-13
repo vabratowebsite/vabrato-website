@@ -74,6 +74,14 @@ describe("the work snapshot", () => {
     expect(JSON.stringify(snapshotParts(s, "all"))).toContain("Final walk-through");
   });
 
+  it("a transaction closing more than 14 days out (no documents missing) is left out of the briefing, not out of questions", () => {
+    const far = { id: "00000000-0000-4000-8000-0000000029d2", address: "77 Fictional Court, Belmont, CA", ratification_date: "2026-03-15", days_to_close: 45, rent_back_days: 0, agent_id: AVERY };
+    const s = buildSnapshot(rows({ deals: [...rows().deals, far] }));
+    expect(s.items.filter((i) => i.kind === "D").map((i) => [i.ref, i.soon])).toEqual([["D1", true], ["D2", false]]);
+    expect(JSON.stringify(snapshotParts(s, "briefing"))).not.toContain("77 Fictional Court");
+    expect(JSON.stringify(snapshotParts(s, "all"))).toContain("77 Fictional Court");
+  });
+
   it("records are data; our numbers are text", () => {
     const parts = snapshotParts(buildSnapshot(rows()), "all");
     expect(parts[0]).toMatchObject({ type: "text", text: expect.stringMatching(/^Today is 2026-03-20\./) });

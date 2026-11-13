@@ -725,6 +725,26 @@ document checks, receipts, calendar drafts).
     the fake Claude, including that an agent's briefing only covers their
     own transaction and lead; the PR 2 (64) and PR 3 (42) scripts still
     pass. Screenshots in `docs/screenshots/s6b-summaries/`.
+  - **QA fixture fix (2026-11-13, no app change):** on a clean database,
+    "the admin's briefing covers more transactions and leads" failed with
+    `D: 1` (it expects at least 2). The briefing has only carried
+    transactions closing within 14 days since PR 4 (30 with documents
+    missing since PR 7a). The fixture's second deal (Vera's, 77 Fictional
+    Court) was accepted 5 days ago with 45 days to close, so it closed
+    about 40 days out and was never in any briefing. The earlier passing
+    runs most likely counted other active deals left in the local database
+    (the lead admin sees every deal). The rule is the intended one, so the
+    fixture changed, not the code: Vera's deal is now accepted 30 days ago
+    with 40 days to close, closing about 10 days out (13 at most after
+    rolling off a weekend or holiday). New unit test: a deal closing 45
+    days out stays out of the briefing but is in questions. On a fresh
+    local stack (Postgres 16, Supabase Auth, PostgREST 12, the fake
+    Claude, the preview seed, no other deals), the old fixture reproduces
+    the failure (`{"D":1,"T":2,"C":1,"L":2,"M":1}`, 27 of 28). The new one
+    passes 28 of 28 (`{"D":2,"T":2,"C":1,"L":2,"M":1}`); Avery's briefing
+    still leaves out 77 Fictional Court, and nothing is left behind. This
+    resolves the "Known, not from this fix" note on the Today reflow branch
+    (`claude/kind-fermi-bui985`).
   - **On hosted (2026-11-12):** 0029 applied after checking that main's
     file matched the tested one. `hosted-summaries-check.sql` (rolled back)
     passed: the three switches exist and are off, and a signed-in user
