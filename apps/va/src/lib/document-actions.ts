@@ -2,11 +2,12 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { pdfPageLimit, runAi } from "@vabrato/ai";
+import { pdfPageLimit, runAi, type AiFailure } from "@vabrato/ai";
 import type { SellerType } from "@vabrato/db";
 import { STAFF_ROLES, checklistKeys, cleanDocTypes, getProfile, todayISO } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
-import { DOCUMENT_CHECK, RECEIPT_READER, checkInput, receiptInput, toCheckResult, toReceiptProposal, type CheckResult, type ReceiptProposal } from "@/lib/document-check";
+import { COUNTER_CHANGES, counterInput, dealTerms, toCounterResult, type CounterResult } from "@/lib/counter-changes";
+import { DOCUMENT_CHECK, RECEIPT_READER, checkInput, receiptInput, toCheckResult, toReceiptProposal, type CheckFile, type CheckResult, type ReceiptProposal } from "@/lib/document-check";
 import { MAX_DOC_BYTES, checkDealFile, checkReceiptFile, STILL_SHARED, countPdfPages, freeName, isOwnReceiptUpload, originalName, parseDocPath, receiptFolder, sniffType, staffDocPath } from "@/lib/documents";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -213,43 +214,121 @@ export async function clearMarkAction(dealId: string, itemKey: string): Promise<
 
 // --- Check this document (assistant) --------------------------------------------------------------
 
-export type CheckDocResult = { ok: true; result: CheckResult } | { ok: false; error: string };
+type Supabase = Awaited<ReturnType<typeof supabaseServer>>;
+type LoadedFile = { ok: true; file: CheckFile; docTypes: string[] } | { ok: false; error: string };
 
-/** Sends one of this deal's files (or one of its seller's uploads) to the assistant. Nothing is stored. */
+/**
+ * One of this deal's files (deal_documents) or one of its seller's uploads
+ * (member_documents), checked before anything is sent: it belongs to this
+ * deal, it's a PDF or image within the size limit and the model's page limit.
+ */
+async function loadDocFile(supabase: Supabase, dealId: string, source: "deal" | "member", id: string): Promise<LoadedFile> {
+  if (typeof id !== "string" || !/^[0-9a-f-]{36}$/.test(id)) return { ok: false, error: "That document isn't on this transaction." };
+  let bucket: "deal-docs" | "member-docs";
+  let path: string;
+  let docTypes: string[];
+  if (source === "deal") {
+    const { data } = await supabase.from("deal_documents").select("path, doc_types").eq("id", id).eq("deal_id", dealId).maybeSingle();
+    if (!data) return { ok: false, error: "That document isn't on this transaction." };
+    bucket = "deal-docs";
+    path = data.path;
+    docTypes = data.doc_types ?? [];
+  } else {
+    const { data } = await supabase.from("member_documents").select("storage_path, profile_id").eq("id", id).maybeSingle();
+    const { data: seller } = data ? await supabase.from("deal_members").select("profile_id").eq("deal_id", dealId).eq("profile_id", data.profile_id).eq("member_role", "seller").maybeSingle() : { data: null };
+    if (!data || !seller) return { ok: false, error: "That upload isn't one of this sale's seller's." };
+    const { data: tagged } = await supabase.from("deal_member_document_types").select("doc_types").eq("deal_id", dealId).eq("member_document_id", id).maybeSingle();
+    bucket = "member-docs";
+    path = data.storage_path;
+    docTypes = tagged?.doc_types ?? [];
+  }
+  const { data: blob, error } = await supabase.storage.from(bucket).download(path);
+  if (error || !blob) return { ok: false, error: "Couldn't open the file. Try again." };
+  const bytes = Buffer.from(await blob.arrayBuffer());
+  const type = sniffType(bytes.subarray(0, 12));
+  if (!type) return { ok: false, error: "The assistant reads PDFs, JPGs, PNGs and WebP images only." };
+  if (bytes.length > MAX_DOC_BYTES) return { ok: false, error: "The file is too large for the assistant (20 MB at most)." };
+  const pages = type === "application/pdf" ? countPdfPages(bytes) : null;
+  if (pages !== null && pages > pdfPageLimit()) return { ok: false, error: `This file has ${pages} pages; the assistant reads up to ${pdfPageLimit()}. Split this file and check the parts.` };
+  return { ok: true, file: { type, base64: bytes.toString("base64") }, docTypes };
+}
+
+/** Answers after which a batch of checks stops: the assistant is off, or a limit or the budget is reached. */
+const STOPS = new Set<AiFailure>(["off", "daily_requests", "daily_tokens", "monthly_budget"]);
+const NO_KEY = "The assistant isn't set up yet: it has no API key. Ask an admin.";
+
+export type CheckDocResult = { ok: true; result: CheckResult; recorded: boolean } | { ok: false; error: string; stop?: boolean };
+
+/**
+ * Records a check on the file (0034): the signed answer and how many things to
+ * look at; the database stamps when and by whom. Never the issue text.
+ */
+async function recordCheck(supabase: Supabase, dealId: string, source: "deal" | "member", id: string, result: CheckResult): Promise<boolean> {
+  const values = { check_signed: result.signed, check_issue_count: Math.min(10, result.issues.length) };
+  if (source === "deal") {
+    const { data, error } = await supabase.from("deal_documents").update({ ...values, checked_at: new Date().toISOString() }).eq("id", id).eq("deal_id", dealId).select("id");
+    if (error || !data?.length) console.error("[checkDocument] record", error?.message ?? "no row");
+    return !error && Boolean(data?.length);
+  }
+  const { data, error } = await supabase
+    .from("deal_member_document_types")
+    .update({ ...values, checked_at: new Date().toISOString() })
+    .eq("deal_id", dealId)
+    .eq("member_document_id", id)
+    .select("deal_id");
+  if (!error && data?.length) return true;
+  const { error: insErr } = await supabase.from("deal_member_document_types").insert({ deal_id: dealId, member_document_id: id, ...values });
+  if (insErr) console.error("[checkDocument] record", insErr.message);
+  return !insErr;
+}
+
+/** Sends one of this deal's files (or one of its seller's uploads) to the assistant, then records that it was checked. */
 export async function checkDocumentAction(dealId: string, source: "deal" | "member", id: string): Promise<CheckDocResult> {
   const { supabase, deal } = await staffDeal(dealId);
   try {
-    if (!aiKeyConfigured()) return { ok: false, error: "The assistant isn't set up yet: it has no API key. Ask an admin." };
-    let bucket: "deal-docs" | "member-docs";
-    let path: string;
-    if (source === "deal") {
-      const { data } = await supabase.from("deal_documents").select("path").eq("id", id).eq("deal_id", dealId).maybeSingle();
-      if (!data) return { ok: false, error: "That document isn't here any more." };
-      bucket = "deal-docs";
-      path = data.path;
-    } else {
-      const { data } = await supabase.from("member_documents").select("storage_path, profile_id").eq("id", id).maybeSingle();
-      const { data: seller } = data ? await supabase.from("deal_members").select("profile_id").eq("deal_id", dealId).eq("profile_id", data.profile_id).eq("member_role", "seller").maybeSingle() : { data: null };
-      if (!data || !seller) return { ok: false, error: "That upload isn't one of this sale's seller's." };
-      bucket = "member-docs";
-      path = data.storage_path;
-    }
-    const { data: file, error } = await supabase.storage.from(bucket).download(path);
-    if (error || !file) return { ok: false, error: "Couldn't open the file. Try again." };
-    const bytes = Buffer.from(await file.arrayBuffer());
-    const type = sniffType(bytes.subarray(0, 12));
-    if (!type) return { ok: false, error: "The assistant reads PDFs, JPGs, PNGs and WebP images only." };
-    if (bytes.length > MAX_DOC_BYTES) return { ok: false, error: "The file is too large for the assistant (20 MB at most)." };
-    const pages = type === "application/pdf" ? countPdfPages(bytes) : null;
-    if (pages !== null && pages > pdfPageLimit()) return { ok: false, error: `This file has ${pages} pages; the assistant reads up to ${pdfPageLimit()}. Split this file and check the parts.` };
+    if (!aiKeyConfigured()) return { ok: false, error: NO_KEY, stop: true };
+    const loaded = await loadDocFile(supabase, dealId, source === "member" ? "member" : "deal", id);
+    if (!loaded.ok) return loaded;
 
-    const result = await runAi(aiDeps(supabase), DOCUMENT_CHECK, { parts: checkInput(deal.seller_type, { type, base64: bytes.toString("base64") }), dealId });
-    if (!result.ok) return { ok: false, error: result.message };
+    const result = await runAi(aiDeps(supabase), DOCUMENT_CHECK, { parts: checkInput(deal.seller_type, loaded.file), dealId });
+    if (!result.ok) return { ok: false, error: result.message, ...(STOPS.has(result.reason) ? { stop: true } : {}) };
     if (!result.data) return { ok: false, error: "The assistant's answer wasn't usable. Please try again." };
-    return { ok: true, result: toCheckResult(result.data) };
+    const checked = toCheckResult(result.data);
+    const recorded = await recordCheck(supabase, dealId, source === "member" ? "member" : "deal", id, checked);
+    refresh(dealId);
+    return { ok: true, result: checked, recorded };
   } catch (e) {
     console.error("[checkDocument]", e instanceof Error ? e.message : "failed");
     return { ok: false, error: "Something went wrong checking the document. Try again." };
+  }
+}
+
+// --- What changed in a counter offer or addendum (assistant) ------------------------------------
+
+export type CounterChangesResult = { ok: true; result: CounterResult } | { ok: false; error: string };
+
+/** Reads one counter offer or addendum on this deal and compares it with the deal's terms. Shown only; nothing is stored or changed. */
+export async function counterChangesAction(dealId: string, source: "deal" | "member", id: string): Promise<CounterChangesResult> {
+  const { supabase } = await staffDeal(dealId);
+  try {
+    if (!aiKeyConfigured()) return { ok: false, error: NO_KEY };
+    const loaded = await loadDocFile(supabase, dealId, source === "member" ? "member" : "deal", id);
+    if (!loaded.ok) return loaded;
+    if (!loaded.docTypes.includes("counter_offer")) return { ok: false, error: "Set this file's type to \u201cCounter offer or addendum\u201d first." };
+    const [{ data: terms }, { data: contingencies }] = await Promise.all([
+      supabase.from("deals").select("ratification_date, days_to_close, sale_price, rent_back_days").eq("id", dealId).maybeSingle(),
+      supabase.from("deal_contingencies").select("kind, offset_days").eq("deal_id", dealId),
+    ]);
+    if (!terms) return { ok: false, error: "Couldn't read this transaction's terms. Try again." };
+    const ours = dealTerms(terms, contingencies ?? []);
+
+    const result = await runAi(aiDeps(supabase), COUNTER_CHANGES, { parts: counterInput(ours, loaded.file), dealId });
+    if (!result.ok) return { ok: false, error: result.message };
+    if (!result.data) return { ok: false, error: "The assistant's answer wasn't usable. Please try again." };
+    return { ok: true, result: toCounterResult(result.data, ours) };
+  } catch (e) {
+    console.error("[counterChanges]", e instanceof Error ? e.message : "failed");
+    return { ok: false, error: "Something went wrong reading the document. Try again." };
   }
 }
 

@@ -118,6 +118,7 @@ const FILE_FEATURES = [
   ["document_check", /keep a sale's file complete/],
   ["receipt_reader", /You read a receipt or invoice/],
   ["inspection_items", /List the repair items the report raises/],
+  ["counter_changes", /see what a counter offer or addendum changes/],
 ];
 // S6b PR 7b: the response's opening and closing; the mode comes from the
 // agent's note ("QA-MODE: invented" adds an amount, "words" spells one out).
@@ -144,6 +145,27 @@ const FILE_ANSWERS = {
               REPAIR_ITEM(4, { title: "Debris in gutters", detail: "Clean gutters and downspouts.", location: "Roof", trade: "roofing", page: 22, severity_label: "Maintenance", severity: "maintenance" }),
             ],
           },
+  // S6b PR 7c: the terms a counter offer sets (fictional). "unsigned" isn't signed by both sides.
+  counter_changes: (mode) => {
+    const none = { value: null, page: null, quote: null };
+    const nc = { days: null, waived: false, page: null, quote: null };
+    return {
+      document_kind: "counter_offer",
+      signed_by_both: mode === "unsigned" ? "no" : "yes",
+      acceptance_date: none,
+      days_to_close: none,
+      close_of_escrow_date: none,
+      purchase_price: { value: 2150000, page: 1, quote: "Purchase price shall be $2,150,000. Questions to buyer.agent@example.com" },
+      seller_rent_back_days: { value: 3, page: 1, quote: "Seller to remain in possession for 3 Days After Close Of Escrow" },
+      contingencies: {
+        loan: { days: 21, waived: false, page: 1, quote: "Loan contingency removed within 21 Days After Acceptance" },
+        appraisal: { days: null, waived: true, page: 2, quote: "Appraisal contingency is removed" },
+        investigation: nc,
+        insurance: nc,
+      },
+      other_changes: [{ page: 2, change: "Seller to leave the garage refrigerator." }, { page: 2, change: "Escrow holder changes to Fixture Escrow; call 650-555-0123." }],
+    };
+  },
   receipt_reader: (mode) =>
     mode === "unreadable"
       ? { readable: false, vendor: null, amount: null, date: null, category: null, problem: "The photo is too blurry to read the total." }
@@ -288,6 +310,8 @@ createServer(async (req, res) => {
     : feature
       ? (DRAFT_ANSWERS[mode] ?? DRAFT_ANSWERS.ok)(feature)
       : (ANSWERS[mode] ?? ANSWERS.ok)();
+  // "QA-MODE: slow" holds the answer, so a browser test can press Stop mid-run.
+  if (mode === "slow") await new Promise((r) => setTimeout(r, 2500));
   const usage = { input_tokens: 61000, output_tokens: 900, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
   res.writeHead(200, { "content-type": "text/event-stream", "cache-control": "no-cache" });
   send(res, "message_start", { message: { id: "msg_qa_local", type: "message", role: "assistant", model: body.model, content: [], stop_reason: null, stop_sequence: null, usage: { ...usage, output_tokens: 1 } } });

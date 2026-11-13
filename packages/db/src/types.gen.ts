@@ -637,6 +637,10 @@ export type Database = {
       }
       deal_documents: {
         Row: {
+          check_issue_count: number | null
+          check_signed: string | null
+          checked_at: string | null
+          checked_by: string | null
           content_type: string
           created_at: string
           deal_id: string
@@ -650,6 +654,10 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          check_issue_count?: number | null
+          check_signed?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
           content_type: string
           created_at?: string
           deal_id: string
@@ -663,6 +671,10 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          check_issue_count?: number | null
+          check_signed?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
           content_type?: string
           created_at?: string
           deal_id?: string
@@ -694,6 +706,10 @@ export type Database = {
       }
       deal_member_document_types: {
         Row: {
+          check_issue_count: number | null
+          check_signed: string | null
+          checked_at: string | null
+          checked_by: string | null
           deal_id: string
           doc_types: string[]
           member_document_id: string
@@ -701,6 +717,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          check_issue_count?: number | null
+          check_signed?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
           deal_id: string
           doc_types?: string[]
           member_document_id: string
@@ -708,6 +728,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          check_issue_count?: number | null
+          check_signed?: string | null
+          checked_at?: string | null
+          checked_by?: string | null
           deal_id?: string
           doc_types?: string[]
           member_document_id?: string

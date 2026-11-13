@@ -264,7 +264,7 @@ try {
   let req = last();
   check("check: one inline PDF, the type list as data, nothing else", req.feature === "document_check" && req.documents === 1 && req.documentIsInlinePdf && req.dataBlocks === 1 && !req.requestHasEmail && !req.requestHasPhone && req.tools === 0 && req.fileReferences === 0, JSON.stringify(req));
   const found = av.getByRole("region", { name: "What the assistant found in Disclosures.pdf" });
-  check("check: issues with pages, labelled as the assistant's", (await found.getByText("Page 3: Seller initials missing at the bottom of the page.").isVisible()) && (await found.getByText(/Nothing from this check is saved/).isVisible()));
+  check("check: issues with pages, labelled as the assistant's", (await found.getByText("Page 3: Seller initials missing at the bottom of the page.").isVisible()) && (await found.getByText(/what the assistant wrote isn.t saved/).isVisible()));
   check("check: suggested types ticked; the unknown one dropped", (await av.getByLabel("Transfer Disclosure Statement (TDS)").isChecked()) && (await av.getByLabel("Seller Property Questionnaire (SPQ)").isChecked()) && !(await av.getByLabel("Agent Visual Inspection Disclosure (AVID)").isChecked()));
   check("check: nothing saved until the person saves", sql(`select array_to_string(doc_types, ',') from deal_documents where file_name = 'Disclosures.pdf' and deal_id = '${deal}'`) === "");
   await axeAll(av, "/deals/[id]/documents (check result)");

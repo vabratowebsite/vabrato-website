@@ -172,3 +172,48 @@ export async function loadMissing(supabase: SupabaseDb, deals: DealDocsRows["dea
   if (error) return [];
   return missingByDeal({ deals, docs: docs ?? [], memberDocs: memberDocs ?? [], marks: marks ?? [] });
 }
+
+// --- Check unchecked documents (S6b PR 7c) ---------------------------------------------------------
+
+export interface UncheckedFile {
+  source: "deal" | "member";
+  id: string;
+  name: string;
+}
+
+/** Most files a "Check unchecked documents" click sends: one assistant request each. */
+export const CHECK_BATCH = 10;
+
+/**
+ * Files never checked (0034's checked_at is null), the deal's own and the
+ * seller's uploads together, oldest first. `total` is how many are unchecked;
+ * `next` is the batch the next click checks.
+ */
+export function uncheckedList(
+  docs: { id: string; file_name: string; created_at: string; checked_at: string | null }[],
+  memberDocs: { id: string; name: string; created_at: string; checked_at: string | null }[],
+  max = CHECK_BATCH,
+): { total: number; next: UncheckedFile[] } {
+  const all = [
+    ...docs.filter((d) => !d.checked_at).map((d) => ({ source: "deal" as const, id: d.id, name: d.file_name, at: d.created_at })),
+    ...memberDocs.filter((d) => !d.checked_at).map((d) => ({ source: "member" as const, id: d.id, name: d.name, at: d.created_at })),
+  ].sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.id < b.id ? -1 : 1));
+  return { total: all.length, next: all.slice(0, max).map(({ source, id, name }) => ({ source, id, name })) };
+}
+
+export type CheckSigned = "yes" | "no" | "unclear" | "not_applicable";
+
+export const SIGNED_LABEL: Record<CheckSigned, string> = {
+  yes: "Signed where it should be",
+  no: "Not signed where it should be",
+  unclear: "Signatures unclear",
+  not_applicable: "No signatures expected",
+};
+
+/** "Checked Wed, Nov 12 by Avery Example: signatures unclear, 2 things to look at", or "Not checked yet". */
+export function checkedLine(c: { checked_at: string | null; check_signed: string | null; check_issue_count: number | null }, by: string, fmt: (iso: string) => string): string {
+  if (!c.checked_at) return "Not checked yet";
+  const signed = SIGNED_LABEL[c.check_signed as CheckSigned] ?? "Signatures unclear";
+  const n = c.check_issue_count ?? 0;
+  return `Checked ${fmt(c.checked_at.slice(0, 10))} by ${by}: ${signed.toLowerCase()}, ${n ? `${n} ${n === 1 ? "thing" : "things"} to look at` : "nothing to look at"}`;
+}

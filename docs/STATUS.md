@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 not yet on hosted). PR 7c open (counter-offer changes, check unchecked documents; 0034). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -1033,6 +1033,73 @@ document checks, receipts, calendar drafts).
     locally).
   - **Not in this PR:** counter-offer changes and "Check unchecked
     documents" (7c); editing deal terms; cost estimates.
+- **PR 7c (what changed in a counter offer, "Check unchecked documents";
+  migration 0034, not yet on hosted; owner answers 2026-11-12):**
+  - **What changed** (switch `ai_staff_counter_changes`):
+    - "What changed" next to a file typed "Counter offer or addendum"
+      (the deal's files and the seller's tagged uploads).
+    - The server checks the file is this deal's own and typed as a counter
+      offer, then sends that one file, inline, under Zero Data Retention,
+      with the deal's recorded terms as data: acceptance date, days to
+      close and closing date, price, rent-back, contingency days. No
+      address, names or contacts.
+    - The assistant reports only what the document sets, with pages and
+      quotes. Our code compares each term with our records and marks it
+      "Differs", "Same" or "Not in this document"; the model's view of
+      what changed isn't used. Contacts are redacted and account-like
+      numbers dropped.
+    - Shown only: nothing is stored and the deal's terms and schedule are
+      never changed. If it may not be signed by both sides, it says it may
+      not be in effect.
+  - **Check unchecked documents** (the existing switch
+    `ai_staff_document_check`):
+    - Every document check is now recorded on the file: when, by whom
+      (stamped by the database), the signed answer and how many things to
+      look at. Never what the assistant wrote. Each file shows "Checked …
+      by …" or "Not checked yet".
+    - "Check unchecked documents (N)" checks up to 10 never-checked files,
+      oldest first, the seller's uploads included. It first asks, with the
+      count and the number of requests ("10 requests, counted against your
+      daily limit"); Cancel sends nothing.
+    - The browser sends them one at a time (each its own time limit, each
+      checked again on the server), with progress and "Stop after this
+      one". A limit, budget or switch-off answer stops the run.
+    - Results per file with pages and "Save these types"; the notes go
+      when you leave the page.
+  - **Database:** 0034 adds the switch, the check columns on
+    `deal_documents` and `deal_member_document_types`, and a trigger that
+    stamps `checked_at` and `checked_by` itself (a client can't backdate a
+    check or record it as someone else; a check can't be cleared). The
+    0032 policies apply; no new policy or definer function.
+  - **Also:** the deal tabs row now wraps, so deal pages no longer scroll
+    sideways at 390 px (the Repairs tab had pushed it past phone width;
+    7a and 7b screenshots regenerated). The console's Today page still
+    scrolls sideways at 390 px (leads table, MLS feed, automations): a
+    separate fix.
+  - **Tests:**
+    - 7 database tests (`doc-checks.test.ts`): the stamp is always the
+      caller and now, re-checks re-stamp, no clearing or half checks, an
+      agent without deal access, the seller, a buyer and the public
+      refused, the seller's upload upserted.
+    - 12 feature tests (`counter-changes.test.ts`): what is sent, our
+      comparison (including a value equal to ours that the model might
+      call changed), the closing date from the schedule engine, impossible
+      values, redaction, dates kept, the unchecked list; 7 action tests
+      (`document-actions.test.ts`): another deal's file or a file not
+      typed as a counter offer refused with nothing sent, terms unchanged,
+      checks recorded only on success, limit answers stop the batch.
+    - Browser QA `scripts/qa/s6b-counter-checks.mjs`: 32 checks pass on
+      the local stack with the fake Claude (incl. 11 files checked 10 then
+      1, Stop, the stamps in the database, no issue text stored, no
+      sideways scrolling at 390 px, an agent without deal access getting a
+      404, axe at 1440 and 390 px). The 7b, 7a and PR 2–6 scripts still
+      pass (36, 47, 64, 42, 28, 34, 24). Screenshots in
+      `docs/screenshots/s6b-counter-checks/`.
+  - **After merge:** apply 0034 on your OK, then
+    `packages/db/test/hosted-counter-checks-check.sql` (rolled back;
+    passes locally).
+  - **Not in this PR:** editing deal terms (a non-AI "Edit deal terms"
+    comes later); appointments and call notes (PR 8).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

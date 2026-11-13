@@ -55,7 +55,7 @@ export async function DealShell({
             </dd>
           </div>
         </dl>
-        <nav aria-label="Deal sections" className="flex gap-1 border-t border-line px-3">
+        <nav aria-label="Deal sections" className="flex flex-wrap gap-x-1 border-t border-line px-3">
           {TABS.map((tab) => {
             const isActive = tab.key === active;
             return (
