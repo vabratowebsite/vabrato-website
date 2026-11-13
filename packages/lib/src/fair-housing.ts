@@ -29,11 +29,25 @@ interface Rule {
 const PEOPLE = "Describes who lives there or who the home suits. Describe the property and the area instead.";
 const STEER = "Steering language. Describe facts (distances, amenities) rather than judging an area.";
 
+// Who familial-status exclusions name: kids, children, minors, families with kids.
+// Not followed by an apostrophe, so a room or amenity name ("no kids' bedroom",
+// "no children's play area") reads as a fact about the property.
+const CHILD_GROUP = String.raw`(?:(?:young|small|little)\s+)?(?:kids|children|minors|toddlers|infants|babies)\b(?!['’])`;
+const FAMILY_WITH_KIDS = String.raw`famil(?:y|ies)\s+with\s+(?:any\s+)?${CHILD_GROUP}`;
+// "a family" / "families" as people, not as part of a room or use ("family room",
+// "family gatherings", "single-family home").
+const FAMILY_AS_PEOPLE = String.raw`(?:a\s+)?famil(?:y|ies)\b(?!['’]|[-\s]+(?:rooms?|homes?|dens?|kitchens?|gatherings?|sized?|style|use|dining|members?)\b)`;
+
 const RULES: Rule[] = [
-  // Familial status.
+  // Familial status. Exclusions come first so the whole phrase is reported
+  // ("not suitable for children", not just "suitable for children").
+  { level: "block", pattern: new RegExp(String.raw`\b(?:no|not|without)\s+(?:any\s+)?(?:${FAMILY_WITH_KIDS}|${CHILD_GROUP})`, "gi"), reason: PEOPLE },
+  { level: "block", pattern: new RegExp(String.raw`\b(?:not\s+(?:(?:suitable|suited|ideal|appropriate|recommended|meant|designed|intended)\s+)?for|unsuitable\s+for)\s+(?:the\s+)?(?:${FAMILY_WITH_KIDS}|${FAMILY_AS_PEOPLE}|${CHILD_GROUP})`, "gi"), reason: PEOPLE },
+  // "no families" (plural only, so "no family room" stays a property fact).
+  { level: "block", pattern: /\bno\s+families\b/gi, reason: PEOPLE },
+  { level: "block", pattern: /\b(?:child|kid)[-\s]?free\b|\bchildless\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\b(?:perfect|ideal|great|suited|suitable)\s+for\s+(?:a\s+)?(?:young\s+)?(?:famil(?:y|ies)|couples?|singles?|bachelors?|newlyweds?|empty[-\s]nesters?|retirees?|kids|children|young\s+professionals?|professionals?|students?|seniors?)\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\b(?:family|kid|child)[-\s]?friendly\s+(?:neighbou?rhood|area|community|street|town|city)\b/gi, reason: PEOPLE },
-  { level: "block", pattern: /\b(?:no|without)\s+(?:kids|children)\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\badults?\s+only\b/gi, reason: PEOPLE },
   { level: "block", pattern: /\b(?:mature|older|young)\s+(?:couples?|individuals?|persons?|people|residents|neighbou?rs|crowd)\b/gi, reason: PEOPLE },
   // Race, color, national origin, religion.

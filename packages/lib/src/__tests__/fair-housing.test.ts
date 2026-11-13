@@ -35,6 +35,42 @@ describe("fairHousingIssues (FH-1)", () => {
     expect(fairHousingIssues(text).filter((i) => i.level === "block")).toEqual([]);
   });
 
+  describe("familial status exclusions", () => {
+    it.each([
+      ["no families with kids", "no families with kids"],
+      ["They want a neighborhood with no families with kids", "no families with kids"],
+      ["No families, please.", "No families"],
+      ["No kids allowed.", "No kids"],
+      ["A quiet building with no young children.", "no young children"],
+      ["Best for buyers without kids.", "without kids"],
+      ["Ideal unit for a buyer without children.", "without children"],
+      ["Owner prefers tenants without any small children.", "without any small children"],
+      ["Not suitable for kids.", "Not suitable for kids"],
+      ["Not suitable for children.", "Not suitable for children"],
+      ["This condo is not suitable for families.", "not suitable for families"],
+      ["Not ideal for a family.", "Not ideal for a family"],
+      ["Unsuitable for young children.", "Unsuitable for young children"],
+      ["The loft is not for families with children.", "not for families with children"],
+      ["Not families with kids, ideally.", "Not families with kids"],
+      ["A child-free building.", "child-free"],
+    ])("blocks %j", (text, match) => {
+      expect(blocks(text)).toContain(match);
+    });
+
+    it.each([
+      "The family room opens onto the deck.",
+      "There's no family room, but the living room is large.",
+      "The kids' bedroom has built-in shelves.",
+      "There's a children's play area in the park nearby.",
+      "The complex has no children's play area.",
+      "The seller's children will move the furniture.",
+      "The dining room is not meant for family gatherings of more than eight.",
+      "A single-family home on a corner lot.",
+    ])("leaves room names and other property facts alone: %j", (text) => {
+      expect(blocks(text)).toEqual([]);
+    });
+  });
+
   it("warns, without blocking, on words that are usually fine in context", () => {
     expect(warns("Next to St. Example church and a short walk to the park.")).toEqual(["church"]);
     expect(warns("A close-knit street.")).toEqual(["close-knit"]);

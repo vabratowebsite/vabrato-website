@@ -73,6 +73,12 @@ describe("Fair Housing and cost helpers", () => {
     expect(fairHousingBlocks("Three bedrooms near Caltrain.")).toEqual([]);
   });
 
+  it("blocks familial-status exclusions (S6b PR 8 regression)", () => {
+    expect(fairHousingBlocks("no families with kids").map((i) => i.match)).toEqual(["no families with kids"]);
+    expect(fairHousingBlocks("They want a neighborhood with no families with kids").map((i) => i.match)).toEqual(["no families with kids"]);
+    expect(fairHousingBlocks("The family room is next to the kids' bedroom.")).toEqual([]);
+  });
+
   it("prices a request in millionths of a dollar, never under", () => {
     const usage = { inputTokens: 1_000_000, outputTokens: 100_000, cacheReadTokens: 1_000_000, cacheWriteTokens: 0 };
     expect(costMicros("claude-opus-5-5", usage)).toBe(4_000_000 + 2_000_000 + 200_000);
