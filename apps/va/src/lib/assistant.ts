@@ -90,7 +90,13 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
   {
     flag: "ai_staff_document_check",
     name: "Document check",
-    what: "On a transaction's Documents tab: sends one file to the assistant, which suggests which checklist documents it is and points out missing signatures, initials or blanks, with pages. You save the types; nothing from the check is kept.",
+    what: "On a transaction's Documents tab: sends one file to the assistant, which suggests which checklist documents it is and points out missing signatures, initials or blanks, with pages. You save the types. The console keeps when it was checked, by whom, the signed answer and how many things to look at; never what the assistant wrote. \u201cCheck unchecked documents\u201d checks up to 10 files never checked, after you confirm.",
+    where: { href: "/deals", label: "Deals" },
+  },
+  {
+    flag: "ai_staff_counter_changes",
+    name: "What changed in a counter offer",
+    what: "On a transaction's Documents tab, next to a counter offer or addendum: the assistant reads that one file and lists the terms it sets, with pages; the console compares them with the transaction's recorded terms. Shown only: nothing is saved and the terms aren't changed.",
     where: { href: "/deals", label: "Deals" },
   },
   {

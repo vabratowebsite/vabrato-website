@@ -3,12 +3,12 @@ import { SELLER_TYPE_LABELS, checklistFor, cleanDocTypes, fmtShort, type Checkli
 import { Panel, Pill, WiringBanner } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { DealShell } from "@/components/deal-shell";
-import { ChecklistMarkControl, DocItem, DocumentUploader } from "@/components/documents";
+import { CheckUnchecked, ChecklistMarkControl, CounterChanges, DocItem, DocumentUploader } from "@/components/documents";
 import { StartRepairItems } from "@/components/repairs";
 import { mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
 import { aiKeyConfigured } from "@/lib/ai";
-import { parseDocPath } from "@/lib/documents";
+import { checkedLine, parseDocPath, uncheckedList } from "@/lib/documents";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -37,12 +37,20 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
   const bucket = supabase.storage.from("deal-docs");
 
   // The console can deploy before migration 0032 is applied: with no
-  // documents table, show nothing that uploads, shares or lists files.
-  const { data: docs, error: notReady } = await supabase
-    .from("deal_documents")
-    .select("id, path, file_name, size_bytes, doc_types, shared, uploaded_by, created_at")
-    .eq("deal_id", id)
-    .order("created_at", { ascending: false });
+  // documents table, show nothing that uploads, shares or lists files. Before
+  // 0034, files have no check record: the batch check isn't offered.
+  type Check = { checked_at: string | null; checked_by: string | null; check_signed: string | null; check_issue_count: number | null };
+  const NO_CHECK: Check = { checked_at: null, checked_by: null, check_signed: null, check_issue_count: null };
+  const BASE = "id, path, file_name, size_bytes, doc_types, shared, uploaded_by, created_at";
+  const listDocs = (cols: string) => supabase.from("deal_documents").select(cols).eq("deal_id", id).order("created_at", { ascending: false });
+  let checksReady = true;
+  let { data: rawDocs, error: notReady } = await listDocs(`${BASE}, checked_at, checked_by, check_signed, check_issue_count`);
+  if (notReady) {
+    checksReady = false;
+    ({ data: rawDocs, error: notReady } = await listDocs(BASE));
+  }
+  type DocRow = { id: string; path: string; file_name: string; size_bytes: number; doc_types: string[]; shared: boolean; uploaded_by: string | null; created_at: string } & Check;
+  const docs = ((rawDocs ?? []) as unknown as DocRow[]).map((d) => ({ ...NO_CHECK, ...d }));
   if (notReady) {
     return (
       <DealShell profile={profile} deal={deal} done={done} total={total} active="documents">
@@ -59,28 +67,36 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
     supabase.from("deal_checklist_marks").select("item_key, note, marked_by, marked_at").eq("deal_id", id),
     bucket.list(`deal/${id}`, { limit: 1000 }),
     bucket.list(`deal/${id}/staff`, { limit: 1000 }),
-    aiFeaturesOn(supabase, ["ai_staff_document_check", "ai_staff_inspection_items"]),
+    aiFeaturesOn(supabase, ["ai_staff_document_check", "ai_staff_inspection_items", "ai_staff_counter_changes"]),
   ]);
   const sellerIds = (sellers ?? []).map((s) => s.profile_id);
   const [{ data: memberDocs }, { data: memberTypes }] = sellerIds.length
     ? await Promise.all([
         supabase.from("member_documents").select("id, name, storage_path, size_bytes, created_at").in("profile_id", sellerIds).order("created_at", { ascending: false }),
-        supabase.from("deal_member_document_types").select("member_document_id, doc_types").eq("deal_id", id),
+        supabase
+          .from("deal_member_document_types")
+          .select(checksReady ? "member_document_id, doc_types, checked_at, checked_by, check_signed, check_issue_count" : "member_document_id, doc_types")
+          .eq("deal_id", id)
+          .then((r) => ({ data: ((r.data ?? []) as unknown as ({ member_document_id: string; doc_types: string[] } & Partial<Check>)[]).map((t) => ({ ...NO_CHECK, ...t })) })),
       ])
     : [{ data: [] }, { data: [] }];
-  const people = new Set([...(docs ?? []).map((d) => d.uploaded_by), ...(marks ?? []).map((m) => m.marked_by)].filter((x): x is string => Boolean(x)));
+  const people = new Set(
+    [...docs.map((d) => d.uploaded_by), ...docs.map((d) => d.checked_by), ...(memberTypes ?? []).map((t) => t.checked_by), ...(marks ?? []).map((m) => m.marked_by)].filter((x): x is string => Boolean(x)),
+  );
   const { data: names } = people.size ? await supabase.from("profiles").select("id, full_name").in("id", [...people]) : { data: [] };
   const nameOf = (pid: string | null) => (names ?? []).find((n) => n.id === pid)?.full_name ?? "staff";
 
-  const filed = new Set((docs ?? []).map((d) => d.path));
+  const filed = new Set(docs.map((d) => d.path));
   const unfiled = [
     ...(top ?? []).filter((f) => f.id && !f.name.startsWith(".")).map((f) => ({ path: `deal/${id}/${f.name}`, at: f.created_at })),
     ...(staffFiles ?? []).filter((f) => f.id && !f.name.startsWith(".")).map((f) => ({ path: `deal/${id}/staff/${f.name}`, at: f.created_at })),
   ].filter((f) => !filed.has(f.path) && parseDocPath(f.path, id));
 
   const typesOf = new Map((memberTypes ?? []).map((t) => [t.member_document_id, cleanDocTypes(t.doc_types)]));
+  const memberCheck = new Map((memberTypes ?? []).map((t) => [t.member_document_id, t as Check]));
+  const stampOf = (c: Check | undefined) => (checksReady ? checkedLine(c ?? NO_CHECK, c?.checked_by ? nameOf(c.checked_by) : "staff", fmtShort) : undefined);
   const files: ChecklistFile[] = [
-    ...(docs ?? []).map((d) => ({ id: d.id, name: d.file_name, doc_types: d.doc_types })),
+    ...docs.map((d) => ({ id: d.id, name: d.file_name, doc_types: d.doc_types })),
     ...(memberDocs ?? []).map((d) => ({ id: d.id, name: d.name, doc_types: typesOf.get(d.id) ?? [] })),
   ];
   const checklist = checklistFor(
@@ -90,6 +106,12 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
   );
   const canCheck = ai.ai_staff_document_check && aiKeyConfigured();
   const canReadRepairs = ai.ai_staff_inspection_items && aiKeyConfigured();
+  const canCompare = ai.ai_staff_counter_changes && aiKeyConfigured();
+  const isCounter = (types: string[]) => types.includes("counter_offer");
+  const unchecked = uncheckedList(
+    docs,
+    (memberDocs ?? []).map((d) => ({ id: d.id, name: d.name, created_at: d.created_at, checked_at: memberCheck.get(d.id)?.checked_at ?? null })),
+  );
   const isInspection = (types: string[]) => types.some((t) => t === "home_inspection" || t === "pest_inspection");
   const rowItem = (r: (typeof checklist.rows)[number]) => (
     <li key={r.key} className="flex flex-wrap items-start justify-between gap-3 py-3">
@@ -134,11 +156,12 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
         <DocumentUploader dealId={id} />
       </Panel>
 
-      <Panel title={`Documents (${(docs ?? []).length})`}>
+      <Panel title={`Documents (${docs.length})`}>
         {canCheck && <p className={mutedCls}>&ldquo;Check this document&rdquo; sends that one file to the assistant, which suggests its types and points out missing signatures or blanks. You decide what to save.</p>}
-        {(docs ?? []).length ? (
+        {canCheck && checksReady && (docs.length > 0 || (memberDocs ?? []).length > 0) && <CheckUnchecked dealId={id} total={unchecked.total} next={unchecked.next} />}
+        {docs.length ? (
           <ul className="divide-y divide-line">
-            {(docs ?? []).map((d) => (
+            {docs.map((d) => (
               <DocItem
                 key={`${d.id}-${d.path}-${d.doc_types.join(",")}`}
                 dealId={id}
@@ -150,7 +173,13 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
                 types={cleanDocTypes(d.doc_types)}
                 shared={d.shared}
                 canCheck={canCheck}
-                extra={canReadRepairs && isInspection(d.doc_types) ? <StartRepairItems dealId={id} documentId={d.id} name={d.file_name} /> : null}
+                checked={stampOf(d)}
+                extra={
+                  <>
+                    {canReadRepairs && isInspection(d.doc_types) && <StartRepairItems dealId={id} documentId={d.id} name={d.file_name} />}
+                    {canCompare && isCounter(d.doc_types) && <CounterChanges dealId={id} source="deal" id={d.id} name={d.file_name} />}
+                  </>
+                }
               />
             ))}
           </ul>
@@ -175,6 +204,8 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
                   meta={`${size(d.size_bytes)} · uploaded ${fmtShort(d.created_at.slice(0, 10))}`}
                   types={typesOf.get(d.id) ?? []}
                   canCheck={canCheck}
+                  checked={stampOf(memberCheck.get(d.id))}
+                  extra={canCompare && isCounter(typesOf.get(d.id) ?? []) ? <CounterChanges dealId={id} source="member" id={d.id} name={d.name} /> : null}
                 />
               ))}
             </ul>
