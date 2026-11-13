@@ -1991,6 +1991,45 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_todos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deal_id: string | null
+          done: boolean
+          done_at: string | null
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          source: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          source?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deal_id?: string | null
+          done?: boolean
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          source?: string
+          title?: string
+        }
+        Relationships: []
+      }
       sync_alert_state: {
         Row: {
           closed_at: string | null

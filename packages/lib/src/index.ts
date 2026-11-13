@@ -18,3 +18,4 @@ export * from "./schools";
 export * from "./agent-photo";
 export * from "./seller-report";
 export * from "./deal-documents";
+export * from "./ics";

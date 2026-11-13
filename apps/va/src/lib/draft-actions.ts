@@ -140,6 +140,13 @@ async function load(supabase: Awaited<ReturnType<typeof supabaseServer>>, id: st
   return (data as DraftView | null) ?? null;
 }
 
+/**
+ * Kinds edited and approved here, as plain emails. Kits, presentations,
+ * market updates, CMA write-ups, repair items and responses, and appointments
+ * have their own pages and checks, so these generic actions refuse them.
+ */
+const EMAIL_KINDS = new Set<AiDraftKind>(["lead_reply", "open_house_followup", "escrow_update", "vendor_request", "call_followup"]);
+
 const closedError = (d: DraftView) => (d.status === "approved" ? "This draft is already approved and can't be changed. Write a new one." : "This draft was discarded.");
 
 /** Saves the person's edits to their own draft. */
@@ -149,6 +156,7 @@ export async function saveDraftAction(id: string, text: { subject: string; body:
   const { supabase } = await staffClient();
   const current = await load(supabase, id);
   if (!current) return { ok: false, error: "That draft isn't yours." };
+  if (!EMAIL_KINDS.has(current.kind)) return { ok: false, error: "Open this draft on its own page to change or approve it." };
   if (current.status !== "draft") return { ok: false, error: closedError(current), draft: current };
   if (!t.data.body.trim()) return { ok: false, error: "The email is empty.", draft: current };
   const { data, error } = await supabase.from("ai_drafts").update({ subject: t.data.subject.slice(0, 200), body: t.data.body.slice(0, 8000) }).eq("id", id).select(COLS).maybeSingle();
@@ -210,10 +218,10 @@ export async function sendDraftAsMessageAction(id: string): Promise<DraftResult>
   if (message.length > MAX_PORTAL_MESSAGE) return { ok: false, error: `A portal message holds up to ${MAX_PORTAL_MESSAGE.toLocaleString("en-US")} characters. Send this one from your email instead.`, draft };
 
   let members: string[] = [];
-  if (draft.kind === "lead_reply" || draft.kind === "open_house_followup") {
+  if (draft.kind === "lead_reply" || draft.kind === "open_house_followup" || (draft.kind === "call_followup" && draft.lead_id)) {
     const { data: lead } = await supabase.from("leads").select("profile_id").eq("id", draft.lead_id ?? "").maybeSingle();
     if (lead?.profile_id) members = [lead.profile_id];
-  } else if (draft.kind === "escrow_update") {
+  } else if (draft.kind === "escrow_update" || (draft.kind === "call_followup" && draft.deal_id)) {
     const { data: rows } = await supabase.from("deal_members").select("profile_id").eq("deal_id", draft.deal_id ?? "").eq("member_role", "seller");
     members = (rows ?? []).map((r) => r.profile_id);
   }

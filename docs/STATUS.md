@@ -32,7 +32,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
 | S5b | Member AI assistant (Ask Vabrato) | Not started. Comes after S6b (owner decision 2026-11-12); plan v1 agreed in outline, shares the S6b foundation |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
-| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). Next: PR 8 (appointments, call notes). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| S6b | Staff AI assistant (the VA assistant) | In progress: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 open (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -556,7 +556,7 @@ document checks, receipts, calendar drafts).
     database tests and 55 in `packages/ai`, including six prompt-injection
     fixtures.
   - Not yet built at PR 1: the alert when the monthly budget is nearly used
-    (done in PR 2), and the live test against the real model (PR 8).
+    (done in PR 2), and the live test against the real model (PR 9).
   - On hosted (2026-11-12): 0026 applied; the advisor shows nothing new
     beyond the expected notices for the four new functions (each checks
     the caller). `packages/db/test/hosted-ai-check.sql` (rolled back,
@@ -1123,6 +1123,73 @@ document checks, receipts, calendar drafts).
     fixed search path).
   - **Not in this PR:** editing deal terms (a non-AI "Edit deal terms"
     comes later); appointments and call notes (PR 8).
+- **PR 8 (call notes, appointment drafts, staff to-dos; migration 0035,
+  not yet on hosted; owner answers 2026-11-13):**
+  - **Call notes** (switch `ai_staff_call_notes`), on a lead or a deal:
+    - The person types their notes from a call (2,000 characters at
+      most). They're the person's own words, so the Fair Housing input
+      check runs on them; contacts are redacted and lockbox or access
+      details refused before anything is sent. Sent with them: first
+      names, what the lead asked about or the property and closing date,
+      today's date.
+    - The assistant suggests up to 8 to-dos (with due dates) and, if the
+      call needs one, a follow-up email. Our code removes duplicates,
+      contacts and links. Nothing is added until the person ticks to-dos
+      and adds them; the follow-up is an ordinary draft (edit, approve,
+      copy, email, or a portal message), with the draft checks at
+      approval.
+    - The notes aren't kept. On a lead, a tick box saves them as a lead
+      note.
+  - **Appointment drafts** (switch `ai_staff_appointments`), on a lead or
+    a deal:
+    - From one sentence ("walkthrough with Dana Tuesday 3pm, 45 min, at
+      the house") the assistant proposes the fields and a confirmation.
+      Our code checks them (a real date from today to a year ahead,
+      7:00 AM to 9:00 PM in 5-minute steps, 15 minutes to 8 hours) and
+      leaves anything wrong blank; it fills the date and time into the
+      confirmation itself.
+    - At approval the confirmation must state the date and time the
+      fields say ("Put the date and time in the email" fixes it), with no
+      placeholders, contacts, access details, wiring or Fair Housing
+      wording.
+    - Approved: "Add to calendar (.ics)" (UTC, daylight saving handled),
+      copy, open in email, or print. Nothing goes on a calendar unless a
+      person opens the file; the console books and sends nothing. Google
+      Calendar comes with the integrations PR.
+  - **Staff to-dos** (no AI): a staff-only list on each lead and deal
+    (add, done, delete) and "To-dos due this week" on Today. Sellers and
+    buyers never see them; the deal's schedule tasks are unchanged.
+  - **Database:** 0035 adds the two switches, the `call_followup` and
+    `appointment` draft kinds (exactly one lead or deal) and
+    `staff_todos` (staff who work the lead or deal only; created in your
+    own name; column-limited grants). No definer function.
+  - **Also:**
+    - The generic draft save and approve actions now take email drafts
+      only. Repair items and responses, kits, presentations, market
+      updates, CMA write-ups and appointments can only be changed and
+      approved through their own pages and checks (before, a direct call
+      could have approved one without them).
+    - The calendar-file helpers moved to `packages/lib` (`ics.ts`); the
+      website's open-house and timeline files use them.
+    - Found and suggested separately: the Fair Housing check doesn't
+      block "no families with kids" (it blocks "no children").
+  - **Tests:**
+    - 10 database tests (`calls-appointments.test.ts`) and
+      `hosted-calls-appointments-check.sql` (passes locally).
+    - 12 feature tests, 8 action tests (another lead or deal refused with
+      nothing sent; to-dos only when ticked; the lead note only when
+      ticked; a changed time blocks approval; the generic actions refuse
+      appointments), 3 calendar-file tests (DST, folding, escaping).
+    - Browser QA `scripts/qa/s6b-calls-appointments.mjs`: 35 checks pass
+      on the local stack with the fake Claude (incl. the calendar file's
+      UTC time, no sideways scrolling at 390 px, an agent without access
+      getting a 404, axe at 1440 and 390 px). The 7c, 7b, 7a and PR 2–6
+      scripts still pass (32, 36, 47, 64, 42, 28, 34, 24). Screenshots in
+      `docs/screenshots/s6b-calls-appointments/`.
+  - **After merge:** apply 0035 on your OK, then
+    `packages/db/test/hosted-calls-appointments-check.sql` (rolled back).
+  - **Not in this PR:** Google Calendar (integrations PR); to-dos in the
+    daily briefing; the live test against the real model (PR 9).
 - **Needs you:** an Anthropic API key (`ANTHROPIC_API_KEY` on the console,
   later the website) and Anthropic's written Zero Data Retention
   confirmation. Until then everything is built and tested with the switches

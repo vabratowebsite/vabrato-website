@@ -149,8 +149,10 @@ export type AiDraft = Tables["ai_drafts"]["Row"];
 /** The email drafts (0028). */
 export type EmailDraftKind = "lead_reply" | "open_house_followup" | "escrow_update" | "vendor_request";
 /** Every kind of draft: emails (0028), launch kits and presentations (0030), market updates and CMA write-ups (0031). */
-export type AiDraftKind = EmailDraftKind | "listing_kit" | "listing_presentation" | "buyer_presentation" | "market_update" | "cma_writeup" | "inspection_items" | "repair_response";
+export type AiDraftKind = EmailDraftKind | "listing_kit" | "listing_presentation" | "buyer_presentation" | "market_update" | "cma_writeup" | "inspection_items" | "repair_response" | "call_followup" | "appointment";
 export type AiDraftStatus = "draft" | "approved" | "discarded";
+/** A staff to-do on a lead or a deal (0035). */
+export type StaffTodo = Tables["staff_todos"]["Row"];
 /** ai_begin(feature, deal) (0026). */
 export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "daily_requests" | "daily_tokens" | "monthly_budget" };
 /** ai_usage_today() (0026). */

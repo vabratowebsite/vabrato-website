@@ -1,26 +1,12 @@
+import { icsEscape, icsFold, icsStamp } from "@vabrato/lib";
 import { listingTitle, type AddressParts } from "./format";
 
 // iCalendar file for "Add to calendar" on an open house. The location is the
 // street only when the address may be shown (review item 7).
 
-const stamp = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-
-/** RFC 5545 text escaping. */
-export function icsEscape(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
-}
-
-/** Folds lines longer than 75 octets (RFC 5545 3.1). */
-function fold(line: string): string {
-  const out: string[] = [];
-  let rest = line;
-  while (rest.length > 74) {
-    out.push(rest.slice(0, 74));
-    rest = ` ${rest.slice(74)}`;
-  }
-  out.push(rest);
-  return out.join("\r\n");
-}
+const stamp = icsStamp;
+const fold = icsFold;
+export { icsEscape };
 
 export function openHouseIcs(opts: {
   listing: AddressParts;

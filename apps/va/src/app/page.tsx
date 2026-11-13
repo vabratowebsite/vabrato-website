@@ -2,6 +2,7 @@ import Link from "next/link";
 import { KpiTile, Panel, PanelAction, Pill } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
+import { TodoList } from "@/components/calls";
 import { BriefingPanel } from "@/components/summary-panels";
 import { mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
@@ -10,6 +11,7 @@ import { fmtDuration, medianDuration } from "@/lib/leads";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { feedRows, fmtWhen, leadKindLabel, shortName, type SyncHealth, type SyncRun } from "@/lib/today";
+import { todosForToday } from "@/lib/todos";
 
 // Today (mockup 07): the console's home. KPIs, the newest leads, the MLS feed
 // and what runs automatically. Leads and replies are what this person can
@@ -39,7 +41,7 @@ export default async function Today() {
     supabase.from("notifications").select("created_at, sent_at").eq("template_key", "staff_new_lead").gte("created_at", since30).limit(500),
   ]);
   const { data: activeDeals } = await supabase.from("deals").select("id, address, seller_type").eq("status", "active").order("ratification_date").limit(100);
-  const missingDocs = await loadMissing(supabase, activeDeals ?? []);
+  const [missingDocs, todos] = await Promise.all([loadMissing(supabase, activeDeals ?? []), todosForToday(supabase)]);
   const medianReply = medianDuration((replies.data ?? []).map((r) => ({ start: r.created_at, end: r.first_reply_at })));
   const medianMail = medianDuration((mails.data ?? []).map((m) => ({ start: m.created_at, end: m.sent_at })));
   const routedTo = routing.data ? (away.data ? (routing.data.backup_admin_id ?? routing.data.lead_admin_id) : (routing.data.lead_admin_id ?? routing.data.backup_admin_id)) : null;
@@ -59,6 +61,13 @@ export default async function Today() {
       {ai.ai_staff_daily_briefing && (
         <Panel title="Your briefing">
           <BriefingPanel />
+        </Panel>
+      )}
+
+      {todos.ready && todos.todos.length > 0 && (
+        <Panel title={`To-dos due this week (${todos.todos.length})`}>
+          <p className={`${mutedCls} mb-3`}>Overdue and due in the next 7 days, then undated, on the leads and transactions you work. Staff only.</p>
+          <TodoList todos={todos.todos} showAdd={false} empty="" />
         </Panel>
       )}
 

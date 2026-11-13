@@ -27,6 +27,8 @@ export const DRAFT_KINDS: Record<AiDraftKind, DraftKindInfo> = {
   cma_writeup: { kind: "cma_writeup", flag: "ai_staff_cma_writeup", name: "CMA write-ups", one: "CMA write-up", heading: "Summary" },
   inspection_items: { kind: "inspection_items", flag: "ai_staff_inspection_items", name: "Repair items", one: "Repair items", heading: "Repair items" },
   repair_response: { kind: "repair_response", flag: "ai_staff_repair_response", name: "Repair responses", one: "Response to the request for repairs", heading: "Response to the buyer's request for repairs" },
+  call_followup: { kind: "call_followup", flag: "ai_staff_call_notes", name: "Call follow-ups", one: "Call follow-up", heading: "Follow-up after the call" },
+  appointment: { kind: "appointment", flag: "ai_staff_appointments", name: "Appointments", one: "Appointment", heading: "Draft an appointment" },
 };
 
 /** The draft a lead gets: open-house visitors a follow-up, everyone else a reply. */

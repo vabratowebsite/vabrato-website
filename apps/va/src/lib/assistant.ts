@@ -106,6 +106,18 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
     where: { href: "/deals", label: "Deals" },
   },
   {
+    flag: "ai_staff_call_notes",
+    name: "Call notes to to-dos",
+    what: "On a lead or a transaction: type your notes after a call and the assistant suggests to-dos and a follow-up email. You tick the to-dos to add to the staff to-do list and approve the email; your notes aren't kept (on a lead, unless you save them as a note).",
+    where: { href: "/leads", label: "Leads" },
+  },
+  {
+    flag: "ai_staff_appointments",
+    name: "Appointment drafts",
+    what: "On a lead or a transaction: describe an appointment in one sentence and the assistant proposes the date, time, length and place, with a confirmation email. You check and approve it, then download the calendar file and send the confirmation yourself. The console books nothing.",
+    where: { href: "/deals", label: "Deals" },
+  },
+  {
     flag: "ai_staff_inspection_items",
     name: "Repair items from an inspection report",
     what: "On a transaction's Documents tab, next to a home or pest inspection report: lists the repair items with pages, by trade. You edit and approve the list; the bid list for contractors is made from it. No costs or names.",
