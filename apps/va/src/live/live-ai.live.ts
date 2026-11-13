@@ -2,9 +2,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { anthropicClient, paymentInstructionMatches, runAi, type ModelClient, type ModelResult } from "@vabrato/ai";
+import { paymentInstructionMatches, runAi } from "@vabrato/ai";
+import { CONTACT, budgetStore, recordingModel, sanitize, worstCase } from "@vabrato/ai/live";
 import { prepareNote } from "../lib/drafts";
-import { budgetStore, worstCase } from "./budget";
 import { ACCESS_DETAIL_NOTE, CANARY, LIVE_CALLS, NO_MODEL_CHECKS, type Mode } from "./registry";
 
 // The live test (S6b PR 9): every AI feature once against the real Claude
@@ -51,26 +51,6 @@ interface Row {
   seconds: number;
   worstCaseUsd: number;
 }
-
-/** The real client with no retries, wrapped so the test sees every raw answer (blocked ones too). */
-function recordingModel() {
-  const inner = anthropicClient({ maxRetries: 0 });
-  const raw: { call: string; text: string; result: Omit<ModelResult, "text"> }[] = [];
-  let current = "";
-  const model: ModelClient = {
-    async generate(req) {
-      const r = await inner.generate(req);
-      const { text, ...rest } = r;
-      raw.push({ call: current, text, result: rest });
-      return r;
-    },
-  };
-  return { model, raw, setCall: (id: string) => void (current = id) };
-}
-
-const CONTACT = /[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}|\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/i;
-/** Errors reach the report as a reason only: no messages, keys or long numbers (the repo is public). */
-const sanitize = (s: string) => s.replace(/sk-ant-[\w-]+/g, "[key]").replace(/\d{8,}/g, "[number]").slice(0, 80);
 
 describe.runIf(mode)(`live AI test (${mode ?? "off"})`, () => {
   it("runs every feature once, within the cap, with no injection obeyed", async () => {

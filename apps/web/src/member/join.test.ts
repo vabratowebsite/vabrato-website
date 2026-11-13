@@ -167,6 +167,14 @@ describe("portal nav", () => {
     expect(portalNav("both").map((g) => g.label)).toEqual(["Buying", "Selling", "Your team", "Explore", "Account"]);
   });
 
+  it("shows Ask Vabrato only while a member feature is on (S5b)", () => {
+    for (const role of ["buyer", "seller", "both"] as const) {
+      expect(portalNav(role).flatMap((g) => g.items.map((i) => i.href))).not.toContain("/my/assistant");
+      const groups = portalNav(role, { assistant: true });
+      expect(groups.find((g) => g.label === "Assistant")?.items).toEqual([{ key: "assistant", label: "Ask Vabrato", href: "/my/assistant" }]);
+    }
+  });
+
   it("makes initials", () => {
     expect(initials("Jordan Lee Example", "j@example.test")).toBe("JE");
     expect(initials("", "avery@example.test")).toBe("A");

@@ -1,15 +1,22 @@
-import type { AiFeature, AiInput, AiStore, FinishInfo } from "@vabrato/ai";
-import { countPdfPages } from "../lib/documents";
+import { countPdfPages } from "@vabrato/lib";
+import { anthropicClient } from "./anthropic";
+import type { ModelClient, ModelResult } from "./client";
+import type { AiFeature, AiInput } from "./run";
+import type { AiStore, FinishInfo } from "./store";
 
-// The live test's spending cap (S6b PR 9). Before each call the in-memory
-// store refuses ("monthly_budget") if what's been spent plus the call's worst
-// case would pass the cap; the call is then reported "not run". The worst
-// case assumes the fallback fires and both attempts are billed, the declined
-// one at Opus 5.5's price and the answer at Opus 4.8's (the dearer), with no
-// retries (the live client runs with maxRetries 0). Prices: models.ts,
-// checked against Anthropic's pricing page on 2026-11-13.
+// Shared by the live tests against the real Claude API (S6b PR 9 in apps/va,
+// S5b in apps/web; never in CI). Imported as "@vabrato/ai/live", server-side
+// test code only.
+//
+// The spending cap: before each call the in-memory store refuses
+// ("monthly_budget") if what's been spent plus the call's worst case would
+// pass the cap; the call is then reported "not run". The worst case assumes
+// the fallback fires and both attempts are billed, the declined one at Opus
+// 5.5's price and the answer at Opus 4.8's (the dearer), with no retries (the
+// live client runs with maxRetries 0). Prices: models.ts, checked against
+// Anthropic's pricing page on 2026-11-13.
 
-const DEFAULT_MAX_TOKENS = 64_000; // packages/ai run.ts
+const DEFAULT_MAX_TOKENS = 64_000; // run.ts
 const RULES_TOKENS = 2_000; // ALWAYS_RULES and the request wrapper, generously
 const PAGE_TOKENS = 5_000; // 1,500–3,000 text tokens per page plus the page image, rounded up
 const IMAGE_TOKENS = 1_600;
@@ -65,3 +72,25 @@ export function budgetStore(capUsd: number) {
     finished,
   };
 }
+
+/** The real client with no retries, wrapped so the test sees every raw answer (blocked ones too). */
+export function recordingModel() {
+  const inner = anthropicClient({ maxRetries: 0 });
+  const raw: { call: string; text: string; result: Omit<ModelResult, "text"> }[] = [];
+  let current = "";
+  const model: ModelClient = {
+    async generate(req) {
+      const r = await inner.generate(req);
+      const { text, ...rest } = r;
+      raw.push({ call: current, text, result: rest });
+      return r;
+    },
+  };
+  return { model, raw, setCall: (id: string) => void (current = id) };
+}
+
+/** An email address or a US phone number, in text a person would see. */
+export const CONTACT = /[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}|\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/i;
+
+/** Errors reach a report as a reason only: no messages, keys or long numbers (the repo is public). */
+export const sanitize = (s: string) => s.replace(/sk-ant-[\w-]+/g, "[key]").replace(/\d{8,}/g, "[number]").slice(0, 80);

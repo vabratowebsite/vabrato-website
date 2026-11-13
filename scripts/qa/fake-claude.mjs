@@ -163,6 +163,38 @@ const APPT_ANSWER = (mode, texts) => {
     body: "Hi Dana,\n\nJust confirming our final walkthrough on [when] at the property. It should take about 45 minutes.\n\nAvery",
   };
 };
+// S5b PR 1: Ask Vabrato's member features; the mode comes from the member's
+// own words ("QA-MODE: wiring|steering|refusal|extra|elsewhere").
+const MEMBER_EXPLAIN = /explain it in plain, friendly language/i;
+const MEMBER_SEARCH = /Turn it into the website's search filters/;
+const EXPLAIN_ANSWER = (mode) =>
+  mode === "wiring"
+    ? { text: "An earnest money deposit is wired to escrow: routing number 999999999, account 000123456789." }
+    : mode === "steering"
+      ? { text: "A starter home is perfect for young families." }
+      : mode === "refusal"
+        ? { text: "", stop: "refusal" }
+        : { text: "**Contingency removal** is when the buyer formally gives up a condition in the contract, such as the inspection or loan contingency.\n\nIn California this is usually done in writing by a set date. The details depend on your contract, so ask your agent about yours." };
+const SEARCH_ANSWER = (mode, texts) => {
+  // The member's sentence is the last text block; the city list comes as data before it.
+  const sentence = texts.split("\n").filter(Boolean).pop() ?? "";
+  const cities = [...texts.matchAll(/^([a-z0-9-]+): (.+)$/gm)].filter(([, , name]) => sentence.toLowerCase().includes(name.toLowerCase())).map(([, slug]) => slug);
+  const millions = /under \$?([\d.]+)\s*m/i.exec(sentence);
+  const beds = /(\d+)[-\s]?(?:bed|br|bd)/i.exec(sentence);
+  const answer = {
+    cities: mode === "elsewhere" ? [...cities, "fresno"] : cities,
+    min_price: null,
+    max_price: millions ? Math.round(Number(millions[1]) * 1_000_000) : null,
+    beds: beds ? Number(beds[1]) : null,
+    baths: null,
+    types: /\bhouses?\b/i.test(sentence) ? ["house"] : /\bcondo/i.test(sentence) ? ["condo"] : [],
+    sold: /\bsold\b|sell for/i.test(sentence),
+    open_houses: /open house/i.test(sentence),
+    sort: null,
+    not_used: /\bview\b/i.test(sentence) ? "The search can't filter by view." : null,
+  };
+  return { text: JSON.stringify(mode === "extra" ? { ...answer, household: "no kids" } : answer) };
+};
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const FILE_ANSWERS = {
@@ -285,7 +317,8 @@ createServer(async (req, res) => {
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
   const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
-  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat;
+  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : null;
+  const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat ?? memberFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
   appendFileSync(
@@ -327,7 +360,11 @@ createServer(async (req, res) => {
   );
 
   const responseMode = RESPONSE_FEATURE.test(system) ? (/QA-MODE: ([a-z]+)/.exec(texts)?.[1] ?? "ok") : null;
-  const answer = callsFeat
+  const answer = memberFeat
+    ? memberFeat === "member_explain"
+      ? EXPLAIN_ANSWER(mode)
+      : SEARCH_ANSWER(mode, texts)
+    : callsFeat
     ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
     : responseMode
     ? {

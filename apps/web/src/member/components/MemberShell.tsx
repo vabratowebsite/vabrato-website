@@ -3,6 +3,7 @@ import { Avatar, BellIcon, EqualHousingIcon, PortalShell } from "@vabrato/ui/web
 import { BROKER_DISCLOSURE, ORG } from "@/lib/org";
 import { flagEnabled } from "@/lib/public/listings";
 import { MemberQueryProvider } from "./MemberQueryProvider";
+import { memberAiStatus } from "../ai-status";
 import { unseenAlertCount } from "../alerts";
 import { portalNav, initials, type PortalPage } from "../nav";
 import { buys, type MemberRole } from "../roles";
@@ -29,7 +30,7 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow, unseen, unread] = await Promise.all([
+  const [agent, vow, unseen, unread, ai] = await Promise.all([
     assignedAgent(member.supabase, member.profile.agent_id),
     flagEnabled("vow_enabled"),
     buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
@@ -40,8 +41,9 @@ export async function MemberShell({
       .neq("sender_id", member.profile.id)
       .is("read_at", null)
       .then((r) => r.count ?? 0),
+    memberAiStatus(member.supabase),
   ]);
-  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread }).map((g) => ({
+  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0 }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current, ...(it.count ? { count: it.count } : {}) })),
   }));

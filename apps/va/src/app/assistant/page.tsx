@@ -6,6 +6,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { WorkQuestionPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, linkAction, mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
+import { MEMBER_AI_FEATURES } from "@vabrato/lib";
 import { ASSISTANT_FEATURES, MASTER_FLAG, budgetPercent, usd } from "@/lib/assistant";
 import { DRAFT_KINDS, DRAFT_STATUS_LABEL, SENT_VIA_LABEL } from "@/lib/draft-kinds";
 import { confirmZdrAction, setAiFlagAction, setAiLimitsAction } from "@/lib/assistant-actions";
@@ -26,7 +27,7 @@ export default async function AssistantPage() {
   if (!isStaff) return <AccessDenied profile={profile} />;
   const isAdmin = profile.role === "admin";
   const supabase = await supabaseServer();
-  const keys = [MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag)];
+  const keys = [MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)];
   const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }, { data: myDrafts }] = await Promise.all([
     supabase.from("feature_flags").select("key, enabled").in("key", keys),
     supabase.rpc("ai_usage_today"),
@@ -50,7 +51,7 @@ export default async function AssistantPage() {
   const zdr = Boolean(s?.ai_zdr_confirmed_at);
   const keySet = aiKeyConfigured();
   const { data: confirmer } = isAdmin && s?.ai_zdr_confirmed_by ? await supabase.from("profiles").select("full_name, email").eq("id", s.ai_zdr_confirmed_by).maybeSingle() : { data: null };
-  const featureName = (key: string) => ASSISTANT_FEATURES.find((f) => f.flag === `ai_${key}`)?.name ?? key;
+  const featureName = (key: string) => [...ASSISTANT_FEATURES, ...MEMBER_AI_FEATURES].find((f) => f.flag === `ai_${key}`)?.name ?? key;
   const percent = month ? budgetPercent(month.spent_micros, month.budget_usd) : 0;
 
   return (
@@ -178,6 +179,34 @@ export default async function AssistantPage() {
                     <p className={mutedCls}>{f.flag === MASTER_FLAG ? f.what : "Runs only while the master switch is also on."}</p>
                   </div>
                   <ActionForm action={setAiFlagAction} submitLabel={enabled ? "Turn off" : "Turn on"} submitAriaLabel={`${enabled ? "Turn off" : "Turn on"}: ${f.name}`} secondary={enabled}>
+                    <input type="hidden" name="key" value={f.flag} />
+                    <input type="hidden" name="on" value={enabled ? "false" : "true"} />
+                  </ActionForm>
+                </li>
+              );
+            })}
+          </ul>
+        </Panel>
+      )}
+
+      {isAdmin && (
+        <Panel title="Member assistant (Ask Vabrato)">
+          <p className={`${mutedCls} mb-4`}>
+            For buyers and sellers in their portal on the website (/my). Each runs only while the master switch is also on, within the member limits below. Members&apos; questions and answers aren&apos;t kept.
+          </p>
+          <ul className="divide-y divide-line">
+            {MEMBER_AI_FEATURES.map((f) => {
+              const enabled = on(f.flag);
+              return (
+                <li key={f.flag} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-center">
+                  <div>
+                    <p className="flex flex-wrap items-center gap-2 font-body text-body-sm font-medium text-ink">
+                      {f.name}
+                      <Pill tone={enabled ? "green" : "neutral"}>{enabled ? "On" : "Off"}</Pill>
+                    </p>
+                    <p className={mutedCls}>{f.what}</p>
+                  </div>
+                  <ActionForm action={setAiFlagAction} submitLabel={enabled ? "Turn off" : "Turn on"} submitAriaLabel={`${enabled ? "Turn off" : "Turn on"}: ${f.name} (members)`} secondary={enabled}>
                     <input type="hidden" name="key" value={f.flag} />
                     <input type="hidden" name="on" value={enabled ? "false" : "true"} />
                   </ActionForm>
