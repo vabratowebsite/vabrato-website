@@ -137,7 +137,11 @@ async function keyboard(page, who, name, path, controls) {
 // --- Setup: fictional staff and records -----------------------------------------------------------
 const leadAdminBefore = sql(`select coalesce(lead_admin_id::text, '') || '|' || coalesce(backup_admin_id::text, '') from app_settings`);
 const AI_FLAGS = sql(`select string_agg(quote_literal(key), ',') from feature_flags where key like 'ai\\_%'`);
-const ai = (on) => sql(`update feature_flags set enabled = ${on} where key in (${AI_FLAGS})`);
+// Since 0039 the listing switches turn on only once the MLSListings approval is on: that one first.
+const ai = (on) => {
+  if (on) sql(`update feature_flags set enabled = true where key = 'ai_mls_approved'`);
+  sql(`update feature_flags set enabled = ${on} where key in (${AI_FLAGS})`);
+};
 ai(false);
 const mark = sql(`select id from profiles where email = '${STAFF_EMAIL}'`);
 if (!mark) throw new Error(`no lead-admin profile for ${STAFF_EMAIL} on the local stack`);

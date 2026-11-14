@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). Next: PR 7 (final QA and the member calls in the live run). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | Built: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). PR 7 (final QA, the member live test ready, Mark's wording sheet). Built; live run on the owner's go-ahead. Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -490,7 +490,7 @@ comes after S6, by decision; the console has no AI code.
   - pg_net and pg_cron are available on the hosted project but not installed
     (PR 2a installs them).
 
-### S5b member AI assistant, Ask Vabrato (in progress)
+### S5b member AI assistant, Ask Vabrato (built 2026-11-14)
 
 The assistant for buyers and sellers in `/my`. It runs on the S6b foundation:
 `packages/ai`, the master switch and Zero Data Retention gate, `ai_begin`
@@ -1112,6 +1112,67 @@ with the member daily limits, and the site-wide monthly budget.
     `is_staff` inside, like `decide_member_todo`. The public can't call it,
     and the two trigger functions can't be run by signed-in users or the
     public.
+- **PR 7 (final QA, live-test readiness, Mark's wording sheet; no migration;
+  owner answers 2026-11-14):**
+  - **Owner answers:**
+    - **Live run:** same as the console. This PR gets the member live test
+      ready (fake run, worst case under a cap, report) and sends nothing to
+      Anthropic. The real run of both apps happens on the owner's go-ahead,
+      just before the first switch goes on.
+    - **Mark:** one review sheet with every member-facing Ask Vabrato
+      wording and his pending S6b items, as a private page the owner shares.
+  - **The website's live test:**
+    - **Cap:** `LIVE_AI_BUDGET_USD` now defaults to $3 (it was $1, under
+      the 13 calls' worst case of about $1.72, so a real run would have
+      skipped calls quietly).
+    - **Before any call:** it prints the worst-case total and refuses to
+      start a full run over the cap, so nothing is sent.
+    - **New hard fails:** a call left "not run" in a full run, and an
+      injection call refused for payment details (the injection was
+      obeyed), as in the console's test.
+    - These decisions live in `apps/web/src/live/judge.ts`, with 5 CI
+      tests (`judge.test.ts`).
+  - **Delete my assistant data covers flyers:** My to-dos counts and names
+    flyers, the confirmation says so, and My flyers has the same panel (a
+    seller with only flyers used to see a disabled button).
+  - **Mark's wording sheet** (`docs/review/member-ai-wording.md`):
+    - Generated from the code by `apps/web/src/review/wording-sheet.ts`:
+      the AI labels, the notes on each page (each checked against its
+      file), every mode's button, field and hint, every "can't answer"
+      message, and what each switch does.
+    - Also his S6b items: the Fair Housing wording list, the checklist's
+      "(confirm)" rows and the repair-response wording.
+    - Its CI test fails when member-facing wording changes until the sheet
+      is regenerated (`UPDATE_WORDING=1 pnpm --filter @vabrato/web test
+      wording`).
+    - The same sheet is a private review doc for the owner to share with
+      Mark.
+  - **Browser QA** (`scripts/qa/s5b-final.mjs`, the member-portal sweep):
+    587 of 587, run twice.
+    - **Roles:** a buyer with an agent, a seller, a member doing both, a
+      buyer with no agent, and staff visiting `/my`.
+    - **States:** every switch off; all 13 member switches on; on with the
+      daily limit at 0; the master switch off with the member switches on.
+    - **Each page:** status, axe at 1440 and 390 px, no sideways scroll at
+      390 and 320 px, no console errors, and nothing sent to the model on
+      page load.
+    - **Asks:** one per mode (13); each card is labelled, and exactly 13
+      requests reach the model.
+    - **Keyboard:** every mode's first field, the flyer card, My to-dos
+      and My flyers.
+  - **Reruns:**
+    - `s5b-assistant` 65, `s5b-documents` 53, `s5b-drafts` 50,
+      `s5b-listings` 44, `s5b-schedules` 38 and `s5-qa` 100 pass unchanged.
+    - `s5b-design` 58 of 58, after its check matched the flyer status label
+      exactly (My flyers now has the assistant-data panel too).
+    - `s6b-final`: it now turns the MLSListings approval on before the
+      other switches (0039's gate refused the old one-statement update).
+      1,229 of 1,232: the 3 misses are an intermittent React hydration
+      error (#418) on a different console page each run, about 1 load in
+      400, not tied to this PR. Queued as its own task.
+    - Fake live runs: console 20 of 20, website 13 of 13.
+  - **Not in this PR:** the real live run, any switch turned on, AI images,
+    and indexing members' documents.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
@@ -1971,12 +2032,15 @@ document checks, receipts, calendar drafts).
     - **The full run:**
       - In the Anthropic Console, create a workspace "vabrato-live-test"
         with a $10 spend limit, and a key in that workspace only.
-      - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live` in
-        your own shell. The key can't be injected into a cloud session:
-        `api.anthropic.com` bypasses the session's proxy.
-      - Send `docs/qa/s6b-live-run.json`. It's compared with the Console's
-        usage for the workspace, and both are recorded here in a small
-        docs PR.
+      - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live`, then
+        `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter @vabrato/web test:live`
+        (the 13 member calls, S5b PR 7), in your own shell. The key can't be
+        injected into a cloud session: `api.anthropic.com` bypasses the
+        session's proxy. Worst cases: about $6.69 (console, $5 cap) and
+        $1.72 (website, $3 cap); the $10 workspace limit covers both.
+      - Send `docs/qa/s6b-live-run.json` and `docs/qa/s5b-live-run.json`.
+        They're compared with the Console's usage for the workspace, and
+        recorded here in a small docs PR.
       - Revoke the key and archive the workspace afterwards.
   - **Before any switch goes on:**
     - the full live run above, passing;
@@ -1987,10 +2051,12 @@ document checks, receipts, calendar drafts).
       (listing kits, presentations, market updates, CMA write-ups; the SPEC
       has no rule for this yet);
     - then `ai_enabled`, and each feature's switch.
-  - **Mark:**
+  - **Mark:** all in one review doc (S5b PR 7; the owner shares it), also in
+    the repo as `docs/review/member-ai-wording.md`:
     - the Fair Housing wording list above;
     - the checklist's "(confirm)" rows (PR 7a);
-    - the repair-response wording (PR 7b).
+    - the repair-response wording (PR 7b);
+    - every member-facing Ask Vabrato wording (S5b).
 
 **Must ship before launch (S5 review item 17):** done in S6 PR 2a (member
 message and tour-request alerts, in the console and by email). Email
