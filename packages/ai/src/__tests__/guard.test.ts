@@ -70,7 +70,8 @@ describe("AI guardrails in the codebase", () => {
     for (const name of readdirSync(dir)) {
       const sql = readFileSync(join(dir, name), "utf8");
       for (const m of sql.matchAll(/\(\s*'(ai_[a-z0-9_]+)'\s*,\s*'[^']*'\s*(?:,\s*(true|false))?\s*\)/g)) {
-        if (m[1] !== "ai_enabled" && !/^ai_(staff|member)_[a-z0-9_]{2,40}$/.test(m[1]!)) bad.push(`${name}: ${m[1]} isn't ai_staff_* or ai_member_*`);
+        // ai_enabled is the master switch; ai_mls_approved records MLSListings' approval of AI on listing data (0039).
+        if (m[1] !== "ai_enabled" && m[1] !== "ai_mls_approved" && !/^ai_(staff|member)_[a-z0-9_]{2,40}$/.test(m[1]!)) bad.push(`${name}: ${m[1]} isn't ai_staff_* or ai_member_*`);
         if (m[2] === "true") bad.push(`${name}: ${m[1]} ships enabled`);
       }
     }

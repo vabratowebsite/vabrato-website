@@ -6,7 +6,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { WorkQuestionPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, linkAction, mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
-import { MEMBER_AI_FEATURES } from "@vabrato/lib";
+import { MEMBER_AI_FEATURES, MLS_AI_GATE } from "@vabrato/lib";
 import { ASSISTANT_FEATURES, MASTER_FLAG, budgetPercent, usd } from "@/lib/assistant";
 import { DRAFT_KINDS, DRAFT_STATUS_LABEL, SENT_VIA_LABEL } from "@/lib/draft-kinds";
 import { confirmZdrAction, setAiFlagAction, setAiLimitsAction } from "@/lib/assistant-actions";
@@ -27,7 +27,7 @@ export default async function AssistantPage() {
   if (!isStaff) return <AccessDenied profile={profile} />;
   const isAdmin = profile.role === "admin";
   const supabase = await supabaseServer();
-  const keys = [MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)];
+  const keys = [MASTER_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)];
   const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }, { data: myDrafts }] = await Promise.all([
     supabase.from("feature_flags").select("key, enabled").in("key", keys),
     supabase.rpc("ai_usage_today"),
@@ -194,9 +194,25 @@ export default async function AssistantPage() {
           <p className={`${mutedCls} mb-4`}>
             For buyers and sellers in their portal on the website (/my). Each runs only while the master switch is also on, within the member limits below. Members&apos; questions and answers aren&apos;t kept.
           </p>
+          <div className="mb-4 grid gap-3 border border-gold bg-gold-50 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <p className="flex flex-wrap items-center gap-2 font-body text-body-sm font-medium text-ink">
+                MLSListings approved AI on listing data
+                <Pill tone={on(MLS_AI_GATE) ? "green" : "neutral"}>{on(MLS_AI_GATE) ? "On" : "Off"}</Pill>
+              </p>
+              <p className={mutedCls}>
+                Turn on only after MLSListings confirms in writing that AI may use listing data. &ldquo;Compare homes&rdquo; and &ldquo;Ask about a home&rdquo; can&apos;t be turned on without it, and turning it off turns them off.
+              </p>
+            </div>
+            <ActionForm action={setAiFlagAction} submitLabel={on(MLS_AI_GATE) ? "Turn off" : "Turn on"} submitAriaLabel={`${on(MLS_AI_GATE) ? "Turn off" : "Turn on"}: MLSListings approved AI on listing data`} secondary={on(MLS_AI_GATE)}>
+              <input type="hidden" name="key" value={MLS_AI_GATE} />
+              <input type="hidden" name="on" value={on(MLS_AI_GATE) ? "false" : "true"} />
+            </ActionForm>
+          </div>
           <ul className="divide-y divide-line">
             {MEMBER_AI_FEATURES.map((f) => {
               const enabled = on(f.flag);
+              const locked = Boolean(f.needsMlsApproval) && !on(MLS_AI_GATE) && !enabled;
               return (
                 <li key={f.flag} className="grid gap-3 py-4 first:pt-0 last:pb-0 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div>
@@ -206,10 +222,14 @@ export default async function AssistantPage() {
                     </p>
                     <p className={mutedCls}>{f.what}</p>
                   </div>
-                  <ActionForm action={setAiFlagAction} submitLabel={enabled ? "Turn off" : "Turn on"} submitAriaLabel={`${enabled ? "Turn off" : "Turn on"}: ${f.name} (members)`} secondary={enabled}>
-                    <input type="hidden" name="key" value={f.flag} />
-                    <input type="hidden" name="on" value={enabled ? "false" : "true"} />
-                  </ActionForm>
+                  {locked ? (
+                    <p className={`${mutedCls} sm:max-w-[14rem]`}>Locked until MLSListings approval is on.</p>
+                  ) : (
+                    <ActionForm action={setAiFlagAction} submitLabel={enabled ? "Turn off" : "Turn on"} submitAriaLabel={`${enabled ? "Turn off" : "Turn on"}: ${f.name} (members)`} secondary={enabled}>
+                      <input type="hidden" name="key" value={f.flag} />
+                      <input type="hidden" name="on" value={enabled ? "false" : "true"} />
+                    </ActionForm>
+                  )}
                 </li>
               );
             })}

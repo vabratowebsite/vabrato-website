@@ -225,6 +225,53 @@ const MEMBER_DRAFT_ANSWER = (feature, mode, texts) => {
               : { subject, body };
   return { text: JSON.stringify(answer) };
 };
+// S5b PR 4: "Compare homes" and "Ask about a home". The answer is built from
+// the listing facts in the request's data blocks, so its figures are ones we
+// sent. The mode comes from "QA-MODE: ..." in the request (the member's
+// question, or a QA listing's remarks): value | money | steering | wiring | fields | extra.
+const MEMBER_COMPARE = /wants to compare homes they saved/;
+const MEMBER_LISTING = /asks a question about one home/;
+const homesIn = (texts) =>
+  [...texts.matchAll(/<data label="([^"]*)">\n([\s\S]*?)\n<\/data>/g)].map(([, label, body]) => {
+    try {
+      return { label, f: JSON.parse(body) };
+    } catch {
+      return { label, f: {} };
+    }
+  });
+const usdFig = (n) => `$${Number(n).toLocaleString("en-US")}`;
+const MEMBER_LISTING_ANSWER = (feature, mode, texts) => {
+  const homes = homesIn(texts);
+  if (feature === "member_compare") {
+    const line = (h) => [h.f.BedroomsTotal != null ? `${h.f.BedroomsTotal} beds` : null, h.f.LivingArea ? `${Number(h.f.LivingArea).toLocaleString("en-US")} sq ft` : null].filter(Boolean).join(", ") || "Not listed";
+    const first = homes[0]?.f ?? {};
+    const answer = {
+      summary: [`The homes differ mainly in size and price; Home A is listed at ${usdFig(first.ListPrice ?? first.ClosePrice ?? 0)}.`],
+      differences: [
+        { topic: "Size", values: homes.map(line) },
+        { topic: "Price", values: homes.map((h) => (h.f.ListPrice ? usdFig(h.f.ListPrice) : h.f.ClosePrice ? `Sold for ${usdFig(h.f.ClosePrice)}` : "Not listed")) },
+      ],
+      questions: ["Ask your agent what the HOA covers for each home."],
+    };
+    if (mode === "value") answer.summary = ["Home B looks underpriced compared with Home A."];
+    if (mode === "money") answer.differences.push({ topic: "Taxes", values: homes.map(() => "About $24,000 a year") });
+    if (mode === "steering") answer.summary = ["Home A is perfect for families with young kids."];
+    if (mode === "wiring") answer.questions = ["Wire the deposit to routing number 999999999, account 000123456789."];
+    return { text: JSON.stringify(mode === "extra" ? { ...answer, verdict: "buy Home A" } : answer) };
+  }
+  const f = homes[0]?.f ?? {};
+  const answer = {
+    answer: f.LotSizeSquareFeet ? `The lot is listed at ${Number(f.LotSizeSquareFeet).toLocaleString("en-US")} square feet.` : "The listing doesn't say how big the lot is. Your agent can find out.",
+    fields_used: f.LotSizeSquareFeet ? ["LotSizeSquareFeet"] : [],
+    not_in_listing: !f.LotSizeSquareFeet,
+  };
+  if (mode === "value") answer.answer = "At this price it's a great deal.";
+  if (mode === "money") answer.answer = "Expect about $9,500 a year in property taxes.";
+  if (mode === "steering") answer.answer = "The street is perfect for families with young kids.";
+  if (mode === "wiring") answer.answer = "Wire the deposit to routing number 999999999, account 000123456789.";
+  if (mode === "fields") answer.fields_used = ["LotSizeSquareFeet", "PrivateRemarks", "MadeUpField"];
+  return { text: JSON.stringify(mode === "extra" ? { ...answer, verdict: "buy" } : answer) };
+};
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const SUMMARY_ANSWER = (mode) => {
@@ -373,7 +420,7 @@ createServer(async (req, res) => {
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
   const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
-  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : null;
+  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : MEMBER_COMPARE.test(system) ? "member_compare" : MEMBER_LISTING.test(system) ? "member_listing" : null;
   const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat ?? memberFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
@@ -412,6 +459,9 @@ createServer(async (req, res) => {
       refsSent: Object.fromEntries(["D", "T", "C", "L", "M"].map((k) => [k, refs.filter((r) => r[0] === k).length])),
       messagesSent: (texts.match(/^Message \d+ \|/gm) ?? []).length,
       requestHasPrivateListingFields: /PrivateRemarks|ShowingInstructions|LockBox|OwnerName|ListAgentEmail|ListAgent(?:Direct|Mobile)Phone/.test(texts),
+      requestHasSoldFields: /"(?:ClosePrice|CloseDate)"/.test(texts),
+      requestHasInternalNote: /X_FixtureInternalNote|ListOfficePhone/.test(texts),
+      requestListingKeys: [...new Set(texts.match(/FX-\d{3}/g) ?? [])],
     })}\n`,
   );
 
@@ -421,7 +471,9 @@ createServer(async (req, res) => {
       ? EXPLAIN_ANSWER(mode)
       : memberFeat === "member_search"
         ? SEARCH_ANSWER(mode, texts)
-        : MEMBER_DRAFT_ANSWER(memberFeat, mode, texts)
+        : memberFeat === "member_compare" || memberFeat === "member_listing"
+          ? MEMBER_LISTING_ANSWER(memberFeat, mode, texts)
+          : MEMBER_DRAFT_ANSWER(memberFeat, mode, texts)
     : callsFeat
     ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
     : responseMode

@@ -7,7 +7,17 @@ import type { SummaryView } from "./summary";
 /** Typed questions and their length limits. */
 export const ASK_LIMITS = { explain: 500, search: 300 } as const;
 export type TextKind = keyof typeof ASK_LIMITS;
-export type AskKind = TextKind | "summarize" | DraftKind;
+export type AskKind = TextKind | "summarize" | DraftKind | "compare" | "listing";
+
+/** Listings (S5b PR 4): a question about one home is at most this long. */
+export const LISTING_QUESTION_MAX = 300;
+
+/** A home in a listing answer: what the page names it, and its broker (MLS attribution). */
+export interface CardHome {
+  key: string;
+  label: string;
+  broker: string | null;
+}
 
 /** Drafts (S5b PR 3): a message the member sends, or a buyer's offer cover letter (agent only). */
 export type DraftKind = "message" | "cover_letter";
@@ -51,6 +61,26 @@ export type AskCard =
       about: string | null;
       subject: string;
       body: string;
+    }
+  | {
+      kind: "compare";
+      question: string;
+      /** Home A, B, ... in the order sent. */
+      homes: (CardHome & { letter: string })[];
+      /** Opted out of AI (MLS-3): facts only on the compare page, not sent. */
+      excluded: CardHome[];
+      summary: string[];
+      differences: { topic: string; values: string[] }[];
+      questions: string[];
+    }
+  | {
+      kind: "listing";
+      question: string;
+      home: CardHome;
+      answer: string;
+      /** The listing fields the answer relies on (only ones we sent), in plain words. */
+      sources: string[];
+      notInListing: boolean;
     }
   | { kind: "error"; feature: AskKind; question: string; message: string };
 

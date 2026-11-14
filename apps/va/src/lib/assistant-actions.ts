@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { runAi } from "@vabrato/ai";
-import { MEMBER_AI_FEATURES, STAFF_ROLES, getProfile } from "@vabrato/lib";
+import { MEMBER_AI_FEATURES, MLS_AI_GATE, STAFF_ROLES, getProfile } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
 import { ASSISTANT_FEATURES, MASTER_FLAG, aiSettingsError, checkContract, intakeFolder, isOwnIntakePath } from "@/lib/assistant";
 import { CONTRACT_READER, toIntakeProposal } from "@/lib/contract-reader";
@@ -68,7 +68,7 @@ const refresh = () => {
   revalidatePath("/deals/new");
 };
 
-const FLAGS = new Set<string>([MASTER_FLAG, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)]);
+const FLAGS = new Set<string>([MASTER_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)]);
 
 export async function setAiFlagAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await staffClient();
@@ -78,7 +78,8 @@ export async function setAiFlagAction(_prev: ActionState, form: FormData): Promi
   const { error } = await supabase.rpc("set_ai_flag", { p_key: key, p_on: on });
   if (error) return { error: aiSettingsError(error.message) };
   refresh();
-  const name = key === MASTER_FLAG ? "The assistant" : (ASSISTANT_FEATURES.find((f) => f.flag === key)?.name ?? "The feature");
+  const name =
+    key === MASTER_FLAG ? "The assistant" : key === MLS_AI_GATE ? "MLSListings approval of AI on listing data" : ([...ASSISTANT_FEATURES, ...MEMBER_AI_FEATURES].find((f) => f.flag === key)?.name ?? "The feature");
   return { error: null, ok: `${name} is now ${on ? "on" : "off"}.` };
 }
 

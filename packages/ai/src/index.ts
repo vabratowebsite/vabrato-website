@@ -6,6 +6,6 @@ export { runAi, type AiDeps, type AiFailure, type AiFeature, type AiInput, type 
 export { ModelError, type Citation, type Effort, type ModelClient, type ModelPart, type ModelRequest, type ModelResult } from "./client";
 export { anthropicClient, attemptsFrom } from "./anthropic";
 export { supabaseAiStore, type AiStore, type FinishInfo } from "./store";
-export { listingForAi, stripNeverSend } from "./listing-fields";
+export { listingForAi, listingOptedOutOfAi, stripNeverSend } from "./listing-fields";
 export { FALLBACK_MODEL, MODEL, costMicros, pdfPageLimit, type Usage } from "./models";
 export { fairHousingBlocks, paymentInstructionMatches, removeForeignLinks, wrapData } from "./safety";

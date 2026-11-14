@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { Panel } from "@vabrato/ui/web";
 import { MEMBER_AI_FEATURES, memberFeatureKey } from "@vabrato/lib";
-import { AskVabrato, type DocOption } from "@/member/components/AskVabrato";
+import { AskVabrato, type DocOption, type ListingChoice } from "@/member/components/AskVabrato";
+import { MlsAttribution } from "@/components/MlsAttribution";
+import { listingTitle } from "@/lib/format";
+import { mlsLastUpdated } from "@/lib/public/listings";
+import { cards, savedListings } from "@/member/listings";
+import { LISTING_KEY } from "@/member/saved";
 import { docRef, listMemberDocuments } from "@/member/documents-list";
 import { MemberShell } from "@/member/components/MemberShell";
 import { aiKeyConfigured } from "@/member/ai";
@@ -36,7 +41,25 @@ export default async function AssistantPage({ searchParams }: Props) {
   const kinds = MEMBER_AI_FEATURES.filter((f) => on.includes(f.flag))
     .map((f) => memberFeatureKey(f.flag).replace("member_", ""))
     .map((k) => (k === "draft" ? "message" : k) as AskKind)
-    .filter((k) => k !== "cover_letter" || buys(member.role));
+    .filter((k) => (k !== "cover_letter" && k !== "compare" && k !== "listing") || buys(member.role));
+  // Compare and "Ask about a home" pick from saved homes; ?listing=KEY (from a listing page) preselects one.
+  const listingHomes: ListingChoice[] = [];
+  let initialListing: ListingChoice | undefined;
+  const showsListings = kinds.includes("compare") || kinds.includes("listing");
+  const lastUpdated = showsListings ? await mlsLastUpdated() : null;
+  if (kinds.includes("compare") || kinds.includes("listing")) {
+    const saved = await savedListings(member.supabase);
+    for (const r of saved.rows) listingHomes.push({ key: r.listing_key, label: listingTitle(r) });
+    const asked = typeof sp.listing === "string" && LISTING_KEY.test(sp.listing) ? sp.listing : null;
+    if (asked && kinds.includes("listing")) {
+      const known = listingHomes.find((h) => h.key === asked);
+      if (known) initialListing = known;
+      else {
+        const [row] = await cards(member.supabase, [asked]);
+        if (row) initialListing = { key: row.listing_key, label: listingTitle(row) };
+      }
+    }
+  }
   // Drafts pick a home from the member's own sales and tracked homes (read under RLS).
   const [messageHomes, letterHomes] = await Promise.all([
     kinds.includes("message") ? homeOptions(member.supabase, member.profile.id, member.role, "message") : [],
@@ -87,8 +110,10 @@ export default async function AssistantPage({ searchParams }: Props) {
               Ask Vabrato isn&apos;t available on your account right now.
             </p>
           ) : (
-            <AskVabrato kinds={kinds} left={left} limit={limit} docs={docs} initialDoc={initialDoc} homes={{ message: messageHomes, cover_letter: letterHomes }} />
+            <AskVabrato kinds={kinds} left={left} limit={limit} docs={docs} initialDoc={initialDoc} homes={{ message: messageHomes, cover_letter: letterHomes }} listingHomes={listingHomes} initialListing={initialListing} />
           )}
+          {/* MLS-1: the listing modes show listing data. */}
+          {showsListings && <MlsAttribution lastUpdated={lastUpdated} />}
         </>
       )}
     </MemberShell>

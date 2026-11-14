@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { listingForAi, stripNeverSend } from "../listing-fields";
+import { buildFixtures } from "@vabrato/mls/mock";
+import { listingForAi, listingOptedOutOfAi, stripNeverSend } from "../listing-fields";
 
 // A fictional Property record with fields from every data level.
 const RECORD = {
@@ -53,5 +54,18 @@ describe("listing fields sent to the model", () => {
     const stripped = stripNeverSend({ ...RECORD, SomeNewContactEmail: "x@example.test", BuyerAgencyCompensation: "2.5%" });
     expect(stripped).toMatchObject({ ListingKey: "FX-1", BuyerAgencyCompensation: "2.5%" });
     expect(JSON.stringify(stripped)).not.toMatch(/Seller motivated|Call first|Side gate|example\.test|650-555|Fictional Owner/);
+  });
+
+  it("MLS-3: a seller's AVM or consumer-comment opt-out keeps the home away from the model", () => {
+    expect(listingOptedOutOfAi({ ...RECORD, InternetAutomatedValuationDisplayYN: false })).toBe(true);
+    expect(listingOptedOutOfAi({ ...RECORD, InternetConsumerCommentYN: false })).toBe(true);
+    expect(listingOptedOutOfAi({ ...RECORD, InternetAutomatedValuationDisplayYN: true, InternetConsumerCommentYN: true })).toBe(false);
+    expect(listingOptedOutOfAi(RECORD)).toBe(false); // missing flags: the MLS default
+    const fixtures = buildFixtures().properties;
+    const byKey = (k: string) => fixtures.find((f) => f.ListingKey === k)!;
+    expect(listingOptedOutOfAi(byKey("FX-013"))).toBe(true);
+    expect(listingOptedOutOfAi(byKey("FX-001"))).toBe(false);
+    // The flags survive the IDX projection, so the website can check the stored record.
+    expect(listingOptedOutOfAi(listingForAi(byKey("FX-013"), "IDX"))).toBe(true);
   });
 });

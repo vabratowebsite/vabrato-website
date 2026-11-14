@@ -11,6 +11,7 @@ import { breadcrumbJsonLd, listingJsonLd, openHouseJsonLd } from "@/lib/seo";
 import { ListingViewBeacon } from "@/member/components/ListingViewBeacon";
 import { PriceHistory } from "@/member/components/PriceHistory";
 import { SaveHomeButton } from "@/member/components/SaveIslands";
+import { AskAboutHomeLink } from "@/member/components/AskAboutHomeLink";
 import { FactsRow, LockedHistory, ListingGallery, ListingQa, PropertyDetails, StatusPills } from "./detail";
 import { PaymentEstimate } from "./PaymentEstimate";
 import { TourRequest } from "./TourRequest";
@@ -127,6 +128,8 @@ export function ListingDetail({
 
           {site === "vabrato" ? <PriceHistory listingKey={listing.listing_key} /> : <LockedHistory joinHref={`${linkBase}/join`} />}
           <ListingQa items={qa} />
+          {/* S5b PR 4: signed-in buyers only, while "Ask about a home" is on; it links into /my. */}
+          {site === "vabrato" && <AskAboutHomeLink listingKey={listing.listing_key} address={title} />}
         </div>
 
         <aside className="space-y-6" aria-label="Contact and estimates">
