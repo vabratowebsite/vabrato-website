@@ -3,7 +3,7 @@ import type { AiDeps, AiStore, ModelClient, ModelRequest } from "@vabrato/ai";
 import { buildFixtures } from "@vabrato/mls/mock";
 import { MEMBER_MESSAGES } from "./ask";
 import { homeForAi, type AiHome } from "./listings";
-import { SCHEDULE_MESSAGES, memberDate, movingPlan, namesContractDeadline, planItems, prelistingPlan, tourDay, tourStops, type MovingAnchor, type TourInput } from "./schedules";
+import { SCHEDULE_MESSAGES, memberDate, pacificHm, movingPlan, namesContractDeadline, planItems, prelistingPlan, tourDay, tourStops, type MovingAnchor, type TourInput } from "./schedules";
 
 // Schedules (S5b PR 5) without the network. The model writes steps; our code
 // does every date and never moves a date of record. Fictional data only.
@@ -168,5 +168,13 @@ describe("tour day", () => {
     optedOut.excluded.push({ key: "FX-999", label: "A home in Fiction", broker: null });
     expect(await tourDay(one.d, optedOut)).toMatchObject({ kind: "tour", summary: [SCHEDULE_MESSAGES.noneSent] });
     expect(one.requests).toHaveLength(0);
+  });
+});
+
+describe("open-house times", () => {
+  it("stored UTC timestamps read as Pacific time", () => {
+    expect(pacificHm("2026-11-15T21:00:00+00:00")).toBe("13:00");
+    expect(pacificHm("2026-07-15T17:30:00+00:00")).toBe("10:30"); // daylight time
+    expect(pacificHm("not a time")).toBeNull();
   });
 });

@@ -259,7 +259,8 @@ export async function loadTour(db: SupabaseDb, keys: string[], level: "IDX" | "V
       db.from("mls_listings").select("listing_key, latitude, longitude, address_display").in("listing_key", all),
       db.from("mls_open_houses").select("listing_key, start_time, end_time").in("listing_key", all).eq("open_house_date", date).order("start_time"),
     ]);
-    const hm = (t: unknown) => (typeof t === "string" ? (/T(\d{2}:\d{2})/.exec(t)?.[1] ?? /^(\d{2}:\d{2})/.exec(t)?.[1] ?? null) : null);
+    // Open-house times are stored as UTC timestamps; the tour runs on Pacific time.
+    const hm = (t: unknown) => pacificHm(t);
     for (const r of rows ?? []) {
       const o = (oh ?? []).find((x) => x.listing_key === r.listing_key);
       const start = o ? hm(o.start_time) : null;
@@ -328,6 +329,14 @@ export async function tourDay(deps: AiDeps, input: TourInput): Promise<AskCard> 
     summary: a.summary.map((s) => cleanLine(s, 300)).filter(Boolean).slice(0, 3),
     bring: a.bring.map((s) => cleanLine(s, 120)).filter(Boolean).slice(0, 4),
   };
+}
+
+/** A stored timestamp as Pacific "HH:MM" (open houses), or null. */
+export function pacificHm(t: unknown): string | null {
+  if (typeof t !== "string") return null;
+  const d = new Date(t);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "America/Los_Angeles", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
 /** The tour date's default: next Saturday. */
