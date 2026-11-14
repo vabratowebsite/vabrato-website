@@ -801,7 +801,10 @@ with the member daily limits, and the site-wide monthly budget.
       - private: the agent's console pages and another member see none;
       - delete, the 30-day purge, and Delete my assistant data;
       - axe, 390 and 320 px, the keyboard, and page loads sending nothing.
-    - RERUNS_PLACEHOLDER Screenshots in `docs/screenshots/s5b-drafts/`.
+    - `s5b-assistant.mjs` (65; its notice check updated for the new
+      wording), `s5b-documents.mjs` (53; "Deleted 1 item"), `s5-qa.mjs`
+      (100) and `s6b-drafts.mjs` (42, after the helpers moved) still pass.
+      Screenshots in `docs/screenshots/s5b-drafts/`.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
