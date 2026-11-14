@@ -144,7 +144,7 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
       const f = driveFiles.get(dv[1]!);
       if (!f || f.account !== who.email) return json(404, { error: { code: 404 } });
       const bytes = fakeFileBytes(f.kind);
-      if (url.searchParams.get("alt") === "media") return new Response(bytes as unknown as BodyInit, { status: 200, headers: { "content-type": fakeMime[f.kind], "content-length": String(bytes.byteLength) } });
+      if (url.searchParams.get("alt") === "media") return new Response(bytes as unknown as ConstructorParameters<typeof Response>[0], { status: 200, headers: { "content-type": fakeMime[f.kind], "content-length": String(bytes.byteLength) } });
       return json(200, { id: dv[1], name: f.name, mimeType: fakeMime[f.kind], size: String(bytes.byteLength), trashed: false });
     }
     if (p === "/__fake/picker-files") {

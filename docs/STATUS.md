@@ -33,7 +33,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5b | Member AI assistant (Ask Vabrato) | Built: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). PR 7 merged (final QA, the member live test ready, Mark's wording sheet). Built; live run on the owner's go-ahead. Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
-| Integrations | Console: Google Calendar, Drive, Dropbox | In progress: PR 1 merged (connected accounts and Google Calendar; 0042 on hosted 2026-11-14; switch off until the Google OAuth client and token key are set). Next: PR 2 (Drive and Dropbox import) |
+| Integrations | Console: Google Calendar, Drive, Dropbox | In progress: PR 1 merged (connected accounts and Google Calendar; 0042 on hosted 2026-11-14; switch off until the Google OAuth client and token key are set). PR 2 built (Drive and Dropbox import into deal documents and receipts; 0043; both switches off until the Google picker key and the Dropbox app are set) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -2179,7 +2179,7 @@ apps/web and apps/va (`pnpm test`).
   This also lifts the built-in Supabase mailer's ~2-emails/hour cap on
   magic links.
 
-### Integrations: Google Calendar, Drive and Dropbox (console only; in progress)
+### Integrations: Google Calendar, Drive and Dropbox (console only; built 2026-11-14)
 
 A separate track after S6b (owner decision 2026-11-12). Owner answers
 2026-11-14:
@@ -2283,6 +2283,88 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     `my_connections` and `set_integration_flag` are callable by signed-in
     users as intended (each checks staff or admin inside), and not by the
     public.
+
+- **PR 2 (Drive and Dropbox import; migration 0043; owner answers
+  2026-11-14):**
+  - **Owner answers:**
+    - **Where files go:** documents and receipts. Documents take several
+      files and an optional type; a receipt takes one file, which fills the
+      receipt form ("Read it" where that AI switch is on), then the person
+      saves it.
+    - **Dropbox after import:** the file stays where it is. The console only
+      reads Apps/Vabrato; files already imported to a deal show "Imported"
+      and can't be imported twice.
+    - **The picker's token:** a short-lived, Drive-only (`drive.file`) token
+      goes to Google's picker in the browser. The refresh token and Calendar
+      access never leave the server.
+  - **Database (0043):**
+    - the switches `integration_google_drive` and `integration_dropbox`, off
+      (changed with `set_integration_flag`, audited);
+    - `external_ref` on `deal_documents` and `receipts` (`drive:<id>` or
+      `dropbox:id:<id>`, format checked), unique per deal, so a file can't
+      be imported to the same deal twice;
+    - a receipt's `source` must agree with its ref (manual, drive or
+      dropbox).
+  - **Connecting:**
+    - **Google:** one connection per person. "Allow Google Drive imports"
+      asks Google for `drive.file` on top of what was already allowed;
+      Calendar sync only runs when Calendar access is part of it, and
+      disconnecting removes both.
+    - **Dropbox:** its own OAuth flow, the same checks as Google's (one-time
+      state, PKCE, the same person on return, a verified email), the token
+      encrypted.
+  - **Importing** (a deal's Documents and Receipts tabs):
+    - **Drive:** "Import from Google Drive" opens Google's picker with the
+      narrowed token; the server fetches each picked file.
+    - **Dropbox:** "Import from Dropbox" lists Apps/Vabrato, newest first,
+      with "Imported" marks; the person ticks files.
+    - **Checks:** the same as uploads (real type, 20 MB for documents and
+      10 MB for receipts, HEIC refused), and Google Docs files are refused
+      with a "download it as a PDF" note. Downloads stop at the size limit.
+      Each refused file says why; the others still import.
+    - **Where they land:** documents are staff-only until someone shares
+      them; a receipt is stored in the person's own receipt folder for the
+      deal and saved through the receipt form.
+    - **Revoked access:** "reconnect in Settings", and Settings shows
+      "Needs reconnecting".
+  - **Settings:** Google Drive and Dropbox sections for each person, and one
+    "Integration switches" panel for admins, naming any missing environment
+    settings. The PR 1 disconnect button is now "Disconnect Google account".
+  - **Fixed along the way:** the Receipts table widened the whole page on
+    phones (its visually hidden column heading was positioned against the
+    page); its scroll box now contains it.
+  - **Tests:**
+    - **Database:** 10 tests (`file-imports.test.ts`), and
+      `hosted-imports-check.sql`, which passes locally.
+    - **Library:** 14 more tests (Drive scope narrowing and the picker's
+      token, file details and capped downloads, the Dropbox OAuth flow,
+      folder paging, downloads, revoked access); the guard test now covers
+      Dropbox and the picker key.
+    - **Console:** 7 tests for fetching from Drive and Dropbox.
+    - **Browser QA** (`scripts/qa/int-import.mjs`, with `fake-google.mjs`
+      and `fake-dropbox.mjs`): 81 of 81, run twice.
+    - **Reruns:** `int-calendar` 87 of 87, `s6b-documents` 47 of 47.
+      `s6b-final` 1,231 of 1,232: the miss is the intermittent React #418
+      already queued as its own task.
+  - **Needs you** (nothing here blocks merging; both switches stay off):
+    - **Google Cloud:**
+      - enable the Drive API and the Google Picker API;
+      - add the `drive.file` scope to the consent screen;
+      - create a browser API key restricted to the console's domain and the
+        Picker API;
+      - note the project number.
+    - **The console's Vercel env (Google):** `GOOGLE_PICKER_API_KEY` and
+      `GOOGLE_CLOUD_PROJECT_NUMBER`.
+    - **Dropbox App Console:**
+      - create an app (Scoped access, App folder, named Vabrato) with
+        `files.metadata.read`, `files.content.read` and `account_info.read`;
+      - add the console's `/integrations/dropbox/callback` as a redirect URI.
+    - **The console's Vercel env (Dropbox):** `DROPBOX_APP_KEY` and
+      `DROPBOX_APP_SECRET`.
+    - **Then:** turn the switches on in Settings.
+  - **Not in this PR:** automatic or background import, watching folders,
+    writing to Drive or Dropbox, whole folders, and the website's member
+    documents.
 
 ### Not started
 
