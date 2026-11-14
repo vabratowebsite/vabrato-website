@@ -33,7 +33,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5b | Member AI assistant (Ask Vabrato) | Built: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). PR 7 merged (final QA, the member live test ready, Mark's wording sheet). Built; live run on the owner's go-ahead. Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
-| Integrations | Console: Google Calendar, Drive, Dropbox | In progress: PR 1 built (connected accounts and Google Calendar; 0042; switch off until the Google OAuth client and token key are set). Next: PR 2 (Drive and Dropbox import) |
+| Integrations | Console: Google Calendar, Drive, Dropbox | In progress: PR 1 merged (connected accounts and Google Calendar; 0042 on hosted 2026-11-14; switch off until the Google OAuth client and token key are set). Next: PR 2 (Drive and Dropbox import) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -2192,7 +2192,8 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
 - **Dropbox:** its own Apps/Vabrato folder only.
 - **Two PRs:** PR 1 connections and Calendar; PR 2 Drive and Dropbox import.
 
-- **PR 1 (connected accounts and Google Calendar; migration 0042):**
+- **PR 1 (connected accounts and Google Calendar; migration 0042, merged as #63,
+  on hosted 2026-11-14):**
   - **Database (0042):**
     - `staff_connections`: each person's encrypted refresh token. RLS on
       with no policies and nothing granted to signed-in users, so only the
@@ -2262,6 +2263,26 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     - Then an admin turns Google Calendar on in Settings.
   - **Not in PR 1:** Drive and Dropbox (PR 2), reading calendars, inviting
     clients, and schedule tasks on the calendar.
+  - **On hosted (2026-11-14):** 0042 applied after checking that main's file
+    matched the tested one byte for byte and that hosted ended at 0041, with
+    none of 0042's tables, switch or functions.
+
+    `hosted-connections-check.sql` (rolled back) passed:
+    - the switch arrives off;
+    - a connected agent can't read, add or change any token, sees their own
+      connection through `my_connections()` without the token, reads their
+      own calendar events but can't write one, sets their own preference,
+      and can't turn the switch on (`admin_only`);
+    - another agent sees none of it; a seller gets nothing and can't add a
+      preference; the public is refused.
+
+    Nothing was left behind: no check accounts, connections, events or
+    preferences, no audit rows, the switch off and every AI switch off.
+  - **Security advisor:** the new entries are expected. `staff_connections`
+    has RLS on with no policies, on purpose: only the server reads it.
+    `my_connections` and `set_integration_flag` are callable by signed-in
+    users as intended (each checks staff or admin inside), and not by the
+    public.
 
 ### Not started
 
