@@ -35,7 +35,7 @@ export function CompareAnswer({ card, heading }: { card: CompareCard; heading: R
         </div>
       )}
       {card.differences.length > 0 && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="How the homes differ (scrolls sideways on small screens)">
           <table className="w-full min-w-[480px] border border-line bg-white text-left">
             <caption className="sr-only">How the homes differ</caption>
             <thead>

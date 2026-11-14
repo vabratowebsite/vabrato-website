@@ -79,7 +79,7 @@ async function compareInAssistant(page, labels) {
 }
 async function askAbout(page, question) {
   if (await page.getByRole("radio").count()) await page.getByText("Ask about a home", { exact: true }).click();
-  await page.getByLabel("Your question").fill(question);
+  await page.getByLabel("Your question", { exact: true }).fill(question);
   const n = await cards(page).count();
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await cards(page).nth(n).waitFor({ timeout: 15000 });
@@ -203,7 +203,7 @@ check("ask: an opted-out home gets 'ask your agent', unsent", (await card.getByT
 
 // Keyboard: the home, the question, then the button.
 await buyer.goto(`${BASE}/my/assistant?listing=FX-001`);
-await buyer.getByLabel("Your question").fill("How many bedrooms?");
+await buyer.getByLabel("Your question", { exact: true }).fill("How many bedrooms?");
 await buyer.getByLabel("Which home").focus();
 const order = [];
 for (let i = 0; i < 2; i++) {

@@ -267,3 +267,15 @@ Modes come from `QA-MODE: ok|wiring|steering|contacts|pages|empty` in the fictio
 - **Delete, purge and Delete my assistant data**, then axe, 390 and 320 px, the keyboard, and page loads sending nothing.
 
 Modes come from `QA-MODE: ok|wiring|steering|contacts|personal|extra` in the member's notes. It needs migrations up to 0038, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-drafts/`; everything it adds is removed, and every switch and setting it touches is put back.
+
+`s5b-listings.mjs` covers Ask Vabrato's "Compare homes" and "Ask about a home" (S5b PR 4), on the fictional MLS fixtures:
+- **Off by default:** no compare button and no listing-page link.
+- **The MLSListings approval switch:** the two switches are locked in the console and refused by the database until it's on; turning it off turns them off.
+- **Compare** from `/my/compare` and from Ask Vabrato: only FX-001 and FX-002 are sent (FX-013 opted out, listed as not included); no FULL fields, contacts, internal notes or sold fields for an IDX buyer; brokers, source and disclaimer shown.
+- **Ask about a home** from the listing page's link: answered from the listing, with sources limited to fields we sent.
+- **Never shown or sent:** price opinions, invented dollar figures, Fair Housing wording and wiring details in an answer; a steering question and an opted-out home are refused unsent.
+- **A VOW buyer** gets sold fields; an IDX buyer isn't offered a sold home.
+- **Signed out:** no link and no assistant request; the public page carries no AI text.
+- **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: ok|value|money|steering|wiring|fields|extra` in the member's question, or in FX-002's remarks for compare (put back afterwards). It needs migrations up to 0039, the MLS fixtures seeded, `SERVICE_KEY`, `CLAUDE_LOG` and `REVALIDATE_SECRET`. Screenshots go to `docs/screenshots/s5b-listings/`; everything it adds is removed, and every switch and setting it touches is put back.
