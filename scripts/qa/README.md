@@ -289,3 +289,17 @@ Modes come from `QA-MODE: ok|value|money|steering|wiring|fields|extra` in the me
 - **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
 
 Modes come from `QA-MODE: ok|deadline|money|wiring|steering|value|extra` in the member's notes, or in FX-002's remarks for a tour (put back afterwards). It adds a QA-only open house for FX-002 and removes it. It needs migrations up to 0040, the MLS fixtures seeded, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-schedules/`.
+
+`s5b-design.mjs` covers Ask Vabrato's colors and moodboard, staging ideas, and open-house flyer and posts (S5b PR 6):
+- **Off by default**, then the console switches (none needs the MLSListings approval).
+- **A buyer's palette:** drawn by our templates as images, with the colors as text too; a PNG download; only the notes sent (email removed). Bad colors and markup in the answer never reach the page, Fair Housing wording isn't shown, and buyers get no staging or flyer modes.
+- **A seller's staging ideas:** an idea with a cost is left out; a to-do goes to the agent.
+- **A seller's flyer:**
+  - only their words are sent (no listing data); Fair Housing notes are refused unsent;
+  - an edit with a price is refused when sent; value talk, phone numbers, links and markup are handled;
+  - the agent approves one in the console with FX-001 and a QA open house, and declines another with a note;
+  - the approved flyer shows facts from our records, the open house in Pacific time, the agent's card, the DRE number and Equal Housing; the posts copy with the brokerage line; the post image downloads as PNG; printing shows only the flyer;
+  - a buyer gets a 404 on the flyer.
+- **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: ok|badhex|money|value|contacts|script|steering|wiring|extra` in the member's notes. It adds a QA-only open house for FX-001 and removes it. It needs migrations up to 0041, the MLS fixtures seeded, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-design/`.

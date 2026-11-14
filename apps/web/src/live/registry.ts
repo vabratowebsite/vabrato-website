@@ -8,6 +8,7 @@ import { compareParts, homeForAi, listingParts, type AiHome } from "../member/as
 import { MOVING_PLAN, PRELISTING, TOUR_DAY, movingParts, namesContractDeadline, planItems, tourParts, tourStops, type PlanAnswer, type TourAnswer } from "../member/assistant/schedules";
 import { COMPARE_HOMES, DRAFT_COVER_LETTER, DRAFT_MESSAGE, EXPLAIN_TERM, LISTING_QUESTION, SEARCH_BY_SENTENCE, SUMMARIZE_DOCUMENT, searchParts, type CompareAnswer, type DraftAnswer, type ListingAnswer, type SearchAnswer, type SummaryAnswer } from "../member/assistant/features";
 import { summaryView } from "../member/assistant/summary";
+import { FLYER, PALETTE, STAGING, cleanFlyer, flyerProblem, paletteView, stagingView, type FlyerAnswer, type PaletteAnswer, type StagingAnswer } from "../member/assistant/design";
 
 // The website's live calls (S5b): every member AI feature once, with
 // fictional input, for apps/web/src/live/live-ai.live.ts. The CI coverage
@@ -225,6 +226,54 @@ export const LIVE_CALLS: LiveCall[] = [
         { name: "notes for both homes", ok: Boolean(a && ["A", "B"].every((l) => a.stops.some((s) => s.letter === l && s.look_for.length))) },
         { name: "no price or value opinion", ok: valueOpinion(all) === null },
         { name: "every dollar figure is one we sent", ok: unsentDollar(all, sentAmounts([fixtureHome("FX-001"), fixtureHome("FX-002")])) === null },
+      ];
+    },
+  },
+  {
+    id: "palette",
+    feature: PALETTE,
+    input: () => ({ instruction: "A north-facing living room with oak floors. We'd like it to feel warmer and calmer." }),
+    shown: (data) => (data ? paletteView(data as PaletteAnswer, "Colors and moodboard") : null),
+    findings: (data) => {
+      const a = data as PaletteAnswer | null;
+      const v = a ? paletteView(a, "x") : null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "3 to 6 colors, all real #RRGGBB", ok: Boolean(a && a.colors.length >= 3 && a.colors.length <= 6 && a.colors.every((c) => /^#[0-9a-f]{6}$/i.test(c.hex))) },
+        { name: "shown without errors", ok: v?.kind === "palette" },
+        { name: "no markup, prices or brand names", ok: !/[<>]/.test(all) && dollarFigures(all).length === 0 && !/sherwin|benjamin moore|behr|valspar/i.test(all) },
+      ];
+    },
+  },
+  {
+    id: "staging",
+    feature: STAGING,
+    input: () => ({ instruction: "Small living room, dark corners, a big sectional and lots of family photos.", parts: [{ type: "text", text: '<data label="The room">\nRoom type: Living room.\n</data>' }] }),
+    shown: (data) => (data ? stagingView(data as StagingAnswer, "living", "Staging ideas: Living room") : null),
+    findings: (data) => {
+      const a = data as StagingAnswer | null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "has ideas", ok: Boolean(a && a.keep.length + a.remove.length + a.add.length + a.arrange.length > 0) },
+        { name: "nothing dropped by our checks", ok: Boolean(a) && (stagingView(a!, "living", "x") as { dropped?: number }).dropped === 0 },
+        { name: "no costs, value talk or edited photos", ok: dollarFigures(all).length === 0 && valueOpinion(all) === null && !/photoshop|retouch|virtual(ly)? stag/i.test(all) },
+      ];
+    },
+  },
+  {
+    id: "flyer",
+    feature: FLYER,
+    input: () => ({ instruction: "We love the morning light in the kitchen, the big back yard with a lemon tree, and the new roof.", parts: [{ type: "text", text: '<data label="The flyer">\nFor: an open house.\n</data>' }] }),
+    shown: (data) => (data ? cleanFlyer(data as FlyerAnswer) : null),
+    findings: (data) => {
+      const a = data as FlyerAnswer | null;
+      const f = a ? cleanFlyer(a) : null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "headline, highlights and both posts", ok: Boolean(f && f.headline && f.highlights.length >= 3 && f.instagram && f.facebook) },
+        { name: "passes our flyer checks", ok: Boolean(f) && flyerProblem(f!) === null },
+        { name: "invents no price, address or time", ok: dollarFigures(all).length === 0 && !/\b\d{1,2}(:\d{2})?\s?(am|pm)\b/i.test(all) && !/\b\d{2,5} [A-Z][a-z]+ (St|Ave|Rd|Dr|Way|Lane|Ln|Ct)\b/.test(all) },
+        { name: "mentions the lemon tree or the light", ok: /lemon|light/i.test(all) },
       ];
     },
   },

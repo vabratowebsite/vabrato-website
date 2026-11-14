@@ -181,6 +181,12 @@ describe("portal nav", () => {
     expect(portalNav("seller", { drafts: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href)).toEqual(["/my/drafts"]);
   });
 
+  it("lists My flyers for sellers only (S5b PR 6)", () => {
+    expect(portalNav("seller", { assistant: true, flyers: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href)).toEqual(["/my/assistant", "/my/flyers"]);
+    expect(portalNav("both", { flyers: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href)).toEqual(["/my/flyers"]);
+    expect(portalNav("buyer", { assistant: true, flyers: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href)).toEqual(["/my/assistant"]);
+  });
+
   it("makes initials", () => {
     expect(initials("Jordan Lee Example", "j@example.test")).toBe("JE");
     expect(initials("", "avery@example.test")).toBe("A");

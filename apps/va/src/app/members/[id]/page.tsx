@@ -7,7 +7,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { MemberSummaryPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, mutedCls } from "@/components/ui";
 import { aiFeaturesOn } from "@/lib/ai-flags";
-import { decideMemberTodoAction, setMemberAgentAction } from "@/lib/member-actions";
+import { decideMemberPromoAction, decideMemberTodoAction, setMemberAgentAction } from "@/lib/member-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen, leadKindLabel } from "@/lib/today";
@@ -36,7 +36,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
   if (!m) notFound();
 
   const ai = await aiFeaturesOn(supabase, ["ai_staff_member_summary"]);
-  const [saved, searches, tracked, tours, docs, deals, deletion, agents, acting, todos] = await Promise.all([
+  const [saved, searches, tracked, tours, docs, deals, deletion, agents, acting, todos, promos] = await Promise.all([
     supabase.from("saved_homes").select("listing_key, created_at").eq("profile_id", id).order("created_at", { ascending: false }).limit(50),
     supabase.from("saved_searches").select("id, name, frequency").eq("profile_id", id).order("created_at", { ascending: false }),
     supabase.from("tracked_properties").select("id, address, status").eq("buyer_id", id).order("created_at", { ascending: false }),
@@ -47,7 +47,22 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
     supabase.rpc("is_acting_lead_admin"),
     supabase.from("member_todos").select("id, title, source_name, page, due_date, status, created_at").eq("profile_id", id).order("created_at", { ascending: true }).limit(300),
+    supabase.from("member_promos").select("id, kind, headline, highlights, blurb, instagram, facebook, status, created_at").eq("profile_id", id).order("created_at", { ascending: true }).limit(20),
   ]);
+  // S5b PR 6: flyers the member sent wait for approval with one of our own active listings.
+  const pendingPromos = (promos.data ?? []).filter((p) => p.status === "pending");
+  const ownListings = pendingPromos.length
+    ? ((await supabase.from("mls_listings").select("listing_key, city, address_display, data").eq("is_own_listing", true).in("standard_status", ["Active", "ActiveUnderContract", "ComingSoon", "Pending"]).order("listing_key").limit(100)).data ?? [])
+    : [];
+  const listingLabel = (l: { listing_key: string; city: string | null; address_display: boolean | null; data: unknown }) => {
+    const addr = l.address_display && typeof (l.data as Record<string, unknown> | null)?.UnparsedAddress === "string" ? String((l.data as Record<string, unknown>).UnparsedAddress) : null;
+    return `${addr ?? l.city ?? "Address hidden"} (${l.listing_key})`;
+  };
+  const openHouses = ownListings.length
+    ? ((await supabase.from("mls_open_houses").select("open_house_key, listing_key, start_time, end_time").in("listing_key", ownListings.map((l) => l.listing_key)).gt("end_time", new Date().toISOString()).order("start_time").limit(200)).data ?? [])
+    : [];
+  const ohLabel = (o: { start_time: string | null; end_time: string | null }) =>
+    o.start_time ? new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(o.start_time)) : "Time not set";
   const pendingTodos = (todos.data ?? []).filter((t) => t.status === "pending");
   const todoCount = (s: string) => (todos.data ?? []).filter((t) => t.status === s).length;
   const agentName = (aid: string | null) => (aid ? (aid === profile.id ? "You" : (agents.data ?? []).find((a) => a.id === aid)?.full_name || "Staff") : "None");
@@ -189,6 +204,86 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
                           <input type="hidden" name="decision" value="decline" />
                         </ActionForm>
                       </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={mutedCls}>Nothing waiting.</p>
+              )}
+            </Panel>
+          )}
+
+          {(promos.data?.length ?? 0) > 0 && (
+            <Panel title="Flyers waiting">
+              <p className={`${mutedCls} mb-3`}>
+                Open-house flyers and posts the member wrote with Ask Vabrato, from their own words. Approving attaches one of our listings: the flyer then shows its address, price, photo, the open house you pick and your card, from our records. {(promos.data ?? []).filter((p) => p.status === "approved").length} approved, {(promos.data ?? []).filter((p) => p.status === "declined").length} declined so far.
+              </p>
+              {pendingPromos.length ? (
+                <ul className="divide-y divide-line font-body text-body-sm text-ink">
+                  {pendingPromos.map((p) => (
+                    <li key={p.id} className="space-y-3 py-4">
+                      <p className="flex flex-wrap items-center gap-2 font-medium">
+                        {p.headline}
+                        <Pill tone="gold">Waiting</Pill>
+                      </p>
+                      <p className={mutedCls}>
+                        {p.kind === "just_listed" ? "Just listed" : "Open house"} · sent {fmtWhen(p.created_at)}
+                      </p>
+                      {p.highlights && (
+                        <ul className="list-disc pl-5">
+                          {p.highlights.split("\n").filter(Boolean).map((h) => (
+                            <li key={h}>{h}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {p.blurb && <p className="whitespace-pre-wrap">{p.blurb}</p>}
+                      <details>
+                        <summary className="min-h-[44px] cursor-pointer py-2 text-navy underline">The posts</summary>
+                        <p className="mt-2 font-medium">Instagram</p>
+                        <p className="whitespace-pre-wrap">{p.instagram || "None"}</p>
+                        <p className="mt-2 font-medium">Facebook</p>
+                        <p className="whitespace-pre-wrap">{p.facebook || "None"}</p>
+                      </details>
+                      {ownListings.length ? (
+                        <ActionForm action={decideMemberPromoAction.bind(null, m.id)} submitLabel="Approve" submitAriaLabel={`Approve the flyer: ${p.headline}`}>
+                          <input type="hidden" name="promo" value={p.id} />
+                          <input type="hidden" name="decision" value="approve" />
+                          <label className={labelCls}>
+                            Our listing
+                            <select name="listing" required className={inputCls} defaultValue="">
+                              <option value="" disabled>
+                                Choose the listing
+                              </option>
+                              {ownListings.map((l) => (
+                                <option key={l.listing_key} value={l.listing_key}>
+                                  {listingLabel(l)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className={labelCls}>
+                            Open house (optional)
+                            <select name="open_house" className={inputCls} defaultValue="">
+                              <option value="">No open house</option>
+                              {openHouses.map((o) => (
+                                <option key={o.open_house_key} value={o.open_house_key}>
+                                  {ohLabel(o)} · {o.listing_key}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </ActionForm>
+                      ) : (
+                        <p className={mutedCls}>None of our listings is active, so there&apos;s nothing to attach. Decline it with a note, or wait until the listing is live.</p>
+                      )}
+                      <ActionForm action={decideMemberPromoAction.bind(null, m.id)} submitLabel="Decline" submitAriaLabel={`Decline the flyer: ${p.headline}`} secondary>
+                        <input type="hidden" name="promo" value={p.id} />
+                        <input type="hidden" name="decision" value="decline" />
+                        <label className={labelCls}>
+                          Note to the member (optional)
+                          <textarea name="note" maxLength={300} rows={2} className={inputCls} />
+                        </label>
+                      </ActionForm>
                     </li>
                   ))}
                 </ul>

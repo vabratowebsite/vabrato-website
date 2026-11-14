@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { STAFF_ROLES, getProfile } from "@vabrato/lib";
+import { fairHousingBlocks, paymentInstructionMatches } from "@vabrato/ai";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Staff side of member messages, tours and the buyer agreement (S5 PR 4;
@@ -103,4 +104,48 @@ export async function decideMemberTodoAction(memberId: string, _prev: MemberActi
   if (error) return { error: /not_found/.test(error.message) ? "That to-do was already decided, or isn't for a member you work with." : "Couldn't save that." };
   revalidatePath(`/members/${member.data}`);
   return { error: null, ok: approve ? "Approved: it's on the member's to-do list." : "Declined." };
+}
+
+/**
+ * Approve a member's flyer with one of our own listings (and optionally one of
+ * its open houses), or decline it with a note (S5b PR 6, 0041
+ * decide_member_promo: staff who can see the member, pending only; our own
+ * listing; audited). The words are checked again first: they were written in
+ * the member's browser.
+ */
+export async function decideMemberPromoAction(memberId: string, _prev: MemberActionState, form: FormData): Promise<MemberActionState> {
+  const { supabase } = await staffClient();
+  const member = MemberId.safeParse(memberId);
+  const promo = MemberId.safeParse(form.get("promo"));
+  const approve = form.get("decision") === "approve";
+  if (!member.success || !promo.success) return { error: "That flyer wasn't found." };
+  if (approve) {
+    const listing = z.string().regex(/^[A-Za-z0-9._-]{1,64}$/).safeParse(form.get("listing"));
+    if (!listing.success) return { error: "Choose the listing." };
+    const ohRaw = String(form.get("open_house") ?? "");
+    const openHouse = ohRaw ? z.string().min(1).max(128).safeParse(ohRaw) : null;
+    if (openHouse && !openHouse.success) return { error: "That open house wasn't found." };
+    const { data: row } = await supabase.from("member_promos").select("headline, highlights, blurb, instagram, facebook").eq("id", promo.data).maybeSingle();
+    if (!row) return { error: "That flyer wasn't found." };
+    const text = [row.headline, row.highlights, row.blurb, row.instagram, row.facebook].join("\n");
+    const fh = fairHousingBlocks(text);
+    if (fh.length) return { error: `It uses "${fh[0]!.match}", which Fair Housing rules don't allow. Decline it with a note.` };
+    if (paymentInstructionMatches(text).length) return { error: "It mentions payment or wiring details. Decline it with a note." };
+    if (/\$\s?\d/.test(text)) return { error: "It has a dollar figure; the price comes from the listing. Decline it with a note." };
+    if (/\bhttps?:\/\/|\bwww\./i.test(text)) return { error: "It has a link. Decline it with a note." };
+    const { error } = await supabase.rpc("decide_member_promo", { p_id: promo.data, p_approve: true, p_listing_key: listing.data, ...(openHouse?.success ? { p_open_house_key: openHouse.data } : {}) });
+    if (error) {
+      if (/not_our_listing/.test(error.message)) return { error: "Choose one of our own listings." };
+      if (/not_this_open_house/.test(error.message)) return { error: "That open house isn't for this listing, or it's over." };
+      return { error: /not_found/.test(error.message) ? "That flyer was already decided, or isn't for a member you work with." : "Couldn't save that." };
+    }
+    revalidatePath(`/members/${member.data}`);
+    return { error: null, ok: "Approved: the member can print the flyer and copy the posts." };
+  }
+  const note = z.string().trim().max(300).safeParse(String(form.get("note") ?? ""));
+  if (!note.success) return { error: "Keep the note under 300 characters." };
+  const { error } = await supabase.rpc("decide_member_promo", { p_id: promo.data, p_approve: false, ...(note.data ? { p_note: note.data } : {}) });
+  if (error) return { error: /not_found/.test(error.message) ? "That flyer was already decided, or isn't for a member you work with." : "Couldn't save that." };
+  revalidatePath(`/members/${member.data}`);
+  return { error: null, ok: "Declined. The member sees your note." };
 }

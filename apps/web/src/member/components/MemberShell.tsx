@@ -6,7 +6,7 @@ import { MemberQueryProvider } from "./MemberQueryProvider";
 import { memberAiStatus } from "../ai-status";
 import { unseenAlertCount } from "../alerts";
 import { portalNav, initials, type PortalPage } from "../nav";
-import { buys, type MemberRole } from "../roles";
+import { buys, sells, type MemberRole } from "../roles";
 import { assignedAgent, type Member } from "../session";
 
 // Portal frame for every /my page (mockups 05/06): role-based nav, agent card,
@@ -30,7 +30,7 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow, unseen, unread, ai, todoCount, draftCount] = await Promise.all([
+  const [agent, vow, unseen, unread, ai, todoCount, draftCount, flyerCount] = await Promise.all([
     assignedAgent(member.supabase, member.profile.agent_id),
     flagEnabled("vow_enabled"),
     buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
@@ -52,8 +52,15 @@ export async function MemberShell({
       .select("id", { count: "exact", head: true })
       .eq("profile_id", member.profile.id)
       .then((r) => r.count ?? 0),
+    sells(role)
+      ? member.supabase
+          .from("member_promos")
+          .select("id", { count: "exact", head: true })
+          .eq("profile_id", member.profile.id)
+          .then((r) => r.count ?? 0)
+      : Promise.resolve(0),
   ]);
-  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0, todos: ai.on.includes("ai_member_summarize") || todoCount > 0, drafts: ai.on.includes("ai_member_draft") || ai.on.includes("ai_member_cover_letter") || draftCount > 0 }).map((g) => ({
+  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0, todos: ai.on.includes("ai_member_summarize") || todoCount > 0, drafts: ai.on.includes("ai_member_draft") || ai.on.includes("ai_member_cover_letter") || draftCount > 0, flyers: ai.on.includes("ai_member_flyer") || flyerCount > 0 }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current, ...(it.count ? { count: it.count } : {}) })),
   }));

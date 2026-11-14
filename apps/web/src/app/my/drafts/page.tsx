@@ -22,7 +22,10 @@ export default async function DraftsPage() {
     .order("updated_at", { ascending: false })
     .limit(50);
   const drafts = data ?? [];
-  const { count: todos } = await member.supabase.from("member_todos").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id).in("status", ["pending", "declined"]);
+  const [{ count: todos }, { count: flyers }] = await Promise.all([
+    member.supabase.from("member_todos").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id).in("status", ["pending", "declined"]),
+    member.supabase.from("member_promos").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id),
+  ]);
 
   return (
     <MemberShell member={member} role={member.role} current="drafts" eyebrow="Assistant" title="My drafts">
@@ -62,13 +65,13 @@ export default async function DraftsPage() {
       <Panel title="Your assistant data">
         <div className="space-y-3 font-body text-body-sm text-ink">
           <p>
-            This removes your saved drafts, and the to-dos waiting for your agent or declined (
+            This removes your saved drafts, your flyers, and the to-dos waiting for your agent or declined (
             <a href="/my/todos" className="text-navy underline">
               My to-dos
             </a>
             ). Approved to-dos stay until you delete them.
           </p>
-          <DeleteAssistantData count={drafts.length + (todos ?? 0)} />
+          <DeleteAssistantData count={drafts.length + (todos ?? 0) + (flyers ?? 0)} />
         </div>
       </Panel>
     </MemberShell>

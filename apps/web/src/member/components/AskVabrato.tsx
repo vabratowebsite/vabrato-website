@@ -3,8 +3,9 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { AIDraftLabel, SparkleIcon } from "@vabrato/ui/web";
 import { Markdown } from "@vabrato/ui/markdown";
-import { addTodosAction, askCompareAction, askCoverLetterAction, askDraftAction, askExplainAction, askListingAction, askMovingAction, askPrelistingAction, askSearchAction, askSummarizeAction, askTourAction } from "@/app/my/assistant/actions";
-import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, LISTING_QUESTION_MAX, PLAN_NOTES_MAX, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
+import { addTodosAction, askCompareAction, askCoverLetterAction, askDraftAction, askExplainAction, askFlyerAction, askListingAction, askMovingAction, askPaletteAction, askPrelistingAction, askSearchAction, askStagingAction, askSummarizeAction, askTourAction } from "@/app/my/assistant/actions";
+import { ASK_LIMITS, DESIGN_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, LISTING_QUESTION_MAX, PLAN_NOTES_MAX, PROMO_KINDS, ROOM_TYPES, askMyAgentHref, isPromoKind, isRecipient, isRoomType, type AskCard, type AskKind, type DesignKind, type DraftKind, type PromoKind, type Recipient, type RoomType } from "../assistant/kinds";
+import { FlyerAnswer, PaletteAnswer, StagingAnswer } from "./DesignAnswers";
 import { DraftEditor } from "./DraftEditor";
 import { CompareAnswer, ListingAnswer } from "./ListingAnswers";
 import { PlanAnswer, TourAnswer } from "./PlanAnswers";
@@ -76,7 +77,28 @@ const MODES: Record<AskKind, { label: string; field: string; hint: string; butto
     hint: "Pick 2 to 6 saved homes. Our code puts them in order (open houses first, then distance); Ask Vabrato adds what to look at.",
     button: "Plan the day",
   },
+  palette: {
+    label: "Colors and moodboard",
+    field: "The room or the look you want",
+    hint: "For example: a north-facing living room with oak floors; we want it warmer and calmer. Only these notes are sent.",
+    button: "Make the palette",
+  },
+  staging: {
+    label: "Staging ideas",
+    field: "Describe the room",
+    hint: "Size, light, furniture, what bothers you. No photos are sent; ideas are for planning only.",
+    button: "Get ideas",
+  },
+  flyer: {
+    label: "Open-house flyer and posts",
+    field: "What do you love about your home?",
+    hint: "Light, updates, the yard, the layout. Only your words are sent: your agent adds the address, price, photo and open-house time when they approve it.",
+    button: "Write the flyer",
+  },
 };
+
+const DESIGN_MAX: Record<DesignKind, number> = { palette: DESIGN_LIMITS.paletteNotes, staging: DESIGN_LIMITS.stagingNotes, flyer: DESIGN_LIMITS.flyerNotes };
+const isDesign = (k: AskKind): k is DesignKind => k === "palette" || k === "staging" || k === "flyer";
 
 const isPlan = (k: AskKind) => k === "moving" || k === "prelisting";
 
@@ -143,6 +165,8 @@ export function AskVabrato({
   const [movingSource, setMovingSource] = useState<"sale" | "date">(sale ? "sale" : "date");
   const [planDateValue, setPlanDateValue] = useState("");
   const [occupancy, setOccupancy] = useState<"occupied" | "vacant">("occupied");
+  const [room, setRoom] = useState<RoomType>("living");
+  const [promoKind, setPromoKind] = useState<PromoKind>("open_house");
   const [tourPicked, setTourPicked] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [listingKey, setListingKey] = useState(initialListing?.key ?? listingOptions[0]?.key ?? "");
@@ -159,7 +183,7 @@ export function AskVabrato({
   const newest = useRef<HTMLHeadingElement>(null);
   const uid = useId();
   const m = MODES[mode];
-  const max = mode === "summarize" || mode === "compare" || mode === "tour" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : mode === "listing" ? LISTING_QUESTION_MAX : isPlan(mode) ? PLAN_NOTES_MAX[mode as "moving" | "prelisting"] : ASK_LIMITS[mode as "explain" | "search"];
+  const max = mode === "summarize" || mode === "compare" || mode === "tour" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : mode === "listing" ? LISTING_QUESTION_MAX : isPlan(mode) ? PLAN_NOTES_MAX[mode as "moving" | "prelisting"] : isDesign(mode) ? DESIGN_MAX[mode] : ASK_LIMITS[mode as "explain" | "search"];
   const ready =
     mode === "summarize"
       ? Boolean(doc)
@@ -195,7 +219,11 @@ export function AskVabrato({
                 : `Moving plan for ${planDateValue}`
               : mode === "prelisting"
                 ? `Pre-listing checklist for ${planDateValue}`
-                : text.trim();
+                : mode === "staging"
+                  ? `Staging ideas: ${ROOM_TYPES[room]}`
+                  : mode === "flyer"
+                    ? `${PROMO_KINDS[promoKind]} flyer and posts`
+                    : text.trim();
     if (!ready || pending) return;
     start(async () => {
       let card: AskCard;
@@ -219,8 +247,14 @@ export function AskVabrato({
                           ? await askPrelistingAction({ listDate: planDateValue, occupancy, notes: text })
                           : mode === "tour"
                             ? await askTourAction({ keys: tourPicked, date: planDateValue })
-                            : await askSummarizeAction(doc);
-        if ((mode === "summarize" || mode === "compare" || mode === "tour" || isPlan(mode)) && card.kind === "error") card = { ...card, question };
+                            : mode === "palette"
+                              ? await askPaletteAction({ notes: text })
+                              : mode === "staging"
+                                ? await askStagingAction({ room, notes: text })
+                                : mode === "flyer"
+                                  ? await askFlyerAction({ kind: promoKind, notes: text })
+                                  : await askSummarizeAction(doc);
+        if ((mode === "summarize" || mode === "compare" || mode === "tour" || isPlan(mode) || mode === "staging" || mode === "flyer") && card.kind === "error") card = { ...card, question };
       } catch {
         card = { kind: "error", feature: mode, question, message: "Something went wrong. Please try again." };
       }
@@ -396,6 +430,34 @@ export function AskVabrato({
                 </div>
               </div>
             )}
+            {mode === "staging" && (
+              <div>
+                <label htmlFor={`${uid}-room`} className="block text-body-sm font-medium text-ink">
+                  Which room
+                </label>
+                <select id={`${uid}-room`} value={room} onChange={(e) => isRoomType(e.target.value) && setRoom(e.target.value)} className={`${selectCls} max-w-xs`}>
+                  {Object.entries(ROOM_TYPES).map(([k, label]) => (
+                    <option key={k} value={k}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {mode === "flyer" && (
+              <div>
+                <label htmlFor={`${uid}-pkind`} className="block text-body-sm font-medium text-ink">
+                  The flyer is for
+                </label>
+                <select id={`${uid}-pkind`} value={promoKind} onChange={(e) => isPromoKind(e.target.value) && setPromoKind(e.target.value)} className={`${selectCls} max-w-xs`}>
+                  {Object.entries(PROMO_KINDS).map(([k, label]) => (
+                    <option key={k} value={k}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {mode === "listing" && (
               <div>
                 <label htmlFor={`${uid}-listing`} className="block text-body-sm font-medium text-ink">
@@ -490,7 +552,7 @@ export function AskVabrato({
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, max))}
               maxLength={max}
-              rows={isDraft(mode) || isPlan(mode) ? 5 : 3}
+              rows={isDraft(mode) || isPlan(mode) || isDesign(mode) ? 5 : 3}
               required={!isPlan(mode)}
               aria-describedby={`${uid}-hint ${uid}-count`}
               className="mt-2 block w-full border border-muted bg-white px-3 py-2 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
@@ -573,6 +635,9 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
   if (card.kind === "summary") return <SummaryAnswer card={card} heading={heading} />;
   if (card.kind === "plan") return <PlanAnswer card={card} heading={heading(card.planKind === "moving" ? "Your moving plan" : "Your pre-listing checklist")} />;
   if (card.kind === "tour") return <TourAnswer card={card} heading={heading("Your tour day")} />;
+  if (card.kind === "palette") return <PaletteAnswer card={card} heading={heading("Your palette")} />;
+  if (card.kind === "staging") return <StagingAnswer card={card} heading={heading(`Staging ideas: ${ROOM_TYPES[card.room]}`)} />;
+  if (card.kind === "flyer") return <FlyerAnswer card={card} heading={heading("Your flyer and posts")} />;
   if (card.kind === "compare") return <CompareAnswer card={card} heading={heading(`Comparing ${card.homes.length + card.excluded.length} homes`)} />;
   if (card.kind === "listing") return <ListingAnswer card={card} heading={heading("About this home")} />;
   if (card.kind === "draft")

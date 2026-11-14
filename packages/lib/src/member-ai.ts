@@ -76,6 +76,21 @@ export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
     what: "For buyers: our code orders 2 to 6 saved homes (open houses first, then straight-line distance); the assistant adds what to look at in each from the listing fields they may see. Opted-out homes are never sent. Needs the MLSListings approval switch. Nothing is kept.",
     needsMlsApproval: true,
   },
+  {
+    flag: "ai_member_palette",
+    name: "Colors and moodboard",
+    what: "A color palette and a moodboard from the member's notes about a room or a style. The assistant picks the colors and names; our code checks them and draws the swatches. Labelled an AI concept for planning only. Nothing is kept.",
+  },
+  {
+    flag: "ai_member_staging",
+    name: "Staging ideas",
+    what: "For sellers: ideas for staging a room they describe in words (no photos are sent): what to keep, remove, add and how to arrange it, with a few accent colors. No costs or price opinions. Ideas the member adds go to their to-dos for their agent's approval. Nothing else is kept.",
+  },
+  {
+    flag: "ai_member_flyer",
+    name: "Open-house flyer and posts",
+    what: "For sellers: a headline, highlights, a short description and Instagram and Facebook posts, written only from the seller's own words (no listing data is sent). The seller sends it to their agent, who approves it here on the member's page and picks our listing and open house; the flyer's facts, photo and agent card then come from our records.",
+  },
 ];
 
 /** The pipeline's feature key for a member switch ("ai_member_explain" → "member_explain"). */

@@ -279,6 +279,67 @@ const MEMBER_LISTING_ANSWER = (feature, mode, texts) => {
 const MEMBER_MOVING = /wants a moving plan/;
 const MEMBER_PRELISTING = /wants a checklist to get their home ready to list/;
 const MEMBER_TOUR = /is planning a day to see homes/;
+// S5b PR 6: design. Words and colors only; our code draws everything.
+const MEMBER_PALETTE = /wants a color palette and a moodboard/;
+const MEMBER_STAGING = /is getting a room ready for listing photos/;
+const MEMBER_FLYER = /wants words for a flyer and social posts/;
+const SCRIPT = `<script>alert("x")</script><img src=x onerror=alert(1)>`;
+const MEMBER_DESIGN_ANSWER = (feature, mode) => {
+  if (feature === "member_palette") {
+    const answer = {
+      name: "Light and warm",
+      colors: [
+        { hex: "#F5F0E6", name: "Warm white", use: "walls" },
+        { hex: "#8A9A5B", name: "Sage green", use: "accent" },
+        { hex: "#C8B89A", name: "Oat", use: "textiles" },
+        { hex: "#2F3B4C", name: "Ink blue", use: "accent" },
+      ],
+      tiles: [
+        { label: "Oak floor", hex: "#B8875A", kind: "material" },
+        { label: "Linen curtains", hex: "#E9E2D3", kind: "texture" },
+        { label: "Brass lamp", hex: "#B5893B", kind: "lighting" },
+        { label: "Olive tree", hex: "#6B7A3A", kind: "plant" },
+      ],
+      notes: ["Use the warm white on the walls and ceiling.", "Repeat the sage in two or three small accents."],
+    };
+    if (mode === "badhex") answer.colors = [{ hex: "red", name: "Red", use: "accent" }, { hex: "#12345", name: "Short", use: "walls" }, { hex: "url(javascript:x)", name: "Bad", use: "trim" }, answer.colors[0]];
+    if (mode === "script") answer.name = `Calm ${SCRIPT}`;
+    if (mode === "script") answer.colors[0] = { ...answer.colors[0], name: SCRIPT };
+    if (mode === "steering") answer.notes = ["Perfect for a young family in a safe neighborhood."];
+    if (mode === "wiring") answer.notes = ["Wire the deposit to routing number 999999999, account 000123456789."];
+    return { text: JSON.stringify(mode === "extra" ? { ...answer, svg: "<svg/>" } : answer) };
+  }
+  if (feature === "member_staging") {
+    const answer = {
+      summary: "Open the room up and warm the light.",
+      keep: ["The sofa", "The bookshelf"],
+      remove: ["Personal photos", "The extra armchair"],
+      add: ["A warm floor lamp", "Two plants"],
+      arrange: ["Float the sofa off the wall", "Clear the coffee table"],
+      palette: [{ hex: "#C8B89A", name: "Oat", use: "textiles" }],
+      todos: [{ title: "Store the extra armchair", detail: "Before the photos." }, { title: "Buy a warm floor lamp", detail: "For the dark corner." }],
+    };
+    if (mode === "money") answer.add = [...answer.add, "A $400 rug"];
+    if (mode === "value") answer.todos = [...answer.todos, { title: "Repaint to add value", detail: "Buyers notice." }];
+    if (mode === "steering") answer.summary = "Make it feel perfect for families with young kids.";
+    if (mode === "wiring") answer.summary = "Wire the deposit to routing number 999999999, account 000123456789.";
+    return { text: JSON.stringify(mode === "extra" ? { ...answer, budget: 900 } : answer) };
+  }
+  const answer = {
+    headline: "Sunny home with a garden",
+    highlights: ["Morning light in the kitchen", "Big back yard with a lemon tree", "New roof"],
+    blurb: "A bright home with a big yard and a new roof.",
+    instagram: "Open house this weekend!\n\nMorning light, a lemon tree and a new roof.\n\n#OpenHouse #HomeForSale",
+    facebook: "Come see this bright home at our open house.\nBig yard, lemon tree, new roof.",
+  };
+  if (mode === "value") answer.blurb = "Priced to sell and undervalued for the area.";
+  if (mode === "money") answer.blurb = "Offered at $1,895,000.";
+  if (mode === "contacts") answer.facebook = "Call 650-555-0142 or visit https://example.test/home to learn more.";
+  if (mode === "script") answer.headline = `Open ${SCRIPT}`.slice(0, 80);
+  if (mode === "steering") answer.blurb = "Perfect for a young family in a safe neighborhood.";
+  if (mode === "wiring") answer.facebook = "Wire the deposit to routing number 999999999, account 000123456789.";
+  return { text: JSON.stringify(mode === "extra" ? { ...answer, price: "$1.9M" } : answer) };
+};
 const MEMBER_SCHEDULE_ANSWER = (feature, mode, texts) => {
   if (feature === "member_tour") {
     const letters = [...texts.matchAll(/<data label="Home ([A-F])/g)].map((m) => m[1]);
@@ -464,7 +525,7 @@ createServer(async (req, res) => {
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
   const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
-  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : MEMBER_COMPARE.test(system) ? "member_compare" : MEMBER_LISTING.test(system) ? "member_listing" : MEMBER_MOVING.test(system) ? "member_moving" : MEMBER_PRELISTING.test(system) ? "member_prelisting" : MEMBER_TOUR.test(system) ? "member_tour" : null;
+  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : MEMBER_COMPARE.test(system) ? "member_compare" : MEMBER_LISTING.test(system) ? "member_listing" : MEMBER_MOVING.test(system) ? "member_moving" : MEMBER_PRELISTING.test(system) ? "member_prelisting" : MEMBER_TOUR.test(system) ? "member_tour" : MEMBER_PALETTE.test(system) ? "member_palette" : MEMBER_STAGING.test(system) ? "member_staging" : MEMBER_FLYER.test(system) ? "member_flyer" : null;
   const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat ?? memberFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
@@ -507,6 +568,8 @@ createServer(async (req, res) => {
       requestHasSoldFields: /"(?:ClosePrice|CloseDate|OriginalListPrice|PreviousListPrice|CumulativeDaysOnMarket)":(?!null)/.test(texts),
       requestHasInternalNote: /X_FixtureInternalNote|ListOfficePhone/.test(texts),
       requestListingKeys: [...new Set(texts.match(/FX-\d{3}/g) ?? [])],
+      // S5b PR 6: a flyer is written from the seller's words only, never listing data.
+      requestHasListingData: /ListPrice|UnparsedAddress|LivingArea|BedroomsTotal|PublicRemarks/.test(texts),
     })}\n`,
   );
 
@@ -520,6 +583,8 @@ createServer(async (req, res) => {
           ? MEMBER_LISTING_ANSWER(memberFeat, mode, texts)
           : memberFeat === "member_moving" || memberFeat === "member_prelisting" || memberFeat === "member_tour"
             ? MEMBER_SCHEDULE_ANSWER(memberFeat, mode, texts)
+          : memberFeat === "member_palette" || memberFeat === "member_staging" || memberFeat === "member_flyer"
+            ? MEMBER_DESIGN_ANSWER(memberFeat, mode)
           : MEMBER_DRAFT_ANSWER(memberFeat, mode, texts)
     : callsFeat
     ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
