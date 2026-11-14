@@ -409,6 +409,33 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          content_hash: string
+          google_event_id: string
+          id: string
+          profile_id: string
+          source_key: string
+          updated_at: string
+        }
+        Insert: {
+          content_hash: string
+          google_event_id: string
+          id?: string
+          profile_id: string
+          source_key: string
+          updated_at?: string
+        }
+        Update: {
+          content_hash?: string
+          google_event_id?: string
+          id?: string
+          profile_id?: string
+          source_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cities: {
         Row: {
           county: string
@@ -2105,6 +2132,60 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_calendar_prefs: {
+        Row: {
+          key_dates: boolean
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          key_dates?: boolean
+          profile_id?: string
+          updated_at?: string
+        }
+        Update: {
+          key_dates?: boolean
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      staff_connections: {
+        Row: {
+          account_email: string | null
+          connected_at: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          profile_id: string
+          provider: string
+          scopes: string[]
+          token_ciphertext: string
+        }
+        Insert: {
+          account_email?: string | null
+          connected_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          profile_id: string
+          provider: string
+          scopes?: string[]
+          token_ciphertext: string
+        }
+        Update: {
+          account_email?: string | null
+          connected_at?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          profile_id?: string
+          provider?: string
+          scopes?: string[]
+          token_ciphertext?: string
+        }
+        Relationships: []
+      }
       staff_notifications: {
         Row: {
           created_at: string
@@ -2572,6 +2653,17 @@ export type Database = {
           stale: boolean
         }[]
       }
+      my_connections: {
+        Args: never
+        Returns: {
+          account_email: string
+          connected_at: string
+          last_error: string
+          last_synced_at: string
+          provider: string
+          scopes: string[]
+        }[]
+      }
       my_tour_requests: {
         Args: never
         Returns: {
@@ -2708,6 +2800,7 @@ export type Database = {
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
       set_lead_admin_away: { Args: { p_away: boolean; p_until?: string }; Returns: undefined }
+      set_integration_flag: { Args: { p_key: string; p_on: boolean }; Returns: undefined }
       set_lead_routing: {
         Args: { p_backup_admin: string; p_escalation_minutes?: number; p_flood_cap?: number; p_lead_admin: string }
         Returns: undefined
