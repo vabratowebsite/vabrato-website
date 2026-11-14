@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 built (moving plan, pre-listing checklist, tour day; 0040, after merge: apply 0040; tour day also behind the MLSListings approval switch). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). Next: PR 6 (design). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -924,7 +924,7 @@ with the member daily limits, and the site-wide monthly budget.
   - **Security advisor:** nothing new. The two trigger functions can't be
     run by signed-in users or the public.
 - **PR 5 (schedules: moving plan, pre-listing checklist, tour day; migration
-  0040; owner answers 2026-11-14; after merge: apply 0040):**
+  0040, merged as #57, on hosted 2026-11-14; owner answers 2026-11-14):**
   - **Owner answers:**
     - **Keeping a plan:** the member ticks steps and adds them to My to-dos
       with their dates; the agent approves them as before. A calendar file
@@ -980,6 +980,21 @@ with the member daily limits, and the site-wide monthly budget.
     - **Browser QA** (`scripts/qa/s5b-schedules.mjs`): 38 of 38, run twice.
       Reruns pass: `s5b-documents` 53, `s5b-listings` 44 (now expects three
       switches locked until approval), `s5b-assistant` 65, `s5-qa` 100.
+  - **On hosted (2026-11-14):** 0040 applied after checking that main's
+    file matched the tested one byte for byte and that hosted ended at 0039.
+    `hosted-schedules-check.sql` (rolled back) passed:
+    - all three switches arrive off;
+    - before approval, the tour-day switch is refused
+      (`mls_ai_not_approved`); after approval it turns on, and turning the
+      approval off turns it off again; the moving switch needs no approval;
+    - a buyer adds two dated to-dos, which stay pending with one alert to
+      their agent; the agent sees the due dates and another buyer sees none;
+    - a buyer can't add an approved to-do, add one for someone else, or
+      change a due date.
+    Nothing was left behind: no check accounts or to-dos, and every AI
+    switch, including the approval switch, off.
+  - **Security advisor:** nothing new. The two replaced trigger functions
+    still can't be run by signed-in users or the public.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
