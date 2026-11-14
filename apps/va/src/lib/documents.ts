@@ -111,6 +111,9 @@ export function freeName(name: string, taken: Iterable<string>): string {
 
 export const receiptFolder = (dealId: string, profileId: string) => `deal/${dealId}/uploads/${profileId}`;
 
+/** Where an imported file came from (Integrations PR 2, 0043): "drive:<id>" or "dropbox:id:<id>". */
+export const EXTERNAL_REF = /^(drive:[A-Za-z0-9_-]{5,200}|dropbox:id:[A-Za-z0-9_-]{5,200})$/;
+
 /** A receipt upload in the caller's own folder on this deal. */
 export function isOwnReceiptUpload(path: string, dealId: string, profileId: string): boolean {
   return typeof path === "string" && new RegExp(`^deal/${dealId}/uploads/${profileId}/${UUID}\\.(pdf|jpg|png|webp)$`).test(path);

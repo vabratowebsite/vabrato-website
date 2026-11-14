@@ -6,19 +6,22 @@ import { btnPrimary, btnSecondary, errorCls, inputCls, labelCls, mutedCls, okCls
 import { addReceiptAction, type FormState } from "@/lib/actions";
 import { prepareReceiptUploadAction, readReceiptAction } from "@/lib/document-actions";
 import { EXT, checkReceiptFile } from "@/lib/documents";
+import { ImportFiles, type ImportState } from "@/components/import-files";
 
 // Add a receipt (S6 PR 1), with an optional file (S6b PR 7a). With the
 // receipt reader on, "Read it" fills the form from the file; the person
 // checks it and saves. The file is uploaded to the person's own folder for
-// this deal and kept with the receipt.
+// this deal and kept with the receipt. It can also come from Google Drive or
+// Dropbox (Integrations PR 2): the import fills the file in the same way.
 
 const EMPTY = { vendor: "", amount: "", category: "", receipt_date: "" };
 
-export function ReceiptForm({ dealId, readerOn }: { dealId: string; readerOn: boolean }) {
+export function ReceiptForm({ dealId, readerOn, imports }: { dealId: string; readerOn: boolean; imports?: { drive: ImportState; dropbox: ImportState } }) {
   const uid = useId();
   const [state, formAction, pending] = useActionState<FormState, FormData>(addReceiptAction.bind(null, dealId), { error: null });
   const [values, setValues] = useState(EMPTY);
   const [path, setPath] = useState("");
+  const [ref, setRef] = useState("");
   const [fileNote, setFileNote] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -27,6 +30,7 @@ export function ReceiptForm({ dealId, readerOn }: { dealId: string; readerOn: bo
     if (state.ok) {
       setValues(EMPTY);
       setPath("");
+      setRef("");
       setFileNote({ kind: "ok", text: "Receipt added." });
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -55,6 +59,7 @@ export function ReceiptForm({ dealId, readerOn }: { dealId: string; readerOn: bo
 
   async function onFile() {
     setPath("");
+    setRef("");
     setFileNote(null);
     if (!fileRef.current?.files?.[0]) return;
     setBusy(true);
@@ -107,6 +112,23 @@ export function ReceiptForm({ dealId, readerOn }: { dealId: string; readerOn: bo
           )}
         </div>
         <input type="hidden" name="storage_path" value={path} />
+        <input type="hidden" name="external_ref" value={ref} />
+        {imports && (
+          <div className="mt-4">
+            <ImportFiles
+              dealId={dealId}
+              target="receipt"
+              drive={imports.drive}
+              dropbox={imports.dropbox}
+              onReceipt={(r) => {
+                if (fileRef.current) fileRef.current.value = "";
+                setPath(r.path);
+                setRef(r.ref);
+                setFileNote({ kind: "ok", text: readerOn ? `Imported ${r.name}. Use “Read it” to fill in the form, or fill it in yourself.` : `Imported ${r.name}. It's saved with the receipt.` });
+              }}
+            />
+          </div>
+        )}
       </div>
       <div>
         <label htmlFor={`${uid}-vendor`} className={labelCls}>

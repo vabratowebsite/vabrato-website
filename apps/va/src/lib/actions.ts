@@ -17,7 +17,7 @@ import {
 } from "@vabrato/lib";
 import { syncCalendarFor } from "@/lib/calendar-sync";
 import { parseDealForm } from "@/lib/deal-schema";
-import { isOwnReceiptUpload } from "@/lib/documents";
+import { EXTERNAL_REF, isOwnReceiptUpload } from "@/lib/documents";
 import { parseReceiptForm } from "@/lib/receipt-schema";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -253,16 +253,20 @@ export async function addReceiptAction(
     if (there !== true) return { error: "Upload the receipt again." };
     storagePath = file;
   }
+  // Imported from Drive or Dropbox (Integrations PR 2): where it came from, with the file attached.
+  const ref = String(form.get("external_ref") ?? "");
+  if (ref && (!EXTERNAL_REF.test(ref) || !storagePath)) return { error: "Import the receipt again." };
   const { error } = await supabase.from("receipts").insert({
     deal_id: dealId,
     vendor: parsed.data.vendor,
     amount: parsed.data.amount,
     category: parsed.data.category,
     receipt_date: parsed.data.receipt_date,
-    source: "manual",
+    source: ref ? (ref.startsWith("drive:") ? "drive" : "dropbox") : "manual",
     storage_path: storagePath,
+    ...(ref ? { external_ref: ref } : {}),
   });
-  if (error) return { error: error.message };
+  if (error) return { error: error.code === "23505" ? "That file is already a receipt on this deal." : error.message };
   revalidatePath(`/deals/${dealId}/receipts`);
   return { error: null, ok: true };
 }

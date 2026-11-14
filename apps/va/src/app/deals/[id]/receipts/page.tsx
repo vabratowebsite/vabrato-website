@@ -7,6 +7,7 @@ import { linkDanger, mutedCls } from "@/components/ui";
 import { deleteReceiptAction } from "@/lib/actions";
 import { aiKeyConfigured } from "@/lib/ai";
 import { aiFeaturesOn } from "@/lib/ai-flags";
+import { importReadiness } from "@/lib/imports";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
@@ -40,14 +41,14 @@ export default async function DealReceiptsPage({ params }: { params: Promise<{ i
         <KpiTile value={money(reimburse)} label={`Reimbursement total · ${all.length} receipt${all.length === 1 ? "" : "s"}`} />
         <div className="lg:col-span-2">
           <Panel title="Add a receipt">
-            <ReceiptForm dealId={deal.id} readerOn={ai.ai_staff_receipt_reader && aiKeyConfigured()} />
+            <ReceiptForm dealId={deal.id} readerOn={ai.ai_staff_receipt_reader && aiKeyConfigured()} imports={await importReadiness(profile.id)} />
           </Panel>
         </div>
       </div>
 
       <Panel title="Logged receipts">
         {all.length === 0 ? (
-          <p className={mutedCls}>No receipts yet. Drive and Dropbox import come with the integrations work; log them here for now.</p>
+          <p className={mutedCls}>No receipts yet. Add one above, from a file or by hand.</p>
         ) : (
           <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Logged receipts table">
             <table className="w-full min-w-[560px] font-body text-body-sm text-ink">

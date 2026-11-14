@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { STAFF_ROLES, createServiceSupabase, getProfile } from "@vabrato/lib";
-import { accountEmail, decryptToken, encryptToken, exchangeCode, revokeToken } from "@vabrato/lib/integrations";
-import { calendarReady, syncCalendarFor } from "@/lib/calendar-sync";
+import { CALENDAR_SCOPE, accountEmail, decryptToken, encryptToken, exchangeCode, googleSetup, revokeToken } from "@vabrato/lib/integrations";
+import { syncCalendarFor } from "@/lib/calendar-sync";
 import { OAUTH_COOKIE, readOAuthCookie, sameState } from "@/lib/google-oauth";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -28,8 +28,9 @@ export async function GET(req: NextRequest) {
   if (q.get("error")) return done("denied");
   const code = q.get("code");
   if (!code || code.length > 2000) return done("failed");
-  const ready = await calendarReady();
-  if (!ready.on) return done("not_ready");
+  const s = googleSetup();
+  if (!s.ok) return done("not_ready");
+  const ready = { setup: s.setup };
 
   const redirectUri = new URL("/integrations/google/callback", req.nextUrl.origin).toString();
   try {
@@ -68,8 +69,9 @@ export async function GET(req: NextRequest) {
         }
       });
     }
-    after(() => syncCalendarFor(profile.id, ready));
-    return done("connected");
+    // Calendar events follow if Calendar access is part of the connection (it checks its own switch).
+    if (tokens.scopes.includes(CALENDAR_SCOPE)) after(() => syncCalendarFor(profile.id));
+    return done(saved.purpose === "drive" ? "drive_connected" : "connected");
   } catch {
     return done("failed");
   }

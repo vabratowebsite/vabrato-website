@@ -146,16 +146,16 @@ try {
   check("agent: settings loads", (await settings(a)) === 200);
   check("off: no Connect button", (await a.getByRole("link", { name: "Connect Google Calendar" }).count()) === 0);
   check("off: says not set up", await a.getByText("Not set up yet.").isVisible());
-  check("off: agent has no switch", (await a.getByRole("heading", { name: "Google Calendar switch" }).count()) === 0);
+  check("off: agent has no switch", (await a.getByRole("heading", { name: "Integration switches" }).count()) === 0);
   await audit(a, "agent", "settings-off");
   await a.goto(`${VA}/integrations/google/start`);
   check("off: the start route goes back to Settings", a.url().includes("/settings?google=not_ready"), a.url());
-  check("off: says it isn't set up", await a.getByText("Google Calendar isn't set up yet.").isVisible());
+  check("off: says it isn't set up", await a.getByText("That connection isn't set up yet.").isVisible());
 
   // --- An admin turns it on ---------------------------------------------------------------------------
   const ad = await signIn(admin.email);
   await settings(ad);
-  check("admin: sees the switch", await ad.getByRole("heading", { name: "Google Calendar switch" }).isVisible());
+  check("admin: sees the switch", await ad.getByRole("heading", { name: "Integration switches" }).isVisible());
   await audit(ad, "admin", "settings-switch-off");
   await clickAndWait(ad, "Turn Google Calendar on", "Google Calendar is on: each person can connect their own.");
   check("switch on in the database", sql(`select enabled from feature_flags where key = '${FLAG}'`) === "t");
@@ -259,14 +259,14 @@ try {
       const cs = el ? getComputedStyle(el) : null;
       return { label: (el?.textContent || el?.getAttribute("name") || "").replace(/\s+/g, " ").trim().slice(0, 80), visible: Boolean(cs && ((cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0) || (cs.boxShadow && cs.boxShadow !== "none"))) };
     });
-    for (const want of ["Stop adding key dates", "Sync now", "Disconnect Google Calendar", "confirm"]) if ((f.label === want || f.label.includes(want)) && f.visible) reached.add(want);
+    for (const want of ["Stop adding key dates", "Sync now", "Disconnect Google account", "confirm"]) if ((f.label === want || f.label.includes(want)) && f.visible) reached.add(want);
   }
   check("keyboard: reaches key dates, Sync now, the confirm box and Disconnect with visible focus", reached.size === 4, [...reached].join(", "));
 
   // --- Disconnect -------------------------------------------------------------------------------------
   await settings(a);
-  await a.getByRole("checkbox", { name: /Remove the events the console added/ }).check();
-  await a.getByRole("button", { name: "Disconnect Google Calendar" }).click();
+  await a.getByRole("checkbox", { name: /Remove the console's access to my Google account and the calendar events it added/ }).check();
+  await a.getByRole("button", { name: "Disconnect Google account" }).click();
   await a.waitForURL(/\/settings\?google=disconnected$/, { timeout: 20000 });
   check("disconnect: says so", await a.getByText(/Google Calendar disconnected\. The events the console added were removed/).isVisible());
   check("disconnect: our events removed from the calendar", (await eventsFor(googleAgent)).length === 0);

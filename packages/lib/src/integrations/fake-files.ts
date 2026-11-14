@@ -2,7 +2,7 @@
 // QA only, Integrations PR 2): just enough bytes for the console's type
 // sniffing to see a PDF, PNG, JPEG, HEIC (refused) or an oversized file.
 
-export type FakeKind = "pdf" | "png" | "jpg" | "heic" | "big" | "text";
+export type FakeKind = "pdf" | "png" | "jpg" | "heic" | "big" | "text" | "gdoc";
 
 const enc = new TextEncoder();
 
@@ -34,4 +34,5 @@ export const fakeMime: Record<FakeKind, string> = {
   heic: "image/heic",
   big: "application/pdf",
   text: "text/plain",
+  gdoc: "application/vnd.google-apps.document",
 };
