@@ -10,6 +10,7 @@ import { APPOINTMENT, appointmentInput, appointmentProblems, checkFields, toAppo
 import { CALL_NOTES, callNotesInput, cleanTodoTitle, toCallResult, type CallTarget, type SuggestedTodo } from "@/lib/calls";
 import type { DraftView } from "@/lib/draft-actions";
 import { prepareNote } from "@/lib/drafts";
+import { syncCalendarFor } from "@/lib/calendar-sync";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Call notes, appointment drafts and staff to-dos (S6b PR 8). Every read and
@@ -265,12 +266,20 @@ export async function approveAppointmentAction(id: string, fields: AppointmentFi
   const a = saved.appointment;
   const problems = appointmentProblems(a.fields, a.subject, a.body, pacificToday());
   if (problems.length) return { ok: false, error: `Not approved yet. ${problems.join(" ")}`, appointment: a };
-  const { supabase } = await staffClient();
-  const { data, error } = await supabase.from("ai_drafts").update({ status: "approved" }).eq("id", id).eq("status", "draft").select("id, status, content, subject, body, sent_via, lead_id, deal_id").maybeSingle();
+  const { supabase, profile } = await staffClient();
+  const { data, error } = await supabase.from("ai_drafts").update({ status: "approved" }).eq("id", id).eq("status", "draft").select("id, status, content, subject, body, sent_via, lead_id, deal_id, owner_id").maybeSingle();
   if (error || !data) return { ok: false, error: "Couldn't approve the appointment. Please try again.", appointment: a };
   revalidatePath(data.lead_id ? `/leads/${data.lead_id}` : `/deals/${data.deal_id}`);
   revalidatePath("/assistant");
-  return { ok: true, appointment: view(data), message: "Approved. Add it to your calendar with the file below, and send the confirmation yourself." };
+  // On the owner's Google Calendar too, if they connected it (Integrations PR 1). A failed sync doesn't undo the approval.
+  const cal = data.owner_id === profile.id ? await syncCalendarFor(profile.id) : { status: "not_connected" as const };
+  const calendarText =
+    cal.status === "synced" && !cal.failed
+      ? "Approved and added to your Google Calendar. Send the confirmation yourself."
+      : cal.status === "not_connected" || cal.status === "off"
+        ? "Approved. Add it to your calendar with the file below, and send the confirmation yourself."
+        : "Approved, but your Google Calendar wasn't updated: use Sync now in Settings, or the file below. Send the confirmation yourself.";
+  return { ok: true, appointment: view(data), message: calendarText };
 }
 
 /** Records that the confirmation was copied, opened in email or printed (once). */

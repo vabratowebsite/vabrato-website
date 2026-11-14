@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
@@ -14,6 +15,7 @@ import {
   signOut,
   todayISO,
 } from "@vabrato/lib";
+import { syncCalendarFor } from "@/lib/calendar-sync";
 import { parseDealForm } from "@/lib/deal-schema";
 import { isOwnReceiptUpload } from "@/lib/documents";
 import { parseReceiptForm } from "@/lib/receipt-schema";
@@ -107,6 +109,9 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
     };
   }
 
+  // The new deal's key dates go on the agent's Google Calendar, if they connected it (Integrations PR 1).
+  const agentId = auth.user.id;
+  after(() => syncCalendarFor(agentId));
   redirect(`/deals/${deal.id}`);
 }
 

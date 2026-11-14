@@ -33,6 +33,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5b | Member AI assistant (Ask Vabrato) | Built: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). PR 7 merged (final QA, the member live test ready, Mark's wording sheet). Built; live run on the owner's go-ahead. Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
+| Integrations | Console: Google Calendar, Drive, Dropbox | In progress: PR 1 built (connected accounts and Google Calendar; 0042; switch off until the Google OAuth client and token key are set). Next: PR 2 (Drive and Dropbox import) |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -2178,15 +2179,96 @@ apps/web and apps/va (`pnpm test`).
   This also lifts the built-in Supabase mailer's ~2-emails/hour cap on
   magic links.
 
+### Integrations: Google Calendar, Drive and Dropbox (console only; in progress)
+
+A separate track after S6b (owner decision 2026-11-12). Owner answers
+2026-11-14:
+- **Calendar:** approved appointments plus each deal's key dates (contingency
+  removals, close of escrow, rent-back end) go on the staff member's own
+  Google Calendar and are kept up to date. The console only writes events it
+  made: it never reads the calendar and never invites anyone.
+- **Drive:** Google's file picker; the console can open only the files
+  picked (no full-Drive access, so no paid Google security review).
+- **Dropbox:** its own Apps/Vabrato folder only.
+- **Two PRs:** PR 1 connections and Calendar; PR 2 Drive and Dropbox import.
+
+- **PR 1 (connected accounts and Google Calendar; migration 0042):**
+  - **Database (0042):**
+    - `staff_connections`: each person's encrypted refresh token. RLS on
+      with no policies and nothing granted to signed-in users, so only the
+      server (service role) reads it. `my_connections()` shows a staff member
+      their own connections without the token.
+    - `calendar_events`: what we put on each calendar (a source key, Google's
+      event id and a content hash), so a sync updates or removes exactly
+      those. Each person reads their own; the server writes.
+    - `staff_calendar_prefs`: the key-dates preference, per person.
+    - The switch `integration_google_calendar` (off), changed by admins with
+      `set_integration_flag` (audited).
+  - **Tokens:** encrypted with AES-256-GCM under `INTEGRATIONS_TOKEN_KEY`
+    (server env) before they reach the database; access tokens are fetched
+    fresh for each sync and never stored. Nothing logs or returns a token.
+  - **Connecting:** our own OAuth flow, separate from sign-in: Calendar
+    events access only, offline, PKCE, a one-time state in a ten-minute
+    httpOnly cookie, the same signed-in person on return, and a verified
+    Google email. Reconnecting revokes the old token.
+  - **What goes on the calendar** (`packages/lib/src/integrations`):
+    - approved appointments the person owns, as timed events in California
+      time;
+    - if they want them, the key dates of deals they work (as the agent or a
+      member, not every deal an admin can see), as all-day events; a
+      cancelled deal's dates are removed, a closed deal's stay for a while;
+    - every event private, with no attendees, a link to the console and
+      "Added by the Vabrato console"; nothing about money, wiring or the
+      seller.
+  - **When it syncs:** on connecting, when an appointment is approved, when
+    a deal is created, on "Sync now" and when the key-dates preference
+    changes. It creates, updates and removes only our own events, at most
+    200 changes a run, and an event the person deleted in Google is made
+    again. A failed sync never blocks the action; a revoked access shows
+    "Needs reconnecting".
+  - **Settings, "Connected accounts":** Connect, the account and last sync,
+    key dates on or off, Sync now, and Disconnect (with a confirmation: it
+    removes our events and revokes the access). Admins get the switch, which
+    names any missing environment settings. The appointment page says
+    whether it's on the person's calendar.
+  - **Tests:**
+    - **Database:** 14 tests (`staff-connections.test.ts`), and
+      `hosted-connections-check.sql`, which passes locally.
+    - **Library:** 24 tests: the encryption (tampering, the wrong key and
+      short keys refused), the OAuth flow and Calendar calls against the
+      fake Google, the events built (daylight saving, close of escrow rolled
+      off Thanksgiving, cancelled and closed deals), and the sync (a second
+      run changes nothing, the cap, Google failures and revoked access, one
+      person's access can't change another's events). A guard test keeps the
+      integration code on the console's server and the token key out of
+      `NEXT_PUBLIC_` names.
+    - **Console:** 4 tests for the connection cookie and messages.
+    - **Browser QA** (`scripts/qa/int-calendar.mjs`, with
+      `scripts/qa/fake-google.mjs`): 87 of 87, run twice.
+    - **Reruns:** `s6b-calls-appointments` 35 of 35. `s6b-final` 1,230 of
+      1,232: the 2 misses are the intermittent React hydration error (#418)
+      already seen on main, on other pages; it's queued as its own task.
+  - **Needs you** (nothing here blocks merging; the switch stays off):
+    - In the Google Cloud project used for sign-in: enable the Google
+      Calendar API; add an OAuth client (web application) with the
+      console's `/integrations/google/callback` URL; set the consent screen
+      to Internal (Workspace) so tokens don't expire after 7 days, as they
+      do in Testing mode (if the account isn't Google Workspace, publish
+      the app instead), and add the `calendar.events` scope.
+    - In the console's Vercel environment: `GOOGLE_INTEGRATION_CLIENT_ID`,
+      `GOOGLE_INTEGRATION_CLIENT_SECRET` and `INTEGRATIONS_TOKEN_KEY` (32
+      random bytes in base64; keep it, since changing it means everyone
+      reconnects).
+    - Then an admin turns Google Calendar on in Settings.
+  - **Not in PR 1:** Drive and Dropbox (PR 2), reading calendars, inviting
+    clients, and schedule tasks on the calendar.
+
 ### Not started
 
 - Inbound email parsing for the buyer tracker (deterministic per-source per
   CLAUDE.md). Needs: Postmark vs SendGrid Inbound Parse decision + a deployed
   webhook URL. Writes to `inbound_emails` / `property_events` (service-role
   only — schema is ready).
-- Integrations (a separate PR after S6b, owner decision 2026-11-12): Google
-  Calendar sync, Google Drive / Dropbox receipt import (va only). The AI
-  receipt reader is S6b PR 7a.
 - Seller/buyer notification recipients beyond sellers; deal_vendors linking UI.
 
 ## Environment (local values are NOT in git)

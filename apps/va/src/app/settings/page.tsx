@@ -8,15 +8,18 @@ import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen } from "@/lib/today";
 import { AwayFields } from "./away-fields";
+import { ConnectedAccounts } from "./connected-accounts";
 
+// Connected accounts (Integrations PR 1): each person's Google Calendar.
 // Lead routing (SPEC <lead_routing>): who gets new leads, the backup while
 // the lead admin is away, escalation and the hourly email cap. Mark, Viv
 // while Mark is away, or any role admin can change it (0022
 // can_manage_settings); everyone else sees it read-only.
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ google?: string }> }) {
   const { profile, isStaff } = await requireSignIn();
+  const { google: notice } = await searchParams;
   if (!isStaff) return <AccessDenied profile={profile} />;
   const supabase = await supabaseServer();
   const [{ data: s }, { data: canManage }, { data: away }, { data: people }, { data: access }, { data: full }] = await Promise.all([
@@ -46,6 +49,8 @@ export default async function SettingsPage() {
         </p>
         <p className={`${mutedCls} mt-2`}>{full ? "You can see FULL MLS fields in the console." : "FULL MLS fields are off for everyone until MLSListings confirms FULL access in writing; you see IDX data."}</p>
       </Panel>
+
+      <ConnectedAccounts isAdmin={profile.role === "admin"} notice={typeof notice === "string" ? notice : undefined} />
 
       <Panel title="Lead routing">
         <dl className="mb-6 grid gap-4 font-body text-body-sm text-ink sm:grid-cols-2">

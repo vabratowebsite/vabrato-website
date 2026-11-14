@@ -7,7 +7,9 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./auth/middleware": "./src/auth/middleware.ts"
+    "./auth/middleware": "./src/auth/middleware.ts",
+    "./integrations": "./src/integrations/index.ts",
+    "./integrations/fake-google": "./src/integrations/fake-google.ts"
   },
   "scripts": {
     "typecheck": "tsc",
