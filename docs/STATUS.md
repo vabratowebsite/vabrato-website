@@ -1971,12 +1971,15 @@ document checks, receipts, calendar drafts).
     - **The full run:**
       - In the Anthropic Console, create a workspace "vabrato-live-test"
         with a $10 spend limit, and a key in that workspace only.
-      - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live` in
-        your own shell. The key can't be injected into a cloud session:
-        `api.anthropic.com` bypasses the session's proxy.
-      - Send `docs/qa/s6b-live-run.json`. It's compared with the Console's
-        usage for the workspace, and both are recorded here in a small
-        docs PR.
+      - Run `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter va test:live`, then
+        `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter @vabrato/web test:live`
+        (the 13 member calls, S5b PR 7), in your own shell. The key can't be
+        injected into a cloud session: `api.anthropic.com` bypasses the
+        session's proxy. Worst cases: about $6.69 (console, $5 cap) and
+        $1.72 (website, $3 cap); the $10 workspace limit covers both.
+      - Send `docs/qa/s6b-live-run.json` and `docs/qa/s5b-live-run.json`.
+        They're compared with the Console's usage for the workspace, and
+        recorded here in a small docs PR.
       - Revoke the key and archive the workspace afterwards.
   - **Before any switch goes on:**
     - the full live run above, passing;
@@ -1987,10 +1990,12 @@ document checks, receipts, calendar drafts).
       (listing kits, presentations, market updates, CMA write-ups; the SPEC
       has no rule for this yet);
     - then `ai_enabled`, and each feature's switch.
-  - **Mark:**
+  - **Mark:** all in one review doc (S5b PR 7; the owner shares it), also in
+    the repo as `docs/review/member-ai-wording.md`:
     - the Fair Housing wording list above;
     - the checklist's "(confirm)" rows (PR 7a);
-    - the repair-response wording (PR 7b).
+    - the repair-response wording (PR 7b);
+    - every member-facing Ask Vabrato wording (S5b).
 
 **Must ship before launch (S5 review item 17):** done in S6 PR 2a (member
 message and tour-request alerts, in the console and by email). Email

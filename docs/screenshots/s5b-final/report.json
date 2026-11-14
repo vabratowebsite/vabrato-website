@@ -1,0 +1,1247 @@
+[
+  {
+    "who": "off-buyer",
+    "name": "buyer",
+    "path": "/my/buyer",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "saved",
+    "path": "/my/saved",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "searches",
+    "path": "/my/searches",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "compare",
+    "path": "/my/compare?key=FX-001&key=FX-002",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "tours",
+    "path": "/my/tours",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "sold",
+    "path": "/my/sold",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "alerts",
+    "path": "/my/alerts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "documents",
+    "path": "/my/documents",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "account",
+    "path": "/my/account",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "seller",
+    "path": "/my/seller",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "performance",
+    "path": "/my/seller/performance",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "flyer",
+    "path": "/my/flyers/e732f8e8-bc70-4376-ae77-34e3cc652e3d",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "documents",
+    "path": "/my/documents",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "account",
+    "path": "/my/account",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-seller",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "off-buyer",
+    "name": "listing-page",
+    "path": "/listing/FX-001/x",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "buyer",
+    "path": "/my/buyer",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "saved",
+    "path": "/my/saved",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "searches",
+    "path": "/my/searches",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "compare",
+    "path": "/my/compare?key=FX-001&key=FX-002",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "tours",
+    "path": "/my/tours",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "sold",
+    "path": "/my/sold",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "alerts",
+    "path": "/my/alerts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "documents",
+    "path": "/my/documents",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "account",
+    "path": "/my/account",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "seller",
+    "path": "/my/seller",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "performance",
+    "path": "/my/seller/performance",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "flyer",
+    "path": "/my/flyers/e732f8e8-bc70-4376-ae77-34e3cc652e3d",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "documents",
+    "path": "/my/documents",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "account",
+    "path": "/my/account",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-seller",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "buyer",
+    "path": "/my/buyer",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "seller",
+    "path": "/my/seller",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "documents",
+    "path": "/my/documents",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "account",
+    "path": "/my/account",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-no-agent",
+    "name": "buyer",
+    "path": "/my/buyer",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-no-agent",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-no-agent",
+    "name": "messages",
+    "path": "/my/messages",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-buyer",
+    "name": "listing-page",
+    "path": "/listing/FX-001/x",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-explain",
+    "path": "/my/assistant?mode=explain",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-search",
+    "path": "/my/assistant?mode=search",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-summarize",
+    "path": "/my/assistant?mode=summarize",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-message",
+    "path": "/my/assistant?mode=message",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-cover_letter",
+    "path": "/my/assistant?mode=cover_letter",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-compare",
+    "path": "/my/assistant?mode=compare",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-listing",
+    "path": "/my/assistant?mode=listing",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-moving",
+    "path": "/my/assistant?mode=moving",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-prelisting",
+    "path": "/my/assistant?mode=prelisting",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-tour",
+    "path": "/my/assistant?mode=tour",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-palette",
+    "path": "/my/assistant?mode=palette",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-staging",
+    "path": "/my/assistant?mode=staging",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "on-both",
+    "name": "assistant-flyer",
+    "path": "/my/assistant?mode=flyer",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "limit0-both",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-seller",
+    "name": "assistant",
+    "path": "/my/assistant",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-seller",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-seller",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-seller",
+    "name": "flyers",
+    "path": "/my/flyers",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-both",
+    "name": "todos",
+    "path": "/my/todos",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "master-off-buyer",
+    "name": "drafts",
+    "path": "/my/drafts",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "staff",
+    "name": "my",
+    "path": "/my",
+    "status": 200,
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  }
+]
