@@ -50,7 +50,7 @@ export default async function DealReceiptsPage({ params }: { params: Promise<{ i
         {all.length === 0 ? (
           <p className={mutedCls}>No receipts yet. Add one above, from a file or by hand.</p>
         ) : (
-          <div className="overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Logged receipts table">
+          <div className="relative overflow-x-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-navy" tabIndex={0} role="region" aria-label="Logged receipts table">
             <table className="w-full min-w-[560px] font-body text-body-sm text-ink">
               <thead>
                 <tr className="border-b border-line text-left text-label uppercase tracking-label text-muted">

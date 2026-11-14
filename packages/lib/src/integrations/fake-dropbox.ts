@@ -121,7 +121,7 @@ export function createFakeDropbox(opts: { email?: string; pageSize?: number } = 
       const f = files.get(arg.path ?? "");
       if (!f || f.account !== who.grant.email) return json(409, { error_summary: "path/not_found/" });
       const bytes = fakeFileBytes(f.kind);
-      return new Response(bytes, { status: 200, headers: { "content-type": "application/octet-stream", "content-length": String(bytes.byteLength), "dropbox-api-result": JSON.stringify({ id: arg.path, name: f.name, size: bytes.byteLength }) } });
+      return new Response(bytes as unknown as BodyInit, { status: 200, headers: { "content-type": "application/octet-stream", "content-length": String(bytes.byteLength), "dropbox-api-result": JSON.stringify({ id: arg.path, name: f.name, size: bytes.byteLength }) } });
     }
     if (p === "/__fake/file" && req.method === "POST") {
       const fid = addFile(url.searchParams.get("account") ?? account.email, url.searchParams.get("name") ?? "file.pdf", (url.searchParams.get("kind") ?? "pdf") as FakeKind);
