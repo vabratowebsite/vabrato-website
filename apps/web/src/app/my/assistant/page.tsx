@@ -13,7 +13,8 @@ import { aiKeyConfigured } from "@/member/ai";
 import { memberAiStatus } from "@/member/ai-status";
 import { homeOptions } from "@/member/assistant/drafts";
 import type { AskKind } from "@/member/assistant/kinds";
-import { buys } from "@/member/roles";
+import { buys, sells } from "@/member/roles";
+import { pacificToday, sellerDeals } from "@/member/seller";
 import { requirePortalMember } from "@/member/session";
 
 // Ask Vabrato, the member assistant (S5b; mockup 11). Each feature has its
@@ -41,13 +42,14 @@ export default async function AssistantPage({ searchParams }: Props) {
   const kinds = MEMBER_AI_FEATURES.filter((f) => on.includes(f.flag))
     .map((f) => memberFeatureKey(f.flag).replace("member_", ""))
     .map((k) => (k === "draft" ? "message" : k) as AskKind)
-    .filter((k) => (k !== "cover_letter" && k !== "compare" && k !== "listing") || buys(member.role));
+    .filter((k) => (k !== "cover_letter" && k !== "compare" && k !== "listing" && k !== "tour") || buys(member.role))
+    .filter((k) => k !== "prelisting" || sells(member.role));
   // Compare and "Ask about a home" pick from saved homes; ?listing=KEY (from a listing page) preselects one.
   const listingHomes: ListingChoice[] = [];
   let initialListing: ListingChoice | undefined;
-  const showsListings = kinds.includes("compare") || kinds.includes("listing");
+  const showsListings = kinds.includes("compare") || kinds.includes("listing") || kinds.includes("tour");
   const lastUpdated = showsListings ? await mlsLastUpdated() : null;
-  if (kinds.includes("compare") || kinds.includes("listing")) {
+  if (showsListings) {
     const saved = await savedListings(member.supabase);
     for (const r of saved.rows) listingHomes.push({ key: r.listing_key, label: listingTitle(r) });
     const asked = typeof sp.listing === "string" && LISTING_KEY.test(sp.listing) ? sp.listing : null;
@@ -65,6 +67,14 @@ export default async function AssistantPage({ searchParams }: Props) {
     kinds.includes("message") ? homeOptions(member.supabase, member.profile.id, member.role, "message") : [],
     kinds.includes("cover_letter") ? homeOptions(member.supabase, member.profile.id, member.role, "cover_letter") : [],
   ]);
+  // A moving plan can count from the member's open sale (its dates of record).
+  const today = pacificToday();
+  let sale: { label: string } | null = null;
+  if (kinds.includes("moving") && sells(member.role)) {
+    const deal = (await sellerDeals(member.supabase)).find((d) => d.status === "active");
+    if (deal) sale = { label: deal.address };
+  }
+  const initialMode = typeof sp.mode === "string" && (kinds as string[]).includes(sp.mode) ? (sp.mode as AskKind) : undefined;
   const u = Usage.safeParse(usage.data ?? {});
   const limit = u.success ? (u.data.requests_limit ?? 0) : 0;
   const left = Math.max(0, limit - (u.success ? (u.data.requests ?? 0) : 0));
@@ -110,7 +120,7 @@ export default async function AssistantPage({ searchParams }: Props) {
               Ask Vabrato isn&apos;t available on your account right now.
             </p>
           ) : (
-            <AskVabrato kinds={kinds} left={left} limit={limit} docs={docs} initialDoc={initialDoc} homes={{ message: messageHomes, cover_letter: letterHomes }} listingHomes={listingHomes} initialListing={initialListing} />
+            <AskVabrato kinds={kinds} left={left} limit={limit} docs={docs} initialDoc={initialDoc} homes={{ message: messageHomes, cover_letter: letterHomes }} listingHomes={listingHomes} initialListing={initialListing} sale={sale} today={today} initialMode={initialMode} />
           )}
           {/* MLS-1: the listing modes show listing data. */}
           {showsListings && <MlsAttribution lastUpdated={lastUpdated} />}

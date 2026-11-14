@@ -102,7 +102,7 @@ describe("schedules (0040)", () => {
     });
 
     it("members can't change a due date directly", async () => {
-      const [{ id }] = await t.query<{ id: string }>(`insert into member_todos (profile_id, title, due_date) values ($1, 'x', '2026-12-01') returning id`, [U.buyerA]);
+      const id = (await t.query<{ id: string }>(`insert into member_todos (profile_id, title, due_date) values ($1, 'x', '2026-12-01') returning id`, [U.buyerA]))[0]!.id;
       await expect(as("buyerA", (q) => q(`update member_todos set due_date = '2027-01-01' where id = $1`, [id]))).rejects.toThrow(DENIED);
     });
   });

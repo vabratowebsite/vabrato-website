@@ -6,13 +6,15 @@ import { aiDeps, aiKeyConfigured } from "@/member/ai";
 import { memberAiStatus, memberDataLevel } from "@/member/ai-status";
 import { explainTerm, searchBySentence, summarizeDocument } from "@/member/assistant/ask";
 import { loadMemberFile, parseDocRef } from "@/member/assistant/files";
-import { SUMMARY_LIMITS, cleanLine } from "@/member/assistant/summary";
+import { cleanLine } from "@/member/assistant/summary";
 import { DRAFT_MESSAGES, resolveHome, writeDraft } from "@/member/assistant/drafts";
 import { askAboutHome, compareHomes } from "@/member/assistant/listing-ask";
+import { MAX_TOUR, SCHEDULE_MESSAGES, loadTour, memberDate, movingPlan, prelistingPlan, tourDay, type MovingAnchor } from "@/member/assistant/schedules";
+import { dealTimeline, pacificToday, sellerDeals } from "@/member/seller";
 import { MAX_COMPARE, memberListingsForAi } from "@/member/assistant/listings";
 import { LISTING_KEY } from "@/member/saved";
 import { isRecipient, type AskCard } from "@/member/assistant/kinds";
-import { buys } from "@/member/roles";
+import { buys, sells } from "@/member/roles";
 import { assignedAgent, requirePortalMember } from "@/member/session";
 import { firstName } from "@vabrato/lib";
 
@@ -60,16 +62,18 @@ export type AddTodosResult = { ok: true; added: number } | { ok: false; error: s
  * Adds the to-dos the member ticked to "My to-dos". They wait for the
  * member's agent to approve them (0037); the agent gets one bell alert.
  */
-export async function addTodosAction(sourceName: string, todos: { title: string; page: number | null }[]): Promise<AddTodosResult> {
+export async function addTodosAction(sourceName: string, todos: { title: string; page: number | null; due_date?: string | null }[]): Promise<AddTodosResult> {
   const member = await requirePortalMember("/my/assistant");
   const source = cleanLine(String(sourceName ?? ""), 160) || null;
   const rows = (Array.isArray(todos) ? todos : [])
-    .slice(0, SUMMARY_LIMITS.todos)
+    .slice(0, 15) // a summary suggests at most 8; a plan at most 15
     .map((t) => ({
       profile_id: member.profile.id,
       title: cleanLine(String(t?.title ?? ""), 200),
       source_name: source,
       page: Number.isInteger(t?.page) && (t.page as number) >= 1 && (t.page as number) <= 5000 ? (t.page as number) : null,
+      // S5b PR 5: a plan step's date (our code worked it out); the agent still approves.
+      due_date: typeof t?.due_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date) && t.due_date >= "2000-01-01" && t.due_date <= "2100-12-31" ? t.due_date : null,
     }))
     .filter((t) => t.title);
   if (!rows.length) return { ok: false, error: "Tick at least one to-do to add." };
@@ -189,4 +193,71 @@ export async function askListingAction(key: string, text: string): Promise<AskCa
   if (typeof key !== "string" || !LISTING_KEY.test(key)) return fail("Choose a home first.");
   const loaded = await memberListingsForAi(member.supabase, [key], await listingLevel(member));
   return askAboutHome(aiDeps(member.supabase), loaded, text);
+}
+
+// --- Schedules (S5b PR 5) ----------------------------------------------------------------------
+// A moving plan, a pre-listing checklist and a tour day. Our code does every
+// date: a seller's plan counts from their sale's dates of record (the
+// schedule engine, never changed). Nothing is kept unless the member adds
+// steps to their to-dos (the agent approves them).
+
+export interface MovingAsk {
+  /** "sale": the member's open sale; "date": a date they type. */
+  source?: string;
+  date?: string;
+  notes?: string;
+}
+
+export async function askMovingAction(ask: MovingAsk): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Moving plan";
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "moving", question, message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_moving")) return fail("Ask Vabrato can't make moving plans right now.");
+  const today = pacificToday();
+  let anchor: MovingAnchor;
+  if (ask?.source === "sale") {
+    const deal = (await sellerDeals(member.supabase)).find((d) => d.status === "active");
+    if (!deal) return fail(SCHEDULE_MESSAGES.noSale);
+    const { timeline } = await dealTimeline(member.supabase, deal, today);
+    const rentBack = timeline.milestones.find((m) => m.key === "rent_back_end");
+    anchor = {
+      kind: "sale",
+      moveDay: rentBack?.date ?? timeline.coe,
+      fixed: timeline.milestones.filter((m) => !m.complete && m.key !== "ratified").map((m) => ({ label: m.label, date: m.date })),
+    };
+  } else {
+    const d = memberDate(ask?.date, today);
+    if ("error" in d) return fail(d.error);
+    anchor = { kind: "purchase", moveDay: d.date, fixed: [] };
+  }
+  return movingPlan(aiDeps(member.supabase), anchor, ask?.notes, today);
+}
+
+export async function askPrelistingAction(ask: { listDate?: string; occupancy?: string; notes?: string }): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Pre-listing checklist";
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "prelisting", question, message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!sells(member.role)) return fail("Pre-listing checklists are for sellers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_prelisting")) return fail("Ask Vabrato can't make checklists right now.");
+  const today = pacificToday();
+  const d = memberDate(ask?.listDate, today);
+  if ("error" in d) return fail(d.error);
+  return prelistingPlan(aiDeps(member.supabase), d.date, ask?.occupancy === "vacant" ? "vacant" : "occupied", ask?.notes, today);
+}
+
+export async function askTourAction(ask: { keys?: string[]; date?: string }): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Plan a tour day";
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "tour", question, message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!buys(member.role)) return fail("Tour days are for buyers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_tour")) return fail("Ask Vabrato can't plan tour days right now.");
+  const today = pacificToday();
+  const d = memberDate(ask?.date, today, 60);
+  if ("error" in d) return fail(d.error);
+  const keys = (Array.isArray(ask?.keys) ? ask.keys : []).filter((k): k is string => typeof k === "string" && LISTING_KEY.test(k)).slice(0, MAX_TOUR);
+  const input = await loadTour(member.supabase, keys, await listingLevel(member), d.date);
+  return tourDay(aiDeps(member.supabase), input);
 }

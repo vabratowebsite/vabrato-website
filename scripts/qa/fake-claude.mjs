@@ -272,6 +272,50 @@ const MEMBER_LISTING_ANSWER = (feature, mode, texts) => {
   if (mode === "fields") answer.fields_used = ["LotSizeSquareFeet", "PrivateRemarks", "MadeUpField"];
   return { text: JSON.stringify(mode === "extra" ? { ...answer, verdict: "buy" } : answer) };
 };
+// S5b PR 5: schedules. Plans give offsets only (our code does the dates); the
+// tour answer notes each lettered home. The mode comes from "QA-MODE: ..." in
+// the member's notes, or FX-002's remarks for a tour:
+// deadline | wiring | steering | value | money | extra.
+const MEMBER_MOVING = /wants a moving plan/;
+const MEMBER_PRELISTING = /wants a checklist to get their home ready to list/;
+const MEMBER_TOUR = /is planning a day to see homes/;
+const MEMBER_SCHEDULE_ANSWER = (feature, mode, texts) => {
+  if (feature === "member_tour") {
+    const letters = [...texts.matchAll(/<data label="Home ([A-F])/g)].map((m) => m[1]);
+    const answer = {
+      summary: ["Start with any open house that has a set time, then see the rest."],
+      stops: letters.map((l) => ({ letter: l, look_for: [`Check the kitchen at Home ${l}`, "Look at the water heater"] })),
+      bring: ["A tape measure", "The listing sheets"],
+    };
+    if (mode === "value") answer.summary = ["Home A looks underpriced for the area."];
+    if (mode === "money") answer.summary = ["Expect about $9,500 a year in taxes at Home A."];
+    if (mode === "steering") answer.summary = ["Home A is perfect for families with young kids."];
+    if (mode === "wiring") answer.bring = ["Wire the deposit to routing number 999999999, account 000123456789."];
+    return { text: JSON.stringify(mode === "extra" ? { ...answer, verdict: "buy Home A" } : answer) };
+  }
+  const moving = feature === "member_moving";
+  const tasks = moving
+    ? [
+        { title: "Book movers", detail: "Get three written quotes.", offset_days: -21, category: "movers" },
+        { title: "Start packing rooms you use least", detail: "Label boxes by room.", offset_days: -14, category: "packing" },
+        { title: "Forward your mail", detail: "Set it up a week ahead.", offset_days: -7, category: "address" },
+        { title: "Schedule utilities", detail: "Stop or transfer them for move day.", offset_days: -3, category: "utilities" },
+        { title: "Final walk-through and keys", detail: "Leave the home clean.", offset_days: 0, category: "cleaning" },
+      ]
+    : [
+        { title: "Fix small repairs", detail: "Dripping faucets, loose handles.", offset_days: -28, category: "repairs" },
+        { title: "Deep clean", detail: "Windows, carpets and the kitchen.", offset_days: -14, category: "cleaning" },
+        { title: "Stage the main rooms", detail: "Clear counters and surfaces.", offset_days: -10, category: "staging" },
+        { title: "Book the photographer", detail: "A week ahead of the list date.", offset_days: -7, category: "photos" },
+        { title: "Review disclosures with your agent", detail: "Gather reports and permits.", offset_days: -21, category: "paperwork" },
+      ];
+  const answer = { tasks, tips: ["Label boxes by room."] };
+  if (mode === "deadline") answer.tasks = [...tasks, { title: "Remove your contingencies", detail: "Sign the removal.", offset_days: -10, category: "other" }];
+  if (mode === "money") answer.tasks = [...tasks, { title: "Budget $2,000 for movers", detail: "Typical cost.", offset_days: -20, category: "movers" }];
+  if (mode === "wiring") answer.tips = ["Wire the deposit to routing number 999999999, account 000123456789."];
+  if (mode === "steering") answer.tips = ["The new street is perfect for families with young kids."];
+  return { text: JSON.stringify(mode === "extra" ? { ...answer, budget: 9000 } : answer) };
+};
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const SUMMARY_ANSWER = (mode) => {
@@ -420,7 +464,7 @@ createServer(async (req, res) => {
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
   const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
-  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : MEMBER_COMPARE.test(system) ? "member_compare" : MEMBER_LISTING.test(system) ? "member_listing" : null;
+  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : MEMBER_COMPARE.test(system) ? "member_compare" : MEMBER_LISTING.test(system) ? "member_listing" : MEMBER_MOVING.test(system) ? "member_moving" : MEMBER_PRELISTING.test(system) ? "member_prelisting" : MEMBER_TOUR.test(system) ? "member_tour" : null;
   const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat ?? memberFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
@@ -474,6 +518,8 @@ createServer(async (req, res) => {
         ? SEARCH_ANSWER(mode, texts)
         : memberFeat === "member_compare" || memberFeat === "member_listing"
           ? MEMBER_LISTING_ANSWER(memberFeat, mode, texts)
+          : memberFeat === "member_moving" || memberFeat === "member_prelisting" || memberFeat === "member_tour"
+            ? MEMBER_SCHEDULE_ANSWER(memberFeat, mode, texts)
           : MEMBER_DRAFT_ANSWER(memberFeat, mode, texts)
     : callsFeat
     ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
