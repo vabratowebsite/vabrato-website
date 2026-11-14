@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). Next: PR 6 (design). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 built (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041, after merge: apply 0041; no AI images yet). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -995,6 +995,97 @@ with the member daily limits, and the site-wide monthly budget.
     switch, including the approval switch, off.
   - **Security advisor:** nothing new. The two replaced trigger functions
     still can't be run by signed-in users or the public.
+- **PR 6 (design: colors and moodboard, staging ideas, open-house flyer and
+  posts; migration 0041; owner answers 2026-11-14; after merge: apply 0041):**
+  - **Owner answers:**
+    - **Drawing:** our own templates. The assistant returns words and color
+      choices only; our code checks every color and draws the swatches,
+      moodboard and post image. Nothing the model writes is ever shown as
+      markup.
+    - **Staging:** the seller describes the room in words; no photos are
+      sent.
+    - **Flyers and posts:** written only from the seller's own words. No
+      MLS data goes to the model, so no MLSListings approval is needed. The
+      agent approves each one and picks our listing (and, if they like, one
+      of its open houses); the flyer's address, price, rooms, photo,
+      open-house time and agent card come from our records. Posts need the
+      agent's approval too, and our code adds the brokerage line.
+    - **Post image:** a square "Open house" / "Just listed" graphic in our
+      colors, without a photo.
+    - **Who:** colors and moodboards for buyers and sellers; staging, flyers
+      and posts for sellers.
+    - **AI images:** none yet. Photo-style room concepts (mockup 11) wait
+      until an image provider is chosen.
+  - **Switches** (all off): `ai_member_palette`, `ai_member_staging` and
+    `ai_member_flyer`. None needs `ai_mls_approved`.
+  - **Colors and moodboard:**
+    - **The answer:** 3 to 6 colors and up to 9 moodboard tiles.
+    - **Our checks:** colors that aren't real `#RRGGBB` codes, repeats,
+      brand names and paint codes are dropped.
+    - **What's shown:** the swatches and tiles are our SVG templates, shown
+      as images, with the colors listed as text too. Labels are black or
+      white, whichever reads better.
+    - **Downloads:** the palette as SVG or PNG, and the moodboard as PNG.
+    - **Label:** "AI concept · for planning only".
+  - **Staging ideas:** the room type and the seller's words go to the
+    model; it returns keep, remove, bring in and arrange lists, accent
+    colors and to-dos. Our code drops ideas with costs, value talk or
+    edited photos, and says so. To-dos go to My to-dos for the agent's
+    approval.
+  - **Flyer and posts:**
+    - **The answer:** a headline, highlights, a description, and Instagram
+      and Facebook posts. The seller edits them.
+    - **Sending:** "Send to my agent for approval" checks the words again
+      (prices and value talk, payment details, Fair Housing, contacts and
+      links) and saves them. The words can't be changed after that.
+    - **My flyers** (sellers) shows each flyer's status and the agent's
+      note on a declined one. The seller can delete a flyer that's waiting
+      or was declined.
+    - **The approved flyer** prints with facts from our records, the open
+      house in Pacific time, the agent's card, the DRE number and "Equal
+      Housing Opportunity". The posts copy with the brokerage line, and the
+      post image downloads.
+    - **A closed or withdrawn listing** shows "no longer active" instead of
+      the flyer.
+  - **Console** (member page, "Flyers waiting"):
+    - **Approve:** the agent picks one of our active listings and,
+      optionally, one of its open houses that hasn't ended. The console
+      checks the words again (Fair Housing, payment details, dollar
+      figures, links) before approving.
+    - **Decline:** with an optional note.
+    - **Alerts:** one bell alert per member until it's read.
+  - **Database (0041):** the three switches, and `member_promos`:
+    - **Who reads:** the member, and staff who can see them.
+    - **Who sends:** sellers only, with the status pending and none of the
+      agent's fields set.
+    - **Limits:** at most 20 per member, and the words are frozen once sent.
+    - **Who deletes:** the member, while a flyer is waiting or after it was
+      declined.
+    - **Decisions:** `decide_member_promo` (staff who can see the member;
+      our own listing only; the open house must belong to it and not have
+      ended; audited).
+    - **Alerts:** bell kind `member_promo`.
+    - **Clean-up:** declined flyers are deleted 30 days after the decision,
+      in the daily purge, and "Delete my assistant data" removes all of a
+      member's flyers.
+  - **Tests:**
+    - **Database:** 13 tests (`member-design.test.ts`), and
+      `hosted-design-check.sql`, which passes locally.
+    - **Features:** 10 tests (colors checked, brand names removed, costs
+      and value talk dropped, flyer words only, contacts stripped, Fair
+      Housing blocked). 6 tests for the SVG templates (every text escaped,
+      only our own tags, label contrast). A nav test for My flyers.
+    - **The website's live test:** 13 calls (palette, staging and flyer
+      added). The fake run is 13 of 13 ok.
+    - **Browser QA** (`scripts/qa/s5b-design.mjs`): 58 of 58, run twice.
+    - **Reruns:**
+      - `s5b-documents` 53, `s5b-drafts` 50, `s5b-schedules` 38,
+        `s5b-listings` 44 and `s5-qa` 100 pass unchanged.
+      - `s5b-assistant` passes 65 after its check was updated for the new
+        sentence about flyers.
+  - **Not in this PR:** AI images and room photos, model-written markup,
+    posting to social networks, and the agent editing a member's flyer (they
+    decline it with a note instead).
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 

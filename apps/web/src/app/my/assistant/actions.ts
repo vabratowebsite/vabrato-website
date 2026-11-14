@@ -13,7 +13,9 @@ import { MAX_TOUR, SCHEDULE_MESSAGES, loadTour, memberDate, movingPlan, prelisti
 import { dealTimeline, pacificToday, sellerDeals } from "@/member/seller";
 import { MAX_COMPARE, memberListingsForAi } from "@/member/assistant/listings";
 import { LISTING_KEY } from "@/member/saved";
-import { isRecipient, type AskCard } from "@/member/assistant/kinds";
+import { isPromoKind, isRecipient, isRoomType, type AskCard } from "@/member/assistant/kinds";
+import { cleanFlyer, flyer, flyerProblem, palette, staging } from "@/member/assistant/design";
+import { fairHousingBlocks } from "@vabrato/ai";
 import { buys, sells } from "@/member/roles";
 import { assignedAgent, requirePortalMember } from "@/member/session";
 import { firstName } from "@vabrato/lib";
@@ -260,4 +262,65 @@ export async function askTourAction(ask: { keys?: string[]; date?: string }): Pr
   const keys = (Array.isArray(ask?.keys) ? ask.keys : []).filter((k): k is string => typeof k === "string" && LISTING_KEY.test(k)).slice(0, MAX_TOUR);
   const input = await loadTour(member.supabase, keys, await listingLevel(member), d.date);
   return tourDay(aiDeps(member.supabase), input);
+}
+
+// --- Design (S5b PR 6) -------------------------------------------------------------------------
+// Colors and staging ideas come back to the page only. A flyer is stored only
+// when the seller sends it to their agent (sendFlyerAction); the agent approves
+// it in the console and attaches our listing.
+
+export async function askPaletteAction(ask: { notes?: string }): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "palette", question: "Colors and moodboard", message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_palette")) return fail("Ask Vabrato can't make palettes right now.");
+  return palette(aiDeps(member.supabase), ask?.notes);
+}
+
+export async function askStagingAction(ask: { room?: string; notes?: string }): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "staging", question: "Staging ideas", message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!sells(member.role)) return fail("Staging ideas are for sellers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_staging")) return fail("Ask Vabrato can't suggest staging right now.");
+  if (!isRoomType(ask?.room)) return fail("Choose the room.");
+  return staging(aiDeps(member.supabase), ask.room, ask?.notes);
+}
+
+export async function askFlyerAction(ask: { kind?: string; notes?: string }): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "flyer", question: "Open-house flyer and posts", message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!sells(member.role)) return fail("Flyers are for sellers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_flyer")) return fail("Ask Vabrato can't write flyers right now.");
+  return flyer(aiDeps(member.supabase), isPromoKind(ask?.kind) ? ask.kind : "open_house", ask?.notes);
+}
+
+export type SendFlyerResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * The seller sends their (possibly edited) flyer to their agent. The words are
+ * checked again (value talk, payment details, Fair Housing) and then frozen;
+ * the agent approves or declines it in the console (0041).
+ */
+export async function sendFlyerAction(input: { kind?: string; headline?: string; highlights?: string[] | string; blurb?: string; instagram?: string; facebook?: string }): Promise<SendFlyerResult> {
+  const member = await requirePortalMember("/my/assistant");
+  if (!sells(member.role)) return { ok: false, error: "Flyers are for sellers." };
+  const f = cleanFlyer({ headline: input?.headline, highlights: input?.highlights, blurb: input?.blurb, instagram: input?.instagram, facebook: input?.facebook });
+  const problem = flyerProblem(f);
+  if (problem) return { ok: false, error: problem };
+  const fh = fairHousingBlocks([f.headline, ...f.highlights, f.blurb, f.instagram, f.facebook].join("\n"));
+  if (fh.length) return { ok: false, error: `Fair Housing rules don't allow "${fh[0]!.match}". Describe the home, not who might live there.` };
+  const { error } = await member.supabase.from("member_promos").insert({
+    profile_id: member.profile.id,
+    kind: isPromoKind(input?.kind) ? input.kind : "open_house",
+    headline: f.headline,
+    highlights: f.highlights.join("\n"),
+    blurb: f.blurb,
+    instagram: f.instagram,
+    facebook: f.facebook,
+  });
+  if (error) return { ok: false, error: /too_many/.test(error.message) ? "You've sent a lot of flyers. Delete ones you don't need on My flyers, then try again." : "We couldn't send that. Please try again." };
+  revalidatePath("/my/flyers");
+  return { ok: true };
 }

@@ -1208,6 +1208,63 @@ export type Database = {
         }
         Relationships: []
       }
+      member_promos: {
+        Row: {
+          blurb: string
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decline_note: string | null
+          facebook: string
+          headline: string
+          highlights: string
+          id: string
+          instagram: string
+          kind: string
+          listing_key: string | null
+          open_house_key: string | null
+          profile_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          blurb?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decline_note?: string | null
+          facebook?: string
+          headline: string
+          highlights?: string
+          id?: string
+          instagram?: string
+          kind: string
+          listing_key?: string | null
+          open_house_key?: string | null
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          blurb?: string
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decline_note?: string | null
+          facebook?: string
+          headline?: string
+          highlights?: string
+          id?: string
+          instagram?: string
+          kind?: string
+          listing_key?: string | null
+          open_house_key?: string | null
+          profile_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_todos: {
         Row: {
           created_at: string
@@ -2422,6 +2479,16 @@ export type Database = {
           row_key: string
           table_name: string
         }[]
+      }
+      decide_member_promo: {
+        Args: {
+          p_approve: boolean
+          p_id: string
+          p_listing_key?: string
+          p_note?: string
+          p_open_house_key?: string
+        }
+        Returns: undefined
       }
       decide_member_todo: { Args: { p_approve: boolean; p_id: string }; Returns: undefined }
       delete_my_assistant_data: { Args: never; Returns: number }

@@ -43,7 +43,7 @@ export default async function AssistantPage({ searchParams }: Props) {
     .map((f) => memberFeatureKey(f.flag).replace("member_", ""))
     .map((k) => (k === "draft" ? "message" : k) as AskKind)
     .filter((k) => (k !== "cover_letter" && k !== "compare" && k !== "listing" && k !== "tour") || buys(member.role))
-    .filter((k) => k !== "prelisting" || sells(member.role));
+    .filter((k) => (k !== "prelisting" && k !== "staging" && k !== "flyer") || sells(member.role));
   // Compare and "Ask about a home" pick from saved homes; ?listing=KEY (from a listing page) preselects one.
   const listingHomes: ListingChoice[] = [];
   let initialListing: ListingChoice | undefined;
@@ -110,7 +110,7 @@ export default async function AssistantPage({ searchParams }: Props) {
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Answers are written by AI and can be wrong. Check anything important with your agent.</li>
               <li>
-                Nothing you type is kept unless you save a draft or add a to-do: leaving this page clears the rest. Your agent doesn&apos;t see your questions or drafts, only to-dos you add and messages you send them.
+                Nothing you type is kept unless you save a draft, add a to-do or send a flyer: leaving this page clears the rest. Your agent doesn&apos;t see your questions or drafts, only to-dos you add, flyers you send and messages you send them.
               </li>
               <li>It never gives legal, tax or wiring advice. Always call your escrow officer to verify wiring instructions.</li>
             </ul>

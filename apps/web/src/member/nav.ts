@@ -4,7 +4,7 @@ import { buys, sells, type MemberRole } from "./roles";
 // sections show; Both sees both"). Only pages that exist are listed; later S5
 // PRs add saved homes, searches, tours, documents and messages.
 
-export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "seller-performance" | "documents" | "messages" | "assistant" | "todos" | "drafts" | "account";
+export type PortalPage = "buyer" | "alerts" | "saved" | "searches" | "compare" | "tours" | "sold" | "seller" | "seller-performance" | "documents" | "messages" | "assistant" | "todos" | "drafts" | "flyers" | "account";
 
 export interface NavGroup {
   label?: string;
@@ -17,8 +17,9 @@ export interface NavGroup {
  * Vabrato (the master switch and at least one member feature on, S5b).
  * `todos`: show My to-dos (summarizing is on, or the member has to-dos).
  * `drafts`: show My drafts (a draft switch is on, or the member has drafts).
+ * `flyers`: show My flyers to sellers (the flyer switch is on, or they have flyers).
  */
-export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessages?: number; assistant?: boolean; todos?: boolean; drafts?: boolean } = {}): NavGroup[] {
+export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessages?: number; assistant?: boolean; todos?: boolean; drafts?: boolean; flyers?: boolean } = {}): NavGroup[] {
   const groups: NavGroup[] = [];
   if (buys(role)) {
     groups.push({
@@ -56,6 +57,7 @@ export function portalNav(role: MemberRole, opts: { vow?: boolean; unreadMessage
     ...(opts.assistant ? [{ key: "assistant" as const, label: "Ask Vabrato", href: "/my/assistant" }] : []),
     ...(opts.todos ? [{ key: "todos" as const, label: "My to-dos", href: "/my/todos" }] : []),
     ...(opts.drafts ? [{ key: "drafts" as const, label: "My drafts", href: "/my/drafts" }] : []),
+    ...(opts.flyers && sells(role) ? [{ key: "flyers" as const, label: "My flyers", href: "/my/flyers" }] : []),
   ];
   if (assistant.length) groups.push({ label: "Assistant", items: assistant });
   groups.push({

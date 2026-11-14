@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MEMBER_AI_FEATURES, memberFeatureKey } from "@vabrato/lib";
 import { LIVE_CALLS } from "../../live/registry";
 import * as features from "./features";
+import * as design from "./design";
 import * as schedules from "./schedules";
 
 // S5b: the website's live test covers every member AI feature once. Runs in CI
@@ -10,7 +11,7 @@ import * as schedules from "./schedules";
 
 type Feature = { key: string; system: string; output: unknown };
 const isFeature = (v: unknown): v is Feature => typeof v === "object" && v !== null && typeof (v as Feature).key === "string" && /^member_/.test((v as Feature).key) && typeof (v as Feature).system === "string" && "output" in v;
-const ALL = [...Object.values(features as Record<string, unknown>), ...Object.values(schedules as Record<string, unknown>)].filter(isFeature);
+const ALL = [features, schedules, design].flatMap((m) => Object.values(m as Record<string, unknown>)).filter(isFeature);
 
 describe("member assistant coverage", () => {
   it("every member AiFeature has exactly one live call", () => {
