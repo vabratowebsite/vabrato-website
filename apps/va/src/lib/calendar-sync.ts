@@ -1,5 +1,6 @@
 import { createServiceSupabase } from "@vabrato/lib";
 import {
+  CALENDAR_SCOPE,
   accessTokenFor,
   appointmentEvent,
   calendarApi,
@@ -94,8 +95,9 @@ export async function desiredEvents(profileId: string): Promise<EventSpec[]> {
 
 async function connection(profileId: string) {
   const service = createServiceSupabase();
-  const { data } = await service.from("staff_connections").select("token_ciphertext, last_error").eq("profile_id", profileId).eq("provider", "google").maybeSingle();
-  return data;
+  const { data } = await service.from("staff_connections").select("token_ciphertext, last_error, scopes").eq("profile_id", profileId).eq("provider", "google").maybeSingle();
+  // A Google connection made for Drive only (Integrations PR 2) isn't a calendar connection.
+  return data && data.scopes.includes(CALENDAR_SCOPE) ? data : null;
 }
 
 async function markConnection(profileId: string, patch: { last_error: "reconnect" | "sync_failed" | null; last_synced_at?: string }) {
@@ -156,7 +158,8 @@ export async function syncCalendarFor(profileId: string, ready?: CalendarReady):
  */
 export async function disconnectGoogle(profileId: string): Promise<{ removedEvents: number; eventsRemoved: boolean; revoked: boolean }> {
   const service = createServiceSupabase();
-  const conn = await connection(profileId);
+  // The whole Google connection, whatever it was for (Calendar, Drive or both).
+  const { data: conn } = await service.from("staff_connections").select("token_ciphertext").eq("profile_id", profileId).eq("provider", "google").maybeSingle();
   let removedEvents = 0;
   let eventsRemoved = false;
   let revoked = false;

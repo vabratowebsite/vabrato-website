@@ -10,6 +10,8 @@ import { aiFeaturesOn } from "@/lib/ai-flags";
 import { aiKeyConfigured } from "@/lib/ai";
 import { checkedLine, parseDocPath, uncheckedList } from "@/lib/documents";
 import { getDealWithProgress } from "@/lib/queries";
+import { ImportFiles } from "@/components/import-files";
+import { importReadiness } from "@/lib/imports";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -154,6 +156,9 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
       <Panel title="Upload a document">
         <p className={`${mutedCls} mb-3`}>Uploads are staff-only. Use &ldquo;Share with seller&rdquo; to put one in the seller&apos;s Documents page.</p>
         <DocumentUploader dealId={id} />
+        <div className="mt-6">
+          <ImportFiles dealId={id} target="documents" {...(await importReadiness(profile.id))} />
+        </div>
       </Panel>
 
       <Panel title={`Documents (${docs.length})`}>

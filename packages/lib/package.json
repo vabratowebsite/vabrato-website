@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./auth/middleware": "./src/auth/middleware.ts",
     "./integrations": "./src/integrations/index.ts",
-    "./integrations/fake-google": "./src/integrations/fake-google.ts"
+    "./integrations/fake-google": "./src/integrations/fake-google.ts",
+    "./integrations/fake-dropbox": "./src/integrations/fake-dropbox.ts"
   },
   "scripts": {
     "typecheck": "tsc",

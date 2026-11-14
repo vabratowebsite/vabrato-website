@@ -337,3 +337,25 @@ Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the 
   - disconnect removes the events and revokes the token;
   - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors, and a keyboard pass on Settings.
 - It needs migrations up to 0042, `SERVICE_KEY` and `GOOGLE_LOG` (the fake's log). Everything is put back in `finally`; a report goes to `docs/screenshots/int-calendar/report.json`.
+
+## Drive and Dropbox import (Integrations PR 2)
+
+`int-import.mjs` checks importing files into a deal's documents and receipts, against `fake-google.mjs` (Drive files and a stand-in for Google's picker at `/picker/api.js`) and `fake-dropbox.mjs` (the Apps/Vabrato folder). Nothing reaches Google or Dropbox.
+
+- **Start the fakes:** they need the small loader in `ts-resolve.mjs` for the shared files:
+  - `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/fake-google.mjs <log>` (port 4030);
+  - `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/fake-dropbox.mjs <log>` (port 4040).
+- **Start the console** with the Google settings from Integrations PR 1, plus:
+  - `GOOGLE_PICKER_API_KEY` (any value), `GOOGLE_CLOUD_PROJECT_NUMBER` (any 6 to 20 digits) and `GOOGLE_PICKER_SCRIPT_URL=http://127.0.0.1:4030/picker/api.js`;
+  - `DROPBOX_WWW_BASE_URL`, `DROPBOX_API_BASE_URL` and `DROPBOX_CONTENT_BASE_URL` set to `http://127.0.0.1:4040`, and any `DROPBOX_APP_KEY` and `DROPBOX_APP_SECRET`.
+- **What it covers:**
+  - the switches off (no import controls) and on (admin only, audited);
+  - allowing Drive from Settings (drive.file only); the picker getting a Drive-only token;
+  - four files picked: a PDF and a PNG imported staff-only with a type; an oversized scan and a HEIC photo refused with reasons; the same file again refused;
+  - Dropbox connected; the folder listed; a file imported and then marked "Imported";
+  - receipts imported from Dropbox and from Drive into the receipt form, saved with their source;
+  - Dropbox access revoked, then reconnected;
+  - another agent gets a 404 on the deal; nothing imported is shared with the seller;
+  - disconnecting both revokes the access, and imports stay on the deal;
+  - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors, and a keyboard pass on the import controls.
+- It needs migrations up to 0043, `SERVICE_KEY`, `GOOGLE_LOG` and `DROPBOX_LOG`. Everything is put back in `finally`; a report goes to `docs/screenshots/int-import/report.json`.

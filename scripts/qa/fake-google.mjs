@@ -3,7 +3,7 @@
 // Calendar connection can be checked end to end without a Google account,
 // an OAuth client or any event leaving the machine (Integrations PR 1).
 //
-//   node --experimental-strip-types scripts/qa/fake-google.mjs <log file>
+//   node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/fake-google.mjs <log file>
 //
 // Start apps/va with GOOGLE_ACCOUNTS_BASE_URL, GOOGLE_OAUTH_BASE_URL and
 // GOOGLE_API_BASE_URL set to http://127.0.0.1:4030, and any client id,

@@ -8,7 +8,7 @@ import { STAFF_ROLES, checklistKeys, cleanDocTypes, getProfile, todayISO } from 
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
 import { COUNTER_CHANGES, counterInput, dealTerms, toCounterResult, type CounterResult } from "@/lib/counter-changes";
 import { DOCUMENT_CHECK, RECEIPT_READER, checkInput, receiptInput, toCheckResult, toReceiptProposal, type CheckFile, type CheckResult, type ReceiptProposal } from "@/lib/document-check";
-import { MAX_DOC_BYTES, checkDealFile, checkReceiptFile, STILL_SHARED, countPdfPages, freeName, isOwnReceiptUpload, originalName, parseDocPath, receiptFolder, sniffType, staffDocPath } from "@/lib/documents";
+import { EXTERNAL_REF, MAX_DOC_BYTES, checkDealFile, checkReceiptFile, STILL_SHARED, countPdfPages, freeName, isOwnReceiptUpload, originalName, parseDocPath, receiptFolder, sniffType, staffDocPath } from "@/lib/documents";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Deal documents and receipts (S6b PR 7a). Every read and write runs as the
@@ -58,8 +58,10 @@ async function isGone(bucket: ReturnType<Awaited<ReturnType<typeof supabaseServe
  * staff/, or left unfiled): checks its real type and size, then adds the row.
  * The storage key uses a cleaned-up name; file_name keeps the name as uploaded.
  */
-export async function fileDealDocumentAction(dealId: string, path: string, docTypes: string[], uploadedName?: string): Promise<DocActionResult> {
+export async function fileDealDocumentAction(dealId: string, path: string, docTypes: string[], uploadedName?: string, externalRef?: string): Promise<DocActionResult> {
   const { supabase, profile } = await staffDeal(dealId);
+  // Integrations PR 2: where an imported file came from (Drive or Dropbox), so it isn't imported twice.
+  if (externalRef !== undefined && !EXTERNAL_REF.test(externalRef)) return fail("That import isn't valid. Import it again.");
   const where = parseDocPath(path, dealId);
   if (!where) return fail("That file isn't in this deal's folder. Upload it again.");
   const { data: file, error } = await supabase.storage.from("deal-docs").download(path);
@@ -77,8 +79,9 @@ export async function fileDealDocumentAction(dealId: string, path: string, docTy
     doc_types: cleanDocTypes(docTypes ?? []),
     shared: where.shared,
     uploaded_by: profile.id,
+    ...(externalRef ? { external_ref: externalRef } : {}),
   });
-  if (insErr) return fail(insErr.code === "23505" ? "That file is already filed." : "Couldn't file the document. Try again.");
+  if (insErr) return fail(insErr.code === "23505" ? (externalRef ? "Already imported to this deal." : "That file is already filed.") : "Couldn't file the document. Try again.");
   refresh(dealId);
   return { ok: true, message: `Filed ${name}.` };
 }

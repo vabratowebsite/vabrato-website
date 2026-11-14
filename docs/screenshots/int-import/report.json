@@ -1,0 +1,114 @@
+[
+  {
+    "who": "admin",
+    "name": "settings-switches",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-not-connected",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "documents-import",
+    "url": "/deals/9a332ee9-90ee-4c4c-aaaf-22997a053c9a/documents",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "documents-imported",
+    "url": "/deals/9a332ee9-90ee-4c4c-aaaf-22997a053c9a/documents",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-connected",
+    "url": "/settings?google=dropbox_connected",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "documents-dropbox-list",
+    "url": "/deals/9a332ee9-90ee-4c4c-aaaf-22997a053c9a/documents",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "receipts-imported",
+    "url": "/deals/9a332ee9-90ee-4c4c-aaaf-22997a053c9a/receipts",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-disconnected",
+    "url": "/settings?google=disconnected",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  }
+]
