@@ -319,3 +319,21 @@ Modes come from `QA-MODE: ok|badhex|money|value|contacts|script|steering|wiring|
 - It needs migrations up to 0041, the MLS fixtures, `SERVICE_KEY`, `CLAUDE_LOG`, `MAIL_DIR`, `PGURL` and `REVALIDATE_SECRET`. Everything is put back in `finally`; a report goes to `docs/screenshots/s5b-final/report.json`.
 
 Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the code by `apps/web/src/review/wording-sheet.ts`. Its CI test fails when member-facing wording changes until the sheet is regenerated: `UPDATE_WORDING=1 pnpm --filter @vabrato/web test wording`.
+
+## Connected accounts and Google Calendar (Integrations PR 1)
+
+`int-calendar.mjs` checks the console's Google Calendar connection end to end against `fake-google.mjs`, a stand-in for Google's consent page, token, revoke, userinfo and Calendar events endpoints (`packages/lib/src/integrations/fake-google.ts`). Nothing reaches Google, and no Google account or OAuth client is needed.
+
+- **Start the fake:** `node --experimental-strip-types scripts/qa/fake-google.mjs <log>` (port 4030). Its log keeps method, path and status only.
+- **Start the console** with `GOOGLE_ACCOUNTS_BASE_URL`, `GOOGLE_OAUTH_BASE_URL` and `GOOGLE_API_BASE_URL` set to `http://127.0.0.1:4030`, any `GOOGLE_INTEGRATION_CLIENT_ID` and `GOOGLE_INTEGRATION_CLIENT_SECRET`, and a fresh `INTEGRATIONS_TOKEN_KEY` (`openssl rand -base64 32`).
+- **What it covers:**
+  - the switch off and on (admin only, audited);
+  - connecting (PKCE, one-time state; the token stored encrypted);
+  - which key dates appear (the agent's own deals and a deal they're a member of, not another agent's);
+  - approving an appointment adds it at once;
+  - key dates off and on; a cancelled deal's dates removed by Sync now; a second sync changes nothing;
+  - Google revoking the access, then reconnecting without duplicates;
+  - a stale callback, an unverified Google email and a seller all refused;
+  - disconnect removes the events and revokes the token;
+  - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors, and a keyboard pass on Settings.
+- It needs migrations up to 0042, `SERVICE_KEY` and `GOOGLE_LOG` (the fake's log). Everything is put back in `finally`; a report goes to `docs/screenshots/int-calendar/report.json`.

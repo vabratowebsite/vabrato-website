@@ -120,7 +120,6 @@ const clickAndWait = async (page, name, text) => {
 };
 
 // --- Setup: fictional staff, deals and an appointment --------------------------------------------------
-const day = (n) => sql(`select (current_date + ${n})::text`);
 sql(`update feature_flags set enabled = false where key = '${FLAG}'`);
 const admin = await account("Avery", "admin");
 const agent = await account("Jordan", "agent");
