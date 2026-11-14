@@ -40,13 +40,14 @@ describe("connected-account guardrails", () => {
     expect(index).not.toMatch(/integrations/);
   });
 
-  it("the token key and the OAuth secret never get a browser-visible name", () => {
-    const hits = files.filter((f) => /NEXT_PUBLIC_[A-Z_]*(INTEGRATION|GOOGLE_INTEGRATION|TOKEN_KEY)/.test(f.text)).map((f) => f.file);
+  it("the token key, the OAuth secrets and the picker key never get a browser-visible name", () => {
+    // The picker's browser key reaches the page only through a server action, for staff who may import.
+    const hits = files.filter((f) => /NEXT_PUBLIC_[A-Z_]*(INTEGRATION|GOOGLE_INTEGRATION|TOKEN_KEY|DROPBOX|PICKER|GOOGLE_CLOUD)/.test(f.text)).map((f) => f.file);
     expect(hits.filter((f) => !f.endsWith("guard.test.ts"))).toEqual([]);
   });
 
-  it("the fake Google is used only by tests and QA", () => {
-    const users = files.filter((f) => /integrations\/fake-google["']/.test(f.text) && !f.file.startsWith("packages/lib/src/integrations/")).map((f) => f.file);
+  it("the fake Google and Dropbox are used only by tests and QA", () => {
+    const users = files.filter((f) => /integrations\/fake-(google|dropbox|files)(\.ts)?["']/.test(f.text) && !f.file.startsWith("packages/lib/src/integrations/")).map((f) => f.file);
     expect(users.filter((f) => !f.startsWith("scripts/qa/") && !/\.test\.tsx?$/.test(f))).toEqual([]);
   });
 });

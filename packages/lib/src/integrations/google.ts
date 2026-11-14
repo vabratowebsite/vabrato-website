@@ -7,7 +7,10 @@ import { tokenKey, TokenKeyError } from "./crypto";
 // point them at the fake (fake-google.ts), like ANTHROPIC_BASE_URL. Nothing
 // here logs or returns a token in an error.
 
-export const CALENDAR_SCOPES = ["openid", "email", "https://www.googleapis.com/auth/calendar.events"] as const;
+export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+/** Drive access to the files the person picks in Google's picker only (Integrations PR 2). */
+export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+export const CALENDAR_SCOPES = ["openid", "email", CALENDAR_SCOPE] as const;
 
 export interface GoogleSetup {
   clientId: string;
@@ -59,12 +62,13 @@ export const pkceChallenge = (verifier: string) => createHash("sha256").update(v
 export const newState = () => randomBytes(24).toString("base64url");
 
 /** Google's consent page for the Calendar connection. */
-export function consentUrl(s: GoogleSetup, o: { redirectUri: string; state: string; challenge: string; loginHint?: string }): string {
+export function consentUrl(s: GoogleSetup, o: { redirectUri: string; state: string; challenge: string; loginHint?: string; scopes?: readonly string[] }): string {
+  const scopes = ["openid", "email", ...(o.scopes ?? [CALENDAR_SCOPE]).filter((x) => x === CALENDAR_SCOPE || x === DRIVE_SCOPE)];
   const q = new URLSearchParams({
     client_id: s.clientId,
     redirect_uri: o.redirectUri,
     response_type: "code",
-    scope: CALENDAR_SCOPES.join(" "),
+    scope: [...new Set(scopes)].join(" "),
     access_type: "offline",
     prompt: "consent",
     include_granted_scopes: "true",
@@ -138,9 +142,15 @@ export async function accountEmail(s: GoogleSetup, accessToken: string, f: Fetch
   return { email, verified: body.email_verified === true || body.email_verified === "true" };
 }
 
-/** A fresh access token from the stored refresh token (never stored itself). */
-export async function accessTokenFor(s: GoogleSetup, refreshToken: string, f: Fetch = fetch): Promise<string> {
-  const res = await call(f, `${s.oauthBase}/token`, form({ grant_type: "refresh_token", refresh_token: refreshToken, client_id: s.clientId, client_secret: s.clientSecret }));
+/**
+ * A fresh access token from the stored refresh token (never stored itself).
+ * With `scopes`, Google narrows the token to just those (the picker gets a
+ * drive.file-only token, never Calendar access).
+ */
+export async function accessTokenFor(s: GoogleSetup, refreshToken: string, f: Fetch = fetch, scopes?: readonly string[]): Promise<string> {
+  const params: Record<string, string> = { grant_type: "refresh_token", refresh_token: refreshToken, client_id: s.clientId, client_secret: s.clientSecret };
+  if (scopes?.length) params.scope = scopes.join(" ");
+  const res = await call(f, `${s.oauthBase}/token`, form(params));
   if (res.status === 400 || res.status === 401) throw new GoogleReconnectError();
   if (!res.ok) throw new GoogleError(res.status);
   const body = await json<{ access_token?: string }>(res);
@@ -204,4 +214,68 @@ export function calendarApi(s: GoogleSetup, accessToken: string, f: Fetch = fetc
       check(res);
     },
   };
+}
+
+// Drive (Integrations PR 2) ---------------------------------------------------------------------------
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+}
+
+/** Google's own formats (Docs, Sheets) have no file to download. */
+export const isGoogleNativeFile = (mimeType: string) => mimeType.startsWith("application/vnd.google-apps.");
+
+export const DRIVE_ID = /^[A-Za-z0-9_-]{5,200}$/;
+
+/** A picked file's name, type and size. Only files the person picked are visible with drive.file. */
+export async function driveFile(s: GoogleSetup, accessToken: string, id: string, f: Fetch = fetch): Promise<DriveFile> {
+  if (!DRIVE_ID.test(id)) throw new GoogleError(400);
+  const res = await call(f, `${s.apiBase}/drive/v3/files/${id}?fields=id,name,mimeType,size,trashed&supportsAllDrives=true`, { headers: { authorization: `Bearer ${accessToken}` } });
+  if (res.status === 401) throw new GoogleReconnectError();
+  if (!res.ok) throw new GoogleError(res.status);
+  const b = await json<{ id?: string; name?: string; mimeType?: string; size?: string | number; trashed?: boolean }>(res);
+  if (b.id !== id || typeof b.name !== "string" || b.trashed) throw new GoogleError(404);
+  return { id, name: b.name.slice(0, 300), mimeType: String(b.mimeType ?? ""), size: Number(b.size ?? 0) };
+}
+
+/** A picked file's bytes, refusing more than maxBytes (null when it's too big). */
+export async function driveDownload(s: GoogleSetup, accessToken: string, id: string, maxBytes: number, f: Fetch = fetch): Promise<Uint8Array | null> {
+  if (!DRIVE_ID.test(id)) throw new GoogleError(400);
+  const res = await call(f, `${s.apiBase}/drive/v3/files/${id}?alt=media&supportsAllDrives=true`, { headers: { authorization: `Bearer ${accessToken}` } });
+  if (res.status === 401) throw new GoogleReconnectError();
+  if (!res.ok) throw new GoogleError(res.status);
+  return readCapped(res, maxBytes);
+}
+
+/** Reads a response body, stopping (null) once it passes maxBytes. */
+export async function readCapped(res: Response, maxBytes: number): Promise<Uint8Array | null> {
+  const declared = Number(res.headers.get("content-length") ?? "0");
+  if (declared > maxBytes) {
+    await res.body?.cancel().catch(() => {});
+    return null;
+  }
+  const reader = res.body?.getReader();
+  if (!reader) return new Uint8Array(0);
+  const parts: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    parts.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const p of parts) {
+    out.set(p, at);
+    at += p.byteLength;
+  }
+  return out;
 }
