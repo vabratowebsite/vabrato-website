@@ -109,7 +109,7 @@ describe("MLS RLS", () => {
 
     it("reads offices and feature flags", async () => {
       expect(await t.as("anon", null, (q) => keys(q, "mls_offices", "office_key"))).toEqual(["O-VABRA"]);
-      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["ai_enabled", "ai_member_compare", "ai_member_cover_letter", "ai_member_draft", "ai_member_explain", "ai_member_flyer", "ai_member_listing", "ai_member_moving", "ai_member_palette", "ai_member_prelisting", "ai_member_search", "ai_member_staging", "ai_member_summarize", "ai_member_tour", "ai_mls_approved", "ai_staff_appointments", "ai_staff_call_notes", "ai_staff_cma_writeup", "ai_staff_contract_reader", "ai_staff_counter_changes", "ai_staff_daily_briefing", "ai_staff_data_questions", "ai_staff_document_check", "ai_staff_escrow_update", "ai_staff_inspection_items", "ai_staff_lead_reply", "ai_staff_listing_kit", "ai_staff_market_update", "ai_staff_member_summary", "ai_staff_open_house_followup", "ai_staff_presentations", "ai_staff_receipt_reader", "ai_staff_repair_response", "ai_staff_vendor_request", "cma_enabled", "full_data_enabled", "integration_google_calendar", "market_stats_enabled", "public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
+      expect(await t.as("anon", null, (q) => keys(q, "feature_flags", "key"))).toEqual(["ai_enabled", "ai_member_compare", "ai_member_cover_letter", "ai_member_draft", "ai_member_explain", "ai_member_flyer", "ai_member_listing", "ai_member_moving", "ai_member_palette", "ai_member_prelisting", "ai_member_search", "ai_member_staging", "ai_member_summarize", "ai_member_tour", "ai_mls_approved", "ai_staff_appointments", "ai_staff_call_notes", "ai_staff_cma_writeup", "ai_staff_contract_reader", "ai_staff_counter_changes", "ai_staff_daily_briefing", "ai_staff_data_questions", "ai_staff_document_check", "ai_staff_escrow_update", "ai_staff_inspection_items", "ai_staff_lead_reply", "ai_staff_listing_kit", "ai_staff_market_update", "ai_staff_member_summary", "ai_staff_open_house_followup", "ai_staff_presentations", "ai_staff_receipt_reader", "ai_staff_repair_response", "ai_staff_vendor_request", "cma_enabled", "full_data_enabled", "integration_dropbox", "integration_google_calendar", "integration_google_drive", "market_stats_enabled", "public_sold", "public_stats", "site_scl_enabled", "vow_enabled"]);
     });
 
     it.each(["mls_listing_vow", "mls_price_events", "mls_listing_full", "mls_members", "mls_agent_access", "mls_sync_runs"])(
@@ -323,7 +323,9 @@ describe("MLS RLS", () => {
         { key: "ai_staff_vendor_request", enabled: false },
         { key: "cma_enabled", enabled: false },
         { key: "full_data_enabled", enabled: false },
+        { key: "integration_dropbox", enabled: false },
         { key: "integration_google_calendar", enabled: false },
+        { key: "integration_google_drive", enabled: false },
         { key: "market_stats_enabled", enabled: false },
         { key: "public_sold", enabled: false },
         { key: "public_stats", enabled: false },

@@ -672,6 +672,7 @@ export type Database = {
           created_at: string
           deal_id: string
           doc_types: string[]
+          external_ref: string | null
           file_name: string
           id: string
           path: string
@@ -689,6 +690,7 @@ export type Database = {
           created_at?: string
           deal_id: string
           doc_types?: string[]
+          external_ref?: string | null
           file_name: string
           id?: string
           path: string
@@ -706,6 +708,7 @@ export type Database = {
           created_at?: string
           deal_id?: string
           doc_types?: string[]
+          external_ref?: string | null
           file_name?: string
           id?: string
           path?: string
@@ -2031,6 +2034,7 @@ export type Database = {
           created_at: string
           created_by: string
           deal_id: string
+          external_ref: string | null
           id: string
           receipt_date: string
           source: Database["public"]["Enums"]["receipt_source"]
@@ -2043,6 +2047,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           deal_id: string
+          external_ref?: string | null
           id?: string
           receipt_date: string
           source?: Database["public"]["Enums"]["receipt_source"]
@@ -2055,6 +2060,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           deal_id?: string
+          external_ref?: string | null
           id?: string
           receipt_date?: string
           source?: Database["public"]["Enums"]["receipt_source"]
