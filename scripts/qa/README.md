@@ -279,3 +279,13 @@ Modes come from `QA-MODE: ok|wiring|steering|contacts|personal|extra` in the mem
 - **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
 
 Modes come from `QA-MODE: ok|value|money|steering|wiring|fields|extra` in the member's question, or in FX-002's remarks for compare (put back afterwards). It needs migrations up to 0039, the MLS fixtures seeded, `SERVICE_KEY`, `CLAUDE_LOG` and `REVALIDATE_SECRET`. Screenshots go to `docs/screenshots/s5b-listings/`; everything it adds is removed, and every switch and setting it touches is put back.
+
+`s5b-schedules.mjs` covers Ask Vabrato's moving plan, pre-listing checklist and tour day (S5b PR 5):
+- **Off by default**, then the console switches; tour day stays locked until the MLSListings approval is on.
+- **A seller's moving plan** from their sale: the dates of record shown as fixed; only the move day and notes sent (no address, phone or long numbers); a calendar file with one event per step; two steps added to My to-dos with due dates, which the agent sees in the console.
+- **Dropped or blocked:** a step naming a contract deadline, a step with a cost, wiring and Fair Housing answers.
+- **A pre-listing checklist** from a typed list date; a past date is stopped.
+- **A buyer's moving plan** from a typed date, and a **tour day** for three saved homes: the open house first (Pacific time), the opted-out home kept in the order without notes and never sent, and a price opinion not shown.
+- **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: ok|deadline|money|wiring|steering|value|extra` in the member's notes, or in FX-002's remarks for a tour (put back afterwards). It adds a QA-only open house for FX-002 and removes it. It needs migrations up to 0040, the MLS fixtures seeded, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-schedules/`.

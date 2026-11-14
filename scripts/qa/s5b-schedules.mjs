@@ -176,16 +176,14 @@ check("pre-listing: a checklist counted back from the list date", (await card.ge
 e = last("member_prelisting");
 check("pre-listing: the list date and notes sent; no address or numbers", e && !e.requestHasLongNumber && !JSON.stringify(e).includes("Fixture Lane"), JSON.stringify(e));
 await shot(seller, "prelisting");
+// A past list date: the date field's minimum stops it in the browser (the server refuses it too; unit-tested).
 let before = memberCalls();
-card = await run(
-  seller,
-  "Pre-listing checklist",
-  async () => {
-    await seller.getByLabel("Target list date").fill(day(-3));
-  },
-  "Build the checklist",
-);
-check("pre-listing: a past list date is refused unsent", (await card.getByText("Pick a date from today on.").isVisible()) && memberCalls() === before);
+const cardsBefore = await cards(seller).count();
+await seller.getByLabel("Target list date").fill(day(-3));
+await seller.getByRole("button", { name: "Build the checklist", exact: true }).click();
+await seller.waitForTimeout(1500);
+const underflow = await seller.getByLabel("Target list date").evaluate((el) => el.validity.rangeUnderflow);
+check("pre-listing: a past list date is refused unsent", underflow && (await cards(seller).count()) === cardsBefore && memberCalls() === before);
 
 // --- 5. A buyer's moving plan and tour day --------------------------------------------------------------
 await buyer.goto(`${BASE}/my/assistant?mode=moving`);
@@ -194,7 +192,7 @@ card = await run(
   buyer,
   "Build my moving schedule",
   async () => {
-    await buyer.getByLabel("Move date").fill(day(45));
+    await buyer.getByLabel("Move date", { exact: true }).fill(day(45));
   },
   "Build the plan",
 );
@@ -215,7 +213,7 @@ check("tour: the open house first, in our code's order", stopNames[0]?.includes(
 check("tour: the open-house time in Pacific time", await card.getByText(/^Open house 10:00 AM–12:00 PM/).isVisible());
 check("tour: the opted-out home kept in the order, without notes", await card.getByText(/asked that this listing not be used by AI tools/).isVisible());
 e = last("member_tour");
-check("tour: only FX-001 and FX-002 sent; no FULL fields or internal notes", JSON.stringify(e?.requestListingKeys) === '["FX-001","FX-002"]' && !e.requestHasPrivateListingFields && !e.requestHasInternalNote, JSON.stringify(e));
+check("tour: only FX-002 and FX-001 sent, in our order (open house first); no FULL fields or internal notes", JSON.stringify(e?.requestListingKeys) === '["FX-002","FX-001"]' && !e.requestHasPrivateListingFields && !e.requestHasInternalNote, JSON.stringify(e));
 await axeAll(buyer, "/my/assistant (tour day)");
 for (const width of [390, 320]) {
   const w = await sideScroll(buyer, width);
@@ -237,12 +235,15 @@ setRemarks(remarksBefore);
 
 // Keyboard: the move date, the notes, then the button.
 await buyer.goto(`${BASE}/my/assistant?mode=moving`);
-await buyer.getByLabel("Move date").fill(day(30));
-await buyer.getByLabel("Move date").focus();
+await buyer.getByLabel("Move date", { exact: true }).fill(day(30));
+await buyer.getByLabel("Move date", { exact: true }).focus();
+// A date field takes several Tab presses (month, day, year) before focus moves on.
+const focused = () => buyer.evaluate(() => document.activeElement?.labels?.[0]?.textContent?.trim() ?? document.activeElement?.textContent?.trim());
 const order = [];
-for (let i = 0; i < 2; i++) {
+for (let i = 0; i < 8 && order.length < 2; i++) {
   await buyer.keyboard.press("Tab");
-  order.push(await buyer.evaluate(() => document.activeElement?.labels?.[0]?.textContent?.trim() ?? document.activeElement?.textContent?.trim()));
+  const name = await focused();
+  if (name !== "Move date" && name !== order.at(-1)) order.push(name);
 }
 check("keyboard: move date → notes → Build the plan", JSON.stringify(order) === JSON.stringify(["Anything to plan around? (optional)", "Build the plan"]), JSON.stringify(order));
 
