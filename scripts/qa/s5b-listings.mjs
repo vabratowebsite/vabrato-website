@@ -114,7 +114,8 @@ await staff.getByText(/Check your email/).waitFor();
 await staff.goto(await linkFor(STAFF_EMAIL, m));
 await staff.waitForURL(`${VA}/`, { timeout: 15000 });
 await staff.goto(`${VA}/assistant`);
-check("console: both listing switches locked until approval", (await staff.getByText("Locked until MLSListings approval is on.").count()) === 2 && (await staff.getByRole("button", { name: "Turn on: Compare homes (members)" }).count()) === 0);
+// Three since S5b PR 5: compare, ask about a home, and plan a tour day.
+check("console: the listing switches locked until approval", (await staff.getByText("Locked until MLSListings approval is on.").count()) === 3 && (await staff.getByRole("button", { name: "Turn on: Compare homes (members)" }).count()) === 0);
 let refused = "";
 try {
   sql(`update feature_flags set enabled = true where key = 'ai_member_compare'`);

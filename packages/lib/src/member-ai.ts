@@ -60,6 +60,22 @@ export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
     what: "Answers a member's question about one home from the listing fields they may see, naming the fields it used. No price opinions; anything the listing doesn't say goes to their agent. Opted-out homes are never sent. Needs the MLSListings approval switch. Nothing is kept.",
     needsMlsApproval: true,
   },
+  {
+    flag: "ai_member_moving",
+    name: "Moving plan",
+    what: "A moving plan with dated steps. A seller's plan counts from their sale's closing date in the schedule engine (never changed, \"confirm with your agent\"); a buyer types their move date. Only that date, buyer or seller, and the member's notes are sent. Steps the member adds go to their to-dos for their agent's approval; they can download a calendar file. The plan isn't kept.",
+  },
+  {
+    flag: "ai_member_prelisting",
+    name: "Pre-listing checklist",
+    what: "For sellers: a checklist counted back from a list date they type (repairs, cleaning, staging, photos, paperwork with their agent). No cost estimates or price opinions. Items the member adds go to their to-dos for their agent's approval. The checklist isn't kept.",
+  },
+  {
+    flag: "ai_member_tour",
+    name: "Plan a tour day",
+    what: "For buyers: our code orders 2 to 6 saved homes (open houses first, then straight-line distance); the assistant adds what to look at in each from the listing fields they may see. Opted-out homes are never sent. Needs the MLSListings approval switch. Nothing is kept.",
+    needsMlsApproval: true,
+  },
 ];
 
 /** The pipeline's feature key for a member switch ("ai_member_explain" → "member_explain"). */

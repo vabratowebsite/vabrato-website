@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). Next: PR 5 (schedules). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 built (moving plan, pre-listing checklist, tour day; 0040, after merge: apply 0040; tour day also behind the MLSListings approval switch). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -923,6 +923,63 @@ with the member daily limits, and the site-wide monthly budget.
     master switch and the approval switch off.
   - **Security advisor:** nothing new. The two trigger functions can't be
     run by signed-in users or the public.
+- **PR 5 (schedules: moving plan, pre-listing checklist, tour day; migration
+  0040; owner answers 2026-11-14; after merge: apply 0040):**
+  - **Owner answers:**
+    - **Keeping a plan:** the member ticks steps and adds them to My to-dos
+      with their dates; the agent approves them as before. A calendar file
+      (.ics) downloads in the browser. Plans themselves aren't stored.
+    - **Tour day:** our code orders the homes (open houses that day first, by
+      start time, then the nearest home by straight-line distance; homes with
+      a hidden address last). The assistant adds what to look at in each home
+      from the listing. It's behind the MLSListings approval switch like PR 4.
+    - **Pre-listing:** the seller types a target list date and notes; our
+      code counts each step back from it.
+    - **Dates:** dates of record only. A seller's plan counts from the closing
+      or rent-back date in the schedule engine (shown as fixed, never
+      changed, "confirm with your agent"); a buyer types their move date. No
+      contract reading.
+  - **The model writes steps; our code does every date.** Each step comes
+    with an offset (days from the move day, or before the list date); our
+    code adds it to the anchor. A date already past shows "as soon as
+    possible". Steps that name a contract deadline (contingencies, close of
+    escrow, signing), carry a dollar figure or a value opinion, or fall
+    outside the window are dropped, and the card says some were left out.
+  - **What's sent:** the move day (or list date) and the member's notes
+    (contacts replaced; payment details refused before anything is sent).
+    Never the address, price, escrow number or names. A tour sends the
+    homes' listing facts at the member's level and their open-house time;
+    opted-out homes (MLS-3) stay in the order but are never sent.
+  - **Switches** (all off): `ai_member_moving`, `ai_member_prelisting`
+    (sellers) and `ai_member_tour` (buyers; needs `ai_mls_approved`).
+  - **The page:** three modes on `/my/assistant` (`?mode=` preselects one):
+    "Build my moving schedule" (sellers can plan from their sale's dates),
+    "Pre-listing checklist" and "Plan a tour day". Cards are labelled AI,
+    show the dates of record separately, and offer "Add to my to-dos",
+    "Download calendar (.ics)" and "Ask my agent". The tour card shows the
+    stops in order with open-house times (Pacific), straight-line miles,
+    listing brokers, notes, "Request a tour" links and the MLS attribution.
+  - **My to-dos and the console** show each to-do's due date; `/my/todos`
+    sorts by it.
+  - **Database (0040):** the three switches; the approval triggers now cover
+    `ai_member_tour`; `member_todos.due_date` (optional, in the members'
+    insert grant; still pending until the agent approves).
+  - **Shared code:** `planDate`, `orderTourDay`, `haversineMiles` and
+    `planIcs` in `packages/lib` (`plan-schedule.ts`).
+  - **Tests:**
+    - 8 database tests (`member-schedules.test.ts`) and
+      `hosted-schedules-check.sql`, which passes locally.
+    - 7 tests for the shared helpers (dates, distances, the tour order, the
+      calendar file) and 12 feature tests: what's sent, dates worked out by
+      our code, contract deadlines and costs dropped, wiring and Fair Housing
+      blocked, the tour order with the opted-out home never sent, price
+      opinions and unsent dollar figures blocked, open-house times in Pacific
+      time.
+    - **The website's live test:** 10 calls (moving, pre-listing and tour
+      added). The fake run is 10 of 10 ok.
+    - **Browser QA** (`scripts/qa/s5b-schedules.mjs`): 38 of 38, run twice.
+      Reruns pass: `s5b-documents` 53, `s5b-listings` 44 (now expects three
+      switches locked until approval), `s5b-assistant` 65, `s5-qa` 100.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 

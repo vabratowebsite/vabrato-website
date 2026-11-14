@@ -7,7 +7,35 @@ import type { SummaryView } from "./summary";
 /** Typed questions and their length limits. */
 export const ASK_LIMITS = { explain: 500, search: 300 } as const;
 export type TextKind = keyof typeof ASK_LIMITS;
-export type AskKind = TextKind | "summarize" | DraftKind | "compare" | "listing";
+export type AskKind = TextKind | "summarize" | DraftKind | "compare" | "listing" | PlanKind | "tour";
+
+/** Schedules (S5b PR 5): a moving plan or a pre-listing checklist. */
+export type PlanKind = "moving" | "prelisting";
+/** One dated step; the date is worked out by our code, never the model. */
+export interface PlanItem {
+  title: string;
+  detail: string;
+  /** ISO date. */
+  date: string;
+  /** The planned date had passed: do it as soon as possible. */
+  asap: boolean;
+  category: string;
+}
+/** One stop of a tour day, in the order our code chose. */
+export interface TourStopView {
+  key: string;
+  label: string;
+  broker: string | null;
+  /** Home A, B, ... as sent to the model; null for a home whose seller opted out (never sent). */
+  letter: string | null;
+  openHouse: { start: string; end: string | null } | null;
+  /** Straight-line miles from the stop before, not driving distance. */
+  milesFromPrevious: number | null;
+  optedOut: boolean;
+  lookFor: string[];
+}
+/** Notes on a plan: at most this long. */
+export const PLAN_NOTES_MAX = { moving: 600, prelisting: 800 } as const;
 
 /** Listings (S5b PR 4): a question about one home is at most this long. */
 export const LISTING_QUESTION_MAX = 300;
@@ -82,6 +110,21 @@ export type AskCard =
       sources: string[];
       notInListing: boolean;
     }
+  | {
+      kind: "plan";
+      question: string;
+      planKind: PlanKind;
+      /** "Move day (from your sale)", "Your list date"... */
+      anchorLabel: string;
+      anchor: string;
+      /** Dates of record from the schedule engine, shown as fixed (never from the model). */
+      fixed: { label: string; date: string }[];
+      items: PlanItem[];
+      tips: string[];
+      /** Steps our checks dropped (contract deadlines, dollar figures, value opinions, out of range). */
+      dropped: number;
+    }
+  | { kind: "tour"; question: string; date: string; stops: TourStopView[]; summary: string[]; bring: string[] }
   | { kind: "error"; feature: AskKind; question: string; message: string };
 
 /** The longest link "Send to my agent" builds (hosts limit request URLs to about 14 KB, cookies included). */

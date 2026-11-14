@@ -3,10 +3,11 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { AIDraftLabel, SparkleIcon } from "@vabrato/ui/web";
 import { Markdown } from "@vabrato/ui/markdown";
-import { addTodosAction, askCompareAction, askCoverLetterAction, askDraftAction, askExplainAction, askListingAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
-import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, LISTING_QUESTION_MAX, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
+import { addTodosAction, askCompareAction, askCoverLetterAction, askDraftAction, askExplainAction, askListingAction, askMovingAction, askPrelistingAction, askSearchAction, askSummarizeAction, askTourAction } from "@/app/my/assistant/actions";
+import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, LISTING_QUESTION_MAX, PLAN_NOTES_MAX, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
 import { DraftEditor } from "./DraftEditor";
 import { CompareAnswer, ListingAnswer } from "./ListingAnswers";
+import { PlanAnswer, TourAnswer } from "./PlanAnswers";
 import { pagesLabel } from "../assistant/summary";
 
 // Ask Vabrato (mockup 11, S5b PRs 1-3). Answers stay in this page's memory
@@ -57,7 +58,27 @@ const MODES: Record<AskKind, { label: string; field: string; hint: string; butto
     hint: "For example: How big is the lot? Answers come from the listing only.",
     button: "Ask",
   },
+  moving: {
+    label: "Build my moving schedule",
+    field: "Anything to plan around? (optional)",
+    hint: "For example: a piano, two cats, a storage unit. Only the move day and these notes are sent.",
+    button: "Build the plan",
+  },
+  prelisting: {
+    label: "Pre-listing checklist",
+    field: "Notes on the home (optional)",
+    hint: "For example: old carpet in the den, a dripping faucet. No costs or prices are given.",
+    button: "Build the checklist",
+  },
+  tour: {
+    label: "Plan a tour day",
+    field: "Homes to see",
+    hint: "Pick 2 to 6 saved homes. Our code puts them in order (open houses first, then distance); Ask Vabrato adds what to look at.",
+    button: "Plan the day",
+  },
 };
+
+const isPlan = (k: AskKind) => k === "moving" || k === "prelisting";
 
 /** A home a listing mode can use: a saved or tracked home with an MLS listing. */
 export interface ListingChoice {
@@ -94,6 +115,9 @@ export function AskVabrato({
   homes = { message: [], cover_letter: [] },
   listingHomes = [],
   initialListing,
+  sale = null,
+  today,
+  initialMode,
 }: {
   kinds: AskKind[];
   left: number;
@@ -104,12 +128,22 @@ export function AskVabrato({
   listingHomes?: ListingChoice[];
   /** ?listing=KEY: "Ask about a home" with this home chosen. */
   initialListing?: ListingChoice;
+  /** The member's open sale, for a moving plan from their dates of record (S5b PR 5). */
+  sale?: { label: string } | null;
+  /** Today (Pacific), the earliest date a member may pick. */
+  today?: string;
+  /** ?mode=: a mode to start in. */
+  initialMode?: AskKind;
 }) {
   const startDoc = initialDoc && docs.some((d) => d.ref === initialDoc) ? initialDoc : undefined;
   const listingOptions = initialListing && !listingHomes.some((h) => h.key === initialListing.key) ? [initialListing, ...listingHomes] : listingHomes;
   const [mode, setMode] = useState<AskKind>(
-    startDoc && kinds.includes("summarize") ? "summarize" : initialListing && kinds.includes("listing") ? "listing" : kinds[0]!,
+    startDoc && kinds.includes("summarize") ? "summarize" : initialListing && kinds.includes("listing") ? "listing" : initialMode && kinds.includes(initialMode) ? initialMode : kinds[0]!,
   );
+  const [movingSource, setMovingSource] = useState<"sale" | "date">(sale ? "sale" : "date");
+  const [planDateValue, setPlanDateValue] = useState("");
+  const [occupancy, setOccupancy] = useState<"occupied" | "vacant">("occupied");
+  const [tourPicked, setTourPicked] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [listingKey, setListingKey] = useState(initialListing?.key ?? listingOptions[0]?.key ?? "");
   const [text, setText] = useState("");
@@ -125,12 +159,18 @@ export function AskVabrato({
   const newest = useRef<HTMLHeadingElement>(null);
   const uid = useId();
   const m = MODES[mode];
-  const max = mode === "summarize" || mode === "compare" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : mode === "listing" ? LISTING_QUESTION_MAX : ASK_LIMITS[mode];
+  const max = mode === "summarize" || mode === "compare" || mode === "tour" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : mode === "listing" ? LISTING_QUESTION_MAX : isPlan(mode) ? PLAN_NOTES_MAX[mode as "moving" | "prelisting"] : ASK_LIMITS[mode as "explain" | "search"];
   const ready =
     mode === "summarize"
       ? Boolean(doc)
       : mode === "compare"
         ? picked.length >= 2 && picked.length <= 4
+        : mode === "tour"
+          ? tourPicked.length >= 2 && tourPicked.length <= 6 && Boolean(planDateValue)
+          : mode === "moving"
+            ? movingSource === "sale" || Boolean(planDateValue)
+            : mode === "prelisting"
+              ? Boolean(planDateValue)
         : mode === "listing"
           ? Boolean(listingKey && text.trim())
           : mode === "cover_letter" && letterHome === "typed"
@@ -147,7 +187,15 @@ export function AskVabrato({
         ? `Summarize: ${docs.find((d) => d.ref === doc)?.label ?? "a document"}`
         : mode === "compare"
           ? `Compare ${picked.map((k) => listingHomes.find((h) => h.key === k)?.label ?? k).join(", ")}`
-          : text.trim();
+          : mode === "tour"
+            ? `Tour day: ${tourPicked.map((k) => listingHomes.find((h) => h.key === k)?.label ?? k).join(", ")}`
+            : mode === "moving"
+              ? movingSource === "sale" && sale
+                ? `Moving plan for ${sale.label}`
+                : `Moving plan for ${planDateValue}`
+              : mode === "prelisting"
+                ? `Pre-listing checklist for ${planDateValue}`
+                : text.trim();
     if (!ready || pending) return;
     start(async () => {
       let card: AskCard;
@@ -165,14 +213,20 @@ export function AskVabrato({
                     ? await askCompareAction(picked)
                     : mode === "listing"
                       ? await askListingAction(listingKey, question)
-                      : await askSummarizeAction(doc);
-        if ((mode === "summarize" || mode === "compare") && card.kind === "error") card = { ...card, question };
+                      : mode === "moving"
+                        ? await askMovingAction({ source: movingSource, date: planDateValue, notes: text })
+                        : mode === "prelisting"
+                          ? await askPrelistingAction({ listDate: planDateValue, occupancy, notes: text })
+                          : mode === "tour"
+                            ? await askTourAction({ keys: tourPicked, date: planDateValue })
+                            : await askSummarizeAction(doc);
+        if ((mode === "summarize" || mode === "compare" || mode === "tour" || isPlan(mode)) && card.kind === "error") card = { ...card, question };
       } catch {
         card = { kind: "error", feature: mode, question, message: "Something went wrong. Please try again." };
       }
       setCards((c) => [...c, { ...card, id: next.current++ }]);
       setRemaining((r) => Math.max(0, r - 1));
-      if (card.kind !== "error" && mode !== "summarize" && mode !== "compare") setText("");
+      if (card.kind !== "error" && mode !== "summarize" && mode !== "compare" && mode !== "tour") setText("");
     });
   }
 
@@ -224,6 +278,43 @@ export function AskVabrato({
               </p>
             )}
           </div>
+        ) : mode === "tour" ? (
+          <div className="space-y-4">
+            <fieldset>
+              <legend className="text-body-sm font-medium text-ink">{m.field}</legend>
+              <p id={`${uid}-thint`} className="mt-1 text-caption text-muted">
+                {m.hint}
+              </p>
+              {listingHomes.length >= 2 ? (
+                <div className="mt-2 space-y-1">
+                  {listingHomes.map((h) => {
+                    const on = tourPicked.includes(h.key);
+                    return (
+                      <label key={h.key} className="flex min-h-[44px] items-center gap-3 text-body-sm text-ink">
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          disabled={!on && tourPicked.length >= 6}
+                          onChange={(e) => setTourPicked((p) => (e.target.checked ? [...p, h.key].slice(0, 6) : p.filter((k) => k !== h.key)))}
+                          aria-describedby={`${uid}-thint`}
+                          className="h-5 w-5 flex-none accent-navy"
+                        />
+                        {h.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-2 text-body-sm text-ink">Save at least two homes to plan a tour day.</p>
+              )}
+            </fieldset>
+            <div>
+              <label htmlFor={`${uid}-tdate`} className="block text-body-sm font-medium text-ink">
+                Tour date
+              </label>
+              <input id={`${uid}-tdate`} type="date" min={today} value={planDateValue} onChange={(e) => setPlanDateValue(e.target.value)} className={`${selectCls} max-w-xs`} />
+            </div>
+          </div>
         ) : mode === "compare" ? (
           <fieldset>
             <legend className="text-body-sm font-medium text-ink">{m.field}</legend>
@@ -261,6 +352,50 @@ export function AskVabrato({
           </fieldset>
         ) : (
           <div className="space-y-4">
+            {mode === "moving" && (
+              <fieldset>
+                <legend className="text-body-sm font-medium text-ink">Plan from</legend>
+                <div className="mt-2 space-y-1 text-body-sm text-ink">
+                  {sale && (
+                    <label className="flex min-h-[44px] items-center gap-3">
+                      <input type="radio" name={`${uid}-msrc`} checked={movingSource === "sale"} onChange={() => setMovingSource("sale")} className="h-5 w-5 accent-navy" />
+                      My sale&apos;s dates ({sale.label}, from my agent&apos;s schedule)
+                    </label>
+                  )}
+                  <label className="flex min-h-[44px] items-center gap-3">
+                    <input type="radio" name={`${uid}-msrc`} checked={movingSource === "date"} onChange={() => setMovingSource("date")} className="h-5 w-5 accent-navy" />
+                    A move date I choose
+                  </label>
+                </div>
+                {movingSource === "date" && (
+                  <div className="mt-2">
+                    <label htmlFor={`${uid}-mdate`} className="block text-body-sm font-medium text-ink">
+                      Move date
+                    </label>
+                    <input id={`${uid}-mdate`} type="date" min={today} value={planDateValue} onChange={(e) => setPlanDateValue(e.target.value)} className={`${selectCls} max-w-xs`} />
+                  </div>
+                )}
+              </fieldset>
+            )}
+            {mode === "prelisting" && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor={`${uid}-ldate`} className="block text-body-sm font-medium text-ink">
+                    Target list date
+                  </label>
+                  <input id={`${uid}-ldate`} type="date" min={today} value={planDateValue} onChange={(e) => setPlanDateValue(e.target.value)} className={selectCls} />
+                </div>
+                <div>
+                  <label htmlFor={`${uid}-occ`} className="block text-body-sm font-medium text-ink">
+                    The home is
+                  </label>
+                  <select id={`${uid}-occ`} value={occupancy} onChange={(e) => setOccupancy(e.target.value === "vacant" ? "vacant" : "occupied")} className={selectCls}>
+                    <option value="occupied">Lived in</option>
+                    <option value="vacant">Empty</option>
+                  </select>
+                </div>
+              </div>
+            )}
             {mode === "listing" && (
               <div>
                 <label htmlFor={`${uid}-listing`} className="block text-body-sm font-medium text-ink">
@@ -355,8 +490,8 @@ export function AskVabrato({
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, max))}
               maxLength={max}
-              rows={isDraft(mode) ? 5 : 3}
-              required
+              rows={isDraft(mode) || isPlan(mode) ? 5 : 3}
+              required={!isPlan(mode)}
               aria-describedby={`${uid}-hint ${uid}-count`}
               className="mt-2 block w-full border border-muted bg-white px-3 py-2 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
             />
@@ -436,6 +571,8 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
     );
   }
   if (card.kind === "summary") return <SummaryAnswer card={card} heading={heading} />;
+  if (card.kind === "plan") return <PlanAnswer card={card} heading={heading(card.planKind === "moving" ? "Your moving plan" : "Your pre-listing checklist")} />;
+  if (card.kind === "tour") return <TourAnswer card={card} heading={heading("Your tour day")} />;
   if (card.kind === "compare") return <CompareAnswer card={card} heading={heading(`Comparing ${card.homes.length + card.excluded.length} homes`)} />;
   if (card.kind === "listing") return <ListingAnswer card={card} heading={heading("About this home")} />;
   if (card.kind === "draft")

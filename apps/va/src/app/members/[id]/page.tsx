@@ -11,6 +11,7 @@ import { decideMemberTodoAction, setMemberAgentAction } from "@/lib/member-actio
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen, leadKindLabel } from "@/lib/today";
+import { fmtLong } from "@vabrato/lib";
 
 // One member: account, agent, saved homes and searches, homes they're
 // pursuing, tours, documents and deals. Read-only except the agent (acting
@@ -45,7 +46,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
     supabase.from("account_deletion_requests").select("status, requested_at").eq("profile_id", id).order("requested_at", { ascending: false }).limit(1),
     supabase.from("profiles").select("id, full_name, email, role").in("role", ["admin", "agent"]).order("full_name"),
     supabase.rpc("is_acting_lead_admin"),
-    supabase.from("member_todos").select("id, title, source_name, page, status, created_at").eq("profile_id", id).order("created_at", { ascending: true }).limit(300),
+    supabase.from("member_todos").select("id, title, source_name, page, due_date, status, created_at").eq("profile_id", id).order("created_at", { ascending: true }).limit(300),
   ]);
   const pendingTodos = (todos.data ?? []).filter((t) => t.status === "pending");
   const todoCount = (s: string) => (todos.data ?? []).filter((t) => t.status === s).length;
@@ -174,6 +175,7 @@ export default async function MemberPage({ params }: { params: Promise<{ id: str
                           <Pill tone="gold">Waiting</Pill>
                         </p>
                         <p className={mutedCls}>
+                          {t.due_date ? `Due ${fmtLong(t.due_date)} · ` : ""}
                           {t.source_name ? `From ${t.source_name}${t.page ? `, p. ${t.page}` : ""} · ` : ""}added {fmtWhen(t.created_at)}
                         </p>
                       </div>

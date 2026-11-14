@@ -1216,6 +1216,7 @@ export type Database = {
           detail: string | null
           done: boolean
           done_at: string | null
+          due_date: string | null
           id: string
           page: number | null
           profile_id: string
@@ -1230,6 +1231,7 @@ export type Database = {
           detail?: string | null
           done?: boolean
           done_at?: string | null
+          due_date?: string | null
           id?: string
           page?: number | null
           profile_id: string
@@ -1244,6 +1246,7 @@ export type Database = {
           detail?: string | null
           done?: boolean
           done_at?: string | null
+          due_date?: string | null
           id?: string
           page?: number | null
           profile_id?: string

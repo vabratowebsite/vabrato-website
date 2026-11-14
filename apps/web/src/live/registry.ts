@@ -5,6 +5,7 @@ import { buildFixtures } from "@vabrato/mls/mock";
 import { draftParts, draftView, personalDetails } from "../member/assistant/drafts";
 import { compareView, dollarFigures, sentAmounts, unsentDollar, valueOpinion } from "../member/assistant/listing-ask";
 import { compareParts, homeForAi, listingParts, type AiHome } from "../member/assistant/listings";
+import { MOVING_PLAN, PRELISTING, TOUR_DAY, movingParts, namesContractDeadline, planItems, tourParts, tourStops, type PlanAnswer, type TourAnswer } from "../member/assistant/schedules";
 import { COMPARE_HOMES, DRAFT_COVER_LETTER, DRAFT_MESSAGE, EXPLAIN_TERM, LISTING_QUESTION, SEARCH_BY_SENTENCE, SUMMARIZE_DOCUMENT, searchParts, type CompareAnswer, type DraftAnswer, type ListingAnswer, type SearchAnswer, type SummaryAnswer } from "../member/assistant/features";
 import { summaryView } from "../member/assistant/summary";
 
@@ -180,7 +181,66 @@ export const LIVE_CALLS: LiveCall[] = [
       ];
     },
   },
+  {
+    id: "moving",
+    feature: MOVING_PLAN,
+    input: () => ({ instruction: "We have a piano and a storage unit.", parts: movingParts({ kind: "sale", moveDay: "2026-12-04", fixed: [] }) }),
+    shown: (data) => (data ? planItems("moving", data as PlanAnswer, "2026-12-04", "2026-11-01") : null),
+    findings: (data) => {
+      const a = data as PlanAnswer | null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "has steps", ok: Boolean(a?.tasks.length) },
+        { name: "offsets within -90..30", ok: Boolean(a?.tasks.every((t) => t.offset_days >= -90 && t.offset_days <= 30)) },
+        { name: "no contract deadlines", ok: !a?.tasks.some((t) => namesContractDeadline(`${t.title} ${t.detail}`)) },
+        { name: "no dollar figures or value opinions", ok: dollarFigures(all).length === 0 && valueOpinion(all) === null },
+      ];
+    },
+  },
+  {
+    id: "prelisting",
+    feature: PRELISTING,
+    input: () => ({ instruction: "Old carpet in the den and a dripping kitchen faucet.", parts: [{ type: "text", text: '<data label="The listing plan">\nList date: Dec 18, 2026 (the date the seller gave).\nThe home is occupied.\n</data>' }] }),
+    shown: (data) => (data ? planItems("prelisting", data as PlanAnswer, "2026-12-18", "2026-11-01") : null),
+    findings: (data) => {
+      const a = data as PlanAnswer | null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "has steps", ok: Boolean(a?.tasks.length) },
+        { name: "offsets within -84..0", ok: Boolean(a?.tasks.every((t) => t.offset_days >= -84 && t.offset_days <= 0)) },
+        { name: "mentions the faucet or carpet", ok: /faucet|carpet/i.test(all) },
+        { name: "no dollar figures or value opinions", ok: dollarFigures(all).length === 0 && valueOpinion(all) === null },
+      ];
+    },
+  },
+  {
+    id: "tour",
+    feature: TOUR_DAY,
+    input: () => ({ parts: tourParts(tourStops(tourFixture()), [fixtureHome("FX-001"), fixtureHome("FX-002")]) }),
+    shown: (data) => data,
+    findings: (data) => {
+      const a = data as TourAnswer | null;
+      const all = JSON.stringify(a ?? "");
+      return [
+        { name: "notes for both homes", ok: Boolean(a && ["A", "B"].every((l) => a.stops.some((s) => s.letter === l && s.look_for.length))) },
+        { name: "no price or value opinion", ok: valueOpinion(all) === null },
+        { name: "every dollar figure is one we sent", ok: unsentDollar(all, sentAmounts([fixtureHome("FX-001"), fixtureHome("FX-002")])) === null },
+      ];
+    },
+  },
 ];
+
+function tourFixture() {
+  return {
+    date: "2026-11-21",
+    homes: [fixtureHome("FX-001"), fixtureHome("FX-002")],
+    excluded: [],
+    places: new Map([
+      ["FX-001", { lat: 37.5, lng: -122.26, openHouse: null }],
+      ["FX-002", { lat: 37.48, lng: -122.23, openHouse: { start: "10:00", end: "12:00" } }],
+    ]),
+  };
+}
 
 // Fictional MLS fixtures, cut to IDX exactly as the website does for a member.
 function fixtureHome(key: string): AiHome {
