@@ -40,5 +40,6 @@ export async function deleteAssistantDataAction(): Promise<TodoActionResult> {
   const n = Number(data ?? 0);
   revalidatePath("/my/todos");
   revalidatePath("/my/drafts");
-  return { ok: true, message: n === 0 ? "There was nothing to delete." : `Deleted ${n} item${n === 1 ? "" : "s"}: your saved drafts, and to-dos that were waiting or declined.` };
+  revalidatePath("/my/flyers");
+  return { ok: true, message: n === 0 ? "There was nothing to delete." : `Deleted ${n} item${n === 1 ? "" : "s"}: your saved drafts, your flyers, and to-dos that were waiting or declined.` };
 }

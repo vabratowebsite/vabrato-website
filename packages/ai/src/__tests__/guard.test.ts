@@ -47,7 +47,8 @@ describe("AI guardrails in the codebase", () => {
 
   it("@vabrato/ai/live (the live test's helpers) is used only by the live tests", () => {
     const users = files.filter((f) => /["']@vabrato\/ai\/live["']/.test(f.text) && !f.file.endsWith("guard.test.ts")).map((f) => f.file);
-    expect(users.filter((f) => !/^apps\/(va|web)\/src\/live\/[^/]+\.live\.ts$/.test(f) && !f.startsWith("packages/ai/"))).toEqual([]);
+    // The live tests, and the CI tests of their decisions beside them (S5b PR 7: src/live/judge.test.ts).
+    expect(users.filter((f) => !/^apps\/(va|web)\/src\/live\/[^/]+\.(live|test)\.ts$/.test(f) && !f.startsWith("packages/ai/"))).toEqual([]);
   });
 
   it("the API key is never exposed to the browser", () => {
