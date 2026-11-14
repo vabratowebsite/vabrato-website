@@ -1,6 +1,7 @@
 import { Panel } from "@vabrato/ui/web";
 import { MemberShell } from "@/member/components/MemberShell";
 import { DeleteFlyer } from "@/member/components/FlyerTools";
+import { DeleteAssistantData } from "@/member/components/MemberTodos";
 import { FLYER_STATUS, kindLabel, listFlyers } from "@/member/flyers";
 import { sells } from "@/member/roles";
 import { requirePortalMember } from "@/member/session";
@@ -20,6 +21,12 @@ const PILL: Record<keyof typeof FLYER_STATUS, string> = {
 export default async function FlyersPage() {
   const member = await requirePortalMember("/my/flyers");
   const flyers = sells(member.role) ? await listFlyers(member.supabase, member.profile.id) : [];
+  // "Delete my assistant data" removes flyers, drafts and waiting or declined to-dos (0041).
+  const [{ count: drafts }, { count: todos }] = await Promise.all([
+    member.supabase.from("member_drafts").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id),
+    member.supabase.from("member_todos").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id).in("status", ["pending", "declined"]),
+  ]);
+  const assistantCount = flyers.length + (drafts ?? 0) + (todos ?? 0);
 
   return (
     <MemberShell member={member} role={member.role} current="flyers" eyebrow="Assistant" title="My flyers">
@@ -83,6 +90,18 @@ export default async function FlyersPage() {
               </p>
             </Panel>
           )}
+          <Panel title="Your assistant data">
+            <div className="space-y-3 font-body text-body-sm text-ink">
+              <p>
+                This removes your flyers (approved ones too), your saved drafts, and the to-dos waiting for your agent or declined. Approved to-dos stay until you delete them on{" "}
+                <a href="/my/todos" className="text-navy underline">
+                  My to-dos
+                </a>
+                .
+              </p>
+              <DeleteAssistantData count={assistantCount} />
+            </div>
+          </Panel>
         </>
       )}
     </MemberShell>

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { paymentInstructionMatches, runAi } from "@vabrato/ai";
 import { CONTACT, budgetStore, recordingModel, sanitize, worstCase } from "@vabrato/ai/live";
+import { callFails, preflight } from "./judge";
 import { CANARY, LIVE_CALLS, NO_MODEL_CHECKS, type Mode } from "./registry";
 
 // The website's live test (S5b): every member AI feature once against the
@@ -11,7 +12,9 @@ import { CANARY, LIVE_CALLS, NO_MODEL_CHECKS, type Mode } from "./registry";
 // /my uses. Never in CI. Modes, as in apps/va's live test:
 //   LIVE_AI_FAKE=1  the local fake (scripts/qa/fake-claude.mjs on :4020); no cost.
 //   LIVE_AI=1       the real API; needs ANTHROPIC_API_KEY in this process's environment.
-// LIVE_AI_BUDGET_USD caps the spend (default 1); LIVE_AI_ONLY=<id,...> re-runs
+// LIVE_AI_BUDGET_USD caps the spend (default 3, enough for every call's worst
+// case: a full run whose worst cases pass the cap is refused before anything
+// is sent, and a call left unrun fails it); LIVE_AI_ONLY=<id,...> re-runs
 // some calls. The committed report (docs/qa/s5b-live-run.json, live full runs
 // only) holds metadata only; answers go to the gitignored apps/web/.live-ai/.
 
@@ -31,7 +34,7 @@ if (mode === "fake") {
 if (mode === "live") process.env.ANTHROPIC_BASE_URL = "https://api.anthropic.com";
 delete process.env.ANTHROPIC_AUTH_TOKEN;
 // The fake reports a fixed 61,000 input tokens per call, so fake spend isn't real.
-const CAP = Number(process.env.LIVE_AI_BUDGET_USD ?? (mode === "fake" ? "1000" : "1"));
+const CAP = Number(process.env.LIVE_AI_BUDGET_USD ?? (mode === "fake" ? "1000" : "3"));
 const ONLY = (process.env.LIVE_AI_ONLY ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 
 describe.runIf(mode)(`website live AI test (${mode ?? "off"})`, () => {
@@ -43,6 +46,11 @@ describe.runIf(mode)(`website live AI test (${mode ?? "off"})`, () => {
     const deps = { store: budget.store, model, log: () => undefined };
     const hardFails: string[] = [];
     const rows: Record<string, unknown>[] = [];
+    const full = !ONLY.length;
+    const worstTotal = calls.map((c) => worstCase(c.feature, c.input(mode as Mode)).usd);
+    console.info(`[live-ai web] ${calls.length} calls, worst case $${worstTotal.reduce((a, b) => a + b, 0).toFixed(2)} in all; cap $${CAP}`);
+    const refused = preflight(worstTotal, CAP, full);
+    if (refused) throw new Error(`Not started: ${refused}.`);
 
     for (const c of NO_MODEL_CHECKS) {
       budget.expect({ inputTokens: 0, outputTokens: 0, usd: 0 });
@@ -74,13 +82,13 @@ describe.runIf(mode)(`website live AI test (${mode ?? "off"})`, () => {
         findings: [] as { name: string; ok: boolean }[],
       };
       const checks = row.checks as { name: string; ok: boolean }[];
+      hardFails.push(...callFails({ id: c.id, injection: c.injection, reason: r.ok ? null : r.reason, sent: mine.length > 0 }, full));
       if (!r.ok && r.reason === "monthly_budget" && mine.length === 0) {
         row.outcome = "not_run";
         row.reason = "budget cap";
       } else if (!r.ok) {
         row.outcome = "fail";
         row.reason = sanitize(r.reason);
-        hardFails.push(`${c.id}: ${r.reason}`);
       } else {
         const shown = JSON.stringify(c.shown(r.data, r.text) ?? "");
         checks.push({ name: "no payment or wiring details shown", ok: paymentInstructionMatches(shown).length === 0 });

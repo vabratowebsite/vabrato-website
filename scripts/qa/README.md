@@ -234,6 +234,9 @@ The website has its own live test: `apps/web/src/live/live-ai.live.ts`, run with
 - It shares its helpers with the console's live test through `@vabrato/ai/live`.
 - It never runs in CI.
 - `apps/web/src/member/assistant/coverage.test.ts` (in CI) fails if a member AI feature has no live call, or no switch on the console.
+- **Cap (S5b PR 7):** `LIVE_AI_BUDGET_USD`, default $3. The 13 calls' worst cases add up to about $1.72; the run prints the total first and refuses to start a full run whose total is over the cap, so nothing is sent.
+- **Hard fails besides the console's:** a call left "not run" in a full run, and an injection call (summarize, search, listing) refused for payment details (the injection was obeyed). Both decisions are in `apps/web/src/live/judge.ts`, tested in CI by `judge.test.ts`.
+- **Commands:** `LIVE_AI_FAKE=1 pnpm --filter @vabrato/web test:live` (fake, no cost); `LIVE_AI=1 ANTHROPIC_API_KEY=… pnpm --filter @vabrato/web test:live` (real). A full live run writes metadata only to `docs/qa/s5b-live-run.json`.
 
 `s5b-documents.mjs` covers Ask Vabrato's document summary and "My to-dos" (S5b PR 2):
 - **Off by default:** no Summarize links and no My to-dos in the menu.
@@ -303,3 +306,16 @@ Modes come from `QA-MODE: ok|deadline|money|wiring|steering|value|extra` in the 
 - **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
 
 Modes come from `QA-MODE: ok|badhex|money|value|contacts|script|steering|wiring|extra` in the member's notes. It adds a QA-only open house for FX-001 and removes it. It needs migrations up to 0041, the MLS fixtures seeded, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-design/`.
+
+### S5b final QA (PR 7)
+
+`s5b-final.mjs` is the member-portal sweep, like `s6b-final.mjs` for the console:
+- **Roles:** a buyer (saved homes, VOW terms accepted, an agent), a seller (a sale linked to FX-001), a member buying and selling, a buyer with no agent, and staff visiting `/my`.
+- **States:** every AI switch off; all 13 member switches on (master switch, a ZDR fixture, the MLSListings approval); on with the member daily limit at 0; the master switch off with the member switches on.
+- **Each page:** status, axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors; page loads send nothing to the model.
+- **What each state shows:** the menus, each role's modes (buyer-only and seller-only filtered), the limit message, and to-dos, drafts and flyers still reachable with the master switch off.
+- **One ask per mode (13)** with the fake: each card is labelled AI, and exactly 13 requests reach the model.
+- **Keyboard:** every mode's first field, the flyer card, My to-dos and My flyers.
+- It needs migrations up to 0041, the MLS fixtures, `SERVICE_KEY`, `CLAUDE_LOG`, `MAIL_DIR`, `PGURL` and `REVALIDATE_SECRET`. Everything is put back in `finally`; a report goes to `docs/screenshots/s5b-final/report.json`.
+
+Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the code by `apps/web/src/review/wording-sheet.ts`. Its CI test fails when member-facing wording changes until the sheet is regenerated: `UPDATE_WORDING=1 pnpm --filter @vabrato/web test wording`.

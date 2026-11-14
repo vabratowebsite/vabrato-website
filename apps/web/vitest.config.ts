@@ -10,6 +10,7 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     // The live AI test has its own config (vitest.live.config.ts) and never runs here.
-    exclude: ["src/live/**", "node_modules/**"],
+    // Its decisions (src/live/judge.ts) are tested here, without a model.
+    exclude: ["src/live/**/*.live.ts", "node_modules/**"],
   },
 });

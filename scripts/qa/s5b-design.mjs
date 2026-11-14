@@ -216,7 +216,7 @@ await card.getByRole("button", { name: "Send to my agent for approval" }).click(
 await card.getByText(/^Sent to your agent/).waitFor({ timeout: 10000 });
 
 await seller.goto(`${BASE}/my/flyers`);
-check("my flyers: both waiting for the agent", (await seller.getByText("Waiting for your agent").count()) === 2 && (await seller.getByRole("link", { name: "My flyers" }).count()) === 1);
+check("my flyers: both waiting for the agent", (await seller.getByText("Waiting for your agent", { exact: true }).count()) === 2 && (await seller.getByRole("link", { name: "My flyers" }).count()) === 1);
 await axeAll(seller, "/my/flyers");
 
 // --- 6. The agent decides ----------------------------------------------------------------------

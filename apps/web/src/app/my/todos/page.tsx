@@ -18,7 +18,10 @@ export default async function TodosPage() {
     .order("created_at", { ascending: false })
     .limit(300);
   const rows = data ?? [];
-  const { count: drafts } = await member.supabase.from("member_drafts").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id);
+  const [{ count: drafts }, { count: flyers }] = await Promise.all([
+    member.supabase.from("member_drafts").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id),
+    member.supabase.from("member_promos").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id),
+  ]);
   // S5b PR 5: plan steps carry a due date ("Due Dec 1"); dated to-dos come first, by date.
   const source = (r: (typeof rows)[number]) =>
     [r.due_date ? `Due ${fmtLong(r.due_date)}` : null, r.source_name ? `From ${r.source_name}${r.page ? `, p. ${r.page}` : ""}` : null].filter(Boolean).join(" · ");
@@ -93,13 +96,13 @@ export default async function TodosPage() {
       <Panel title="Your assistant data">
         <div className="space-y-3 font-body text-body-sm text-ink">
           <p>
-            Ask Vabrato doesn&apos;t keep your questions or summaries. It stores only the to-dos above and the drafts you save (
+            Ask Vabrato doesn&apos;t keep your questions or summaries. It stores only the to-dos above, the drafts you save (
             <a href="/my/drafts" className="text-navy underline">
               My drafts
             </a>
-            ). This removes your saved drafts, the to-dos waiting for your agent and the ones your agent declined; approved to-dos stay until you delete them.
+            ) and the flyers you send your agent. This removes your saved drafts, your flyers, and the to-dos waiting for your agent or declined; approved to-dos stay until you delete them.
           </p>
-          <DeleteAssistantData count={pending.length + declined.length + (drafts ?? 0)} />
+          <DeleteAssistantData count={pending.length + declined.length + (drafts ?? 0) + (flyers ?? 0)} />
         </div>
       </Panel>
     </MemberShell>
