@@ -212,23 +212,23 @@ for (let i = 0; i < 2; i++) {
 }
 check("keyboard: which home → question → Ask", JSON.stringify(order) === JSON.stringify(["Your question", "Ask"]), JSON.stringify(order));
 
-// --- 5. A VOW buyer gets sold fields; an IDX buyer can't compare a sold home ----------------------
+// --- 5. A VOW buyer gets VOW fields (price history); an IDX buyer never does ---------------------
 const vowBuyer = await newPage();
 const vowEmail = `riley.${stamp}@example.test`;
 await joinAs(vowBuyer, { email: vowEmail, name: "Riley Example", role: "buyer" });
 const riley = sql(`select id from profiles where email = '${vowEmail}'`);
 sql(`update feature_flags set enabled = true where key = 'vow_enabled'`);
 await revalidate();
-sql(`update profiles set vow_accepted_at = now(), vow_terms_version = coalesce(vow_terms_version, 'qa') where id = '${riley}'`);
-await vowBuyer.goto(`${BASE}/my/compare?key=FX-001&key=FX-005`);
+sql(`update profiles set vow_accepted_at = now() where id = '${riley}'`);
+await vowBuyer.goto(`${BASE}/my/compare?key=FX-001&key=FX-002`);
 await vowBuyer.getByRole("button", { name: "Compare with Ask Vabrato" }).click();
 await vowBuyer.getByRole("heading", { name: "Comparing 2 homes" }).waitFor({ timeout: 15000 });
 e = last("member_compare");
-check("VOW buyer: the sold home's sold fields are sent", e?.requestHasSoldFields === true && JSON.stringify(e.requestListingKeys) === '["FX-001","FX-005"]', JSON.stringify(e));
+check("VOW buyer: VOW fields (price history) are sent", e?.requestHasSoldFields === true && JSON.stringify(e.requestListingKeys) === '["FX-001","FX-002"]', JSON.stringify(e));
 before = memberCalls();
-await buyer.goto(`${BASE}/my/assistant`);
-const soldVisible = await buyer.getByRole("checkbox", { name: label("FX-005") }).count();
-check("IDX buyer: a sold home isn't offered (RLS)", soldVisible === 0 && memberCalls() === before);
+await buyer.goto(`${BASE}/my/assistant?listing=FX-005`);
+const offered = await buyer.getByLabel("Which home").locator("option").evaluateAll((os) => os.map((o) => o.value));
+check("IDX buyer: a sold home isn't offered, even by link (RLS)", !offered.includes("FX-005") && memberCalls() === before, JSON.stringify(offered));
 sql(`update feature_flags set enabled = false where key = 'vow_enabled'`);
 await revalidate();
 

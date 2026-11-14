@@ -459,7 +459,8 @@ createServer(async (req, res) => {
       refsSent: Object.fromEntries(["D", "T", "C", "L", "M"].map((k) => [k, refs.filter((r) => r[0] === k).length])),
       messagesSent: (texts.match(/^Message \d+ \|/gm) ?? []).length,
       requestHasPrivateListingFields: /PrivateRemarks|ShowingInstructions|LockBox|OwnerName|ListAgentEmail|ListAgent(?:Direct|Mobile)Phone/.test(texts),
-      requestHasSoldFields: /"(?:ClosePrice|CloseDate)"/.test(texts),
+      // VOW-only fields with a value (sold price and date, price history, cumulative days on market).
+      requestHasSoldFields: /"(?:ClosePrice|CloseDate|OriginalListPrice|PreviousListPrice|CumulativeDaysOnMarket)":(?!null)/.test(texts),
       requestHasInternalNote: /X_FixtureInternalNote|ListOfficePhone/.test(texts),
       requestListingKeys: [...new Set(texts.match(/FX-\d{3}/g) ?? [])],
     })}\n`,
