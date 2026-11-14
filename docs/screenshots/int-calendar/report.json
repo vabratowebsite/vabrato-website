@@ -1,0 +1,128 @@
+[
+  {
+    "who": "agent",
+    "name": "settings-off",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "admin",
+    "name": "settings-switch-off",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "admin",
+    "name": "settings-switch-on",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-not-connected",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-connected",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "appointment-on-calendar",
+    "url": "/appointments/e7e01392-45d3-4e29-a043-9861bc460248",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-reconnect",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent2",
+    "name": "settings-unverified",
+    "url": "/settings?google=unverified",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "name": "settings-disconnected",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  }
+]
