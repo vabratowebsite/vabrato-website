@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 built (drafts and offer cover letters, My drafts; 0038, after merge: apply 0038). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). Next: PR 4 (compare homes, listing questions; built off until MLSListings approves). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -720,8 +720,8 @@ with the member daily limits, and the site-wide monthly budget.
     `delete_my_assistant_data`). They are listed like the existing
     signed-in functions; each checks its caller, and the public can't run
     them.
-- **PR 3 (drafts and offer cover letters, "My drafts"; migration 0038;
-  owner answers 2026-11-14; after merge: apply 0038):**
+- **PR 3 (drafts and offer cover letters, "My drafts"; migration 0038,
+  merged as #53, on hosted 2026-11-14; owner answers 2026-11-14):**
   - **Owner answers:**
     - **Saving:** a draft is kept only if the member saves it, in "My
       drafts". Each is deleted 30 days after its last edit; the member can
@@ -805,6 +805,30 @@ with the member daily limits, and the site-wide monthly budget.
       wording), `s5b-documents.mjs` (53; "Deleted 1 item"), `s5-qa.mjs`
       (100) and `s6b-drafts.mjs` (42, after the helpers moved) still pass.
       Screenshots in `docs/screenshots/s5b-drafts/`.
+  - **On hosted (2026-11-14):** 0038 applied after checking that main's
+    file matched the tested one byte for byte and that hosted ended at 0037
+    with no `member_drafts`. `hosted-member-drafts-check.sql` (rolled back)
+    passed:
+    - both switches arrive off;
+    - a buyer saves a message and a cover letter and sees both;
+    - saving for someone else is refused, a seller can't save a cover
+      letter, and an agent can't save any;
+    - the buyer's own agent and another buyer see none (private);
+    - who it's for can't change, and a cover letter can't be marked as
+      emailed; marking it sent to the agent stamps it;
+    - a buyer can't run the purge; the purge deletes a draft aged 31 days,
+      and the daily job `vabrato-purge-member-drafts` (11:47 UTC) is
+      scheduled;
+    - "Delete my assistant data" removes the remaining draft and a waiting
+      to-do;
+    - the public is refused.
+    Nothing was left behind: no check accounts, drafts or to-dos, the Zero
+    Data Retention confirmation still unset, and all 24 feature switches
+    and the master switch off.
+  - **Security advisor:** nothing new. `delete_my_assistant_data` was
+    already listed (it now also deletes drafts), the purge can't be run by
+    signed-in users or the public, and the guard trigger isn't a definer
+    function.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
