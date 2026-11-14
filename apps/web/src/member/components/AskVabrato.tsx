@@ -3,9 +3,10 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { AIDraftLabel, SparkleIcon } from "@vabrato/ui/web";
 import { Markdown } from "@vabrato/ui/markdown";
-import { addTodosAction, askCoverLetterAction, askDraftAction, askExplainAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
-import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
+import { addTodosAction, askCompareAction, askCoverLetterAction, askDraftAction, askExplainAction, askListingAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
+import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, LISTING_QUESTION_MAX, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
 import { DraftEditor } from "./DraftEditor";
+import { CompareAnswer, ListingAnswer } from "./ListingAnswers";
 import { pagesLabel } from "../assistant/summary";
 
 // Ask Vabrato (mockup 11, S5b PRs 1-3). Answers stay in this page's memory
@@ -44,7 +45,25 @@ const MODES: Record<AskKind, { label: string; field: string; hint: string; butto
     hint: "Price, timing, flexibility, preapproval. Leave out anything about your family, background, faith, age or health (Fair Housing).",
     button: "Write the letter",
   },
+  compare: {
+    label: "Compare homes",
+    field: "Homes to compare",
+    hint: "Pick 2 to 4 of your saved homes. Only the listing facts you can see are used; nothing about you is sent.",
+    button: "Compare",
+  },
+  listing: {
+    label: "Ask about a home",
+    field: "Your question",
+    hint: "For example: How big is the lot? Answers come from the listing only.",
+    button: "Ask",
+  },
 };
+
+/** A home a listing mode can use: a saved or tracked home with an MLS listing. */
+export interface ListingChoice {
+  key: string;
+  label: string;
+}
 
 export interface HomeChoice {
   /** "deal:<id>" or "tracked:<id>" */
@@ -73,6 +92,8 @@ export function AskVabrato({
   docs = [],
   initialDoc,
   homes = { message: [], cover_letter: [] },
+  listingHomes = [],
+  initialListing,
 }: {
   kinds: AskKind[];
   left: number;
@@ -80,9 +101,17 @@ export function AskVabrato({
   docs?: DocOption[];
   initialDoc?: string;
   homes?: Record<DraftKind, HomeChoice[]>;
+  listingHomes?: ListingChoice[];
+  /** ?listing=KEY: "Ask about a home" with this home chosen. */
+  initialListing?: ListingChoice;
 }) {
   const startDoc = initialDoc && docs.some((d) => d.ref === initialDoc) ? initialDoc : undefined;
-  const [mode, setMode] = useState<AskKind>(startDoc && kinds.includes("summarize") ? "summarize" : kinds[0]!);
+  const listingOptions = initialListing && !listingHomes.some((h) => h.key === initialListing.key) ? [initialListing, ...listingHomes] : listingHomes;
+  const [mode, setMode] = useState<AskKind>(
+    startDoc && kinds.includes("summarize") ? "summarize" : initialListing && kinds.includes("listing") ? "listing" : kinds[0]!,
+  );
+  const [picked, setPicked] = useState<string[]>([]);
+  const [listingKey, setListingKey] = useState(initialListing?.key ?? listingOptions[0]?.key ?? "");
   const [text, setText] = useState("");
   const [doc, setDoc] = useState(startDoc ?? docs[0]?.ref ?? "");
   const [recipient, setRecipient] = useState<Recipient>("movers");
@@ -96,15 +125,29 @@ export function AskVabrato({
   const newest = useRef<HTMLHeadingElement>(null);
   const uid = useId();
   const m = MODES[mode];
-  const max = mode === "summarize" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : ASK_LIMITS[mode];
-  const ready = mode === "summarize" ? Boolean(doc) : mode === "cover_letter" && letterHome === "typed" ? Boolean(text.trim() && typed.trim()) : Boolean(text.trim());
+  const max = mode === "summarize" || mode === "compare" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : mode === "listing" ? LISTING_QUESTION_MAX : ASK_LIMITS[mode];
+  const ready =
+    mode === "summarize"
+      ? Boolean(doc)
+      : mode === "compare"
+        ? picked.length >= 2 && picked.length <= 4
+        : mode === "listing"
+          ? Boolean(listingKey && text.trim())
+          : mode === "cover_letter" && letterHome === "typed"
+            ? Boolean(text.trim() && typed.trim())
+            : Boolean(text.trim());
 
   // Focus moves to each new answer, so it's read out once (not a live region).
   useEffect(() => newest.current?.focus(), [cards.length]);
 
   function ask(e: React.FormEvent) {
     e.preventDefault();
-    const question = mode === "summarize" ? `Summarize: ${docs.find((d) => d.ref === doc)?.label ?? "a document"}` : text.trim();
+    const question =
+      mode === "summarize"
+        ? `Summarize: ${docs.find((d) => d.ref === doc)?.label ?? "a document"}`
+        : mode === "compare"
+          ? `Compare ${picked.map((k) => listingHomes.find((h) => h.key === k)?.label ?? k).join(", ")}`
+          : text.trim();
     if (!ready || pending) return;
     start(async () => {
       let card: AskCard;
@@ -118,14 +161,18 @@ export function AskVabrato({
                 ? await askDraftAction({ recipient, home, notes: question })
                 : mode === "cover_letter"
                   ? await askCoverLetterAction({ home: letterHome, typedAddress: typed, notes: question })
-                  : await askSummarizeAction(doc);
-        if (mode === "summarize" && card.kind === "error") card = { ...card, question };
+                  : mode === "compare"
+                    ? await askCompareAction(picked)
+                    : mode === "listing"
+                      ? await askListingAction(listingKey, question)
+                      : await askSummarizeAction(doc);
+        if ((mode === "summarize" || mode === "compare") && card.kind === "error") card = { ...card, question };
       } catch {
         card = { kind: "error", feature: mode, question, message: "Something went wrong. Please try again." };
       }
       setCards((c) => [...c, { ...card, id: next.current++ }]);
       setRemaining((r) => Math.max(0, r - 1));
-      if (card.kind !== "error" && mode !== "summarize") setText("");
+      if (card.kind !== "error" && mode !== "summarize" && mode !== "compare") setText("");
     });
   }
 
@@ -177,8 +224,63 @@ export function AskVabrato({
               </p>
             )}
           </div>
+        ) : mode === "compare" ? (
+          <fieldset>
+            <legend className="text-body-sm font-medium text-ink">{m.field}</legend>
+            <p id={`${uid}-chint`} className="mt-1 text-caption text-muted">
+              {m.hint}
+            </p>
+            {listingHomes.length >= 2 ? (
+              <div className="mt-2 space-y-1">
+                {listingHomes.map((h) => {
+                  const on = picked.includes(h.key);
+                  return (
+                    <label key={h.key} className="flex min-h-[44px] items-center gap-3 text-body-sm text-ink">
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        disabled={!on && picked.length >= 4}
+                        onChange={(e) => setPicked((p) => (e.target.checked ? [...p, h.key].slice(0, 4) : p.filter((k) => k !== h.key)))}
+                        aria-describedby={`${uid}-chint`}
+                        className="h-5 w-5 flex-none accent-navy"
+                      />
+                      {h.label}
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="mt-2 text-body-sm text-ink">
+                Save at least two homes to compare them.{" "}
+                <a href="/search" className="text-navy underline">
+                  Search homes
+                </a>
+                .
+              </p>
+            )}
+          </fieldset>
         ) : (
           <div className="space-y-4">
+            {mode === "listing" && (
+              <div>
+                <label htmlFor={`${uid}-listing`} className="block text-body-sm font-medium text-ink">
+                  Which home
+                </label>
+                {listingOptions.length ? (
+                  <select id={`${uid}-listing`} value={listingKey} onChange={(e) => setListingKey(e.target.value)} className={`${selectCls} max-w-xl`}>
+                    {listingOptions.map((h) => (
+                      <option key={h.key} value={h.key}>
+                        {h.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="mt-2 text-body-sm text-ink">
+                    Save a home first, or open one and choose &ldquo;Ask Vabrato about this home&rdquo;.
+                  </p>
+                )}
+              </div>
+            )}
             {mode === "message" && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -334,6 +436,8 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
     );
   }
   if (card.kind === "summary") return <SummaryAnswer card={card} heading={heading} />;
+  if (card.kind === "compare") return <CompareAnswer card={card} heading={heading(`Comparing ${card.homes.length + card.excluded.length} homes`)} />;
+  if (card.kind === "listing") return <ListingAnswer card={card} heading={heading("About this home")} />;
   if (card.kind === "draft")
     return (
       <DraftEditor

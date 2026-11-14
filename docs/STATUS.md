@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). Next: PR 4 (compare homes, listing questions; built off until MLSListings approves). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 built (compare homes, ask about a home; 0039, after merge: apply 0039; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -829,6 +829,84 @@ with the member daily limits, and the site-wide monthly budget.
     already listed (it now also deletes drafts), the purge can't be run by
     signed-in users or the public, and the guard trigger isn't a definer
     function.
+- **PR 4 (compare homes, ask about a home; migration 0039; owner answers
+  2026-11-14; after merge: apply 0039):**
+  - **Owner answers:**
+    - **Approval switch:** a separate admin switch, "MLSListings approved
+      AI on listing data" (`ai_mls_approved`), off. Neither feature's
+      switch can be turned on while it's off, and turning it off turns
+      them off. It stays off until MLSListings confirms in writing.
+    - **Opt-outs (MLS-3):** a home whose seller opted out of automated
+      valuations or consumer comments is never sent to the model. It shows
+      facts only, with "ask your agent".
+    - **Placement:** "Compare with Ask Vabrato" on `/my/compare`; "Ask
+      Vabrato about this home" on a listing's page for signed-in buyers
+      (a link into `/my/assistant`, so public pages carry no AI); both as
+      modes on `/my/assistant`.
+  - **What's sent:** each home's listing facts at the member's level (IDX,
+    or VOW once accepted), read with the member's own account (so a sold
+    home only for a VOW buyer), through `listingForAi` (never FULL, never
+    contacts, showing or lockbox details). Our code works out price per
+    sq ft. Nothing about the member is sent.
+  - **Compare homes** (switch `ai_member_compare`, buyers): 2 to 4 homes,
+    sent as Home A to D. A short summary, a table of differences (one
+    line per home) and questions for the agent.
+  - **Ask about a home** (switch `ai_member_listing`, buyers): one
+    question, answered from the listing only, with the fields it used as
+    sources (only fields we sent) and "the listing doesn't say" when it
+    doesn't.
+  - **Checks after the answer:** no price or value opinions ("overpriced",
+    "good deal", "worth", appraisal and the like); every dollar figure must
+    be one we sent; contacts and links removed. The pipeline's Fair
+    Housing (question and answer) and payment checks still apply.
+  - **Cards:** labelled AI, with each home's listing broker, "Listing data:
+    MLSListings", "Not legal or tax advice, and not an appraisal or price
+    opinion", and "Ask my agent". The assistant page shows the MLS
+    attribution while a listing mode is on.
+  - **Console:** the approval row at the top of the member panel, with a
+    warning; the two switches show "Locked until MLSListings approval is
+    on" while it's off.
+  - **Database (0039):** the switches, and two triggers on
+    `feature_flags`: one refuses turning a listing switch on without the
+    approval (`mls_ai_not_approved`, any route, including direct SQL),
+    the other turns both off when the approval goes off. `set_ai_flag` is
+    unchanged (admins only, audited).
+  - **Also:** `listingOptedOutOfAi` in `packages/ai` (AVM and comments
+    flags), and the AI guard test accepts `ai_mls_approved` as the one
+    switch that isn't a feature.
+  - **Tests:**
+    - 8 database tests (`mls-ai-gate.test.ts`) and
+      `hosted-mls-ai-gate-check.sql`, which passes locally.
+    - 16 feature tests on the fictional MLS fixtures: no FULL field,
+      contact or internal note ever sent; sold fields only at VOW; a
+      hidden address stays hidden; FX-013 (opted out) never sent; price
+      opinions, invented dollar figures, Fair Housing and wiring answers
+      blocked; a steering question refused unsent; sources filtered.
+    - **The website's live test:** 7 calls (the new ones compare FX-001
+      and FX-002, and ask about FX-001 with an injection in its remarks).
+      The fake run is 7 of 7 ok.
+    - Browser QA `scripts/qa/s5b-listings.mjs`: 44 checks pass, twice, on
+      the local stack with the fake Claude and the MLS fixtures. They cover:
+      - off by default; the approval switch locking both switches in the
+        console and in the database, then turning them off again;
+      - compare from `/my/compare` and from Ask Vabrato: only FX-001 and
+        FX-002 sent, FX-013 listed as not included, no FULL fields,
+        contacts, internal notes or VOW fields for an IDX buyer;
+      - price opinions, invented dollar figures, Fair Housing and wiring
+        answers not shown;
+      - ask about a home from the listing page's link, with sources limited
+        to fields we sent; a steering question and an opted-out home
+        refused unsent;
+      - a VOW buyer's request carries VOW fields; an IDX buyer isn't
+        offered a sold home, even by link;
+      - signed out: no link, no assistant request, no AI text on the
+        public page;
+      - axe, 390 and 320 px, the keyboard (which also found the comparison
+        table needed to be reachable by keyboard on phones, now fixed), and
+        page loads sending nothing.
+    - `s5b-assistant.mjs` (65), `s5b-drafts.mjs` (50), `s6b-assistant.mjs`
+      (64) and `s5-qa.mjs` (100) still pass. Screenshots in
+      `docs/screenshots/s5b-listings/`.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 

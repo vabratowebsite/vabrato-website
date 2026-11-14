@@ -33,3 +33,13 @@ export function stripNeverSend(record: Fields): Fields {
 export function listingForAi(record: Fields, level: "IDX" | "VOW"): Fields {
   return stripNeverSend(projectForLevel("Property", record, level));
 }
+
+/**
+ * MLS-3 opt-outs for AI (owner decision 2026-11-14): a home whose seller
+ * opted out of automated valuations or of consumer comments next to the
+ * listing is never sent to the model. Only an explicit "No" counts; a
+ * missing flag means the MLS default (allowed).
+ */
+export function listingOptedOutOfAi(record: Fields): boolean {
+  return record.InternetAutomatedValuationDisplayYN === false || record.InternetConsumerCommentYN === false;
+}

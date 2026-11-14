@@ -165,6 +165,7 @@ export function budgetPercent(spentMicros: number | string, budgetUsd: number): 
 /** Plain messages for the database's refusals (0026, 0027). */
 export function aiSettingsError(message: string): string {
   if (/zdr_not_confirmed/.test(message)) return "Record Anthropic's written Zero Data Retention confirmation first. The assistant can't be turned on without it.";
+  if (/mls_ai_not_approved/.test(message)) return "Turn on \"MLSListings approved AI on listing data\" first. This feature sends listing data and needs MLSListings' written approval.";
   if (/admin_only|permission denied|row-level security/.test(message)) return "Only an admin can change the assistant's settings.";
   if (/note_required/.test(message)) return "Say where the confirmation is filed (for example: email from Anthropic, the date, who has it).";
   if (/not_an_ai_flag|not_found/.test(message)) return "That isn't an assistant feature.";

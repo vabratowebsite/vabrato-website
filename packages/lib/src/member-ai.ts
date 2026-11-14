@@ -11,7 +11,16 @@ export interface MemberAiFeature {
   name: string;
   /** For admins, on the console's /assistant page. */
   what: string;
+  /** Sends MLS listing data: needs the MLSListings approval switch (MLS_AI_GATE) too (0039). */
+  needsMlsApproval?: true;
 }
+
+/**
+ * Admins turn this on only once MLSListings has approved AI on listing data
+ * in writing. While it's off, the database refuses to switch on any feature
+ * with needsMlsApproval, and turning it off turns them off (0039).
+ */
+export const MLS_AI_GATE = "ai_mls_approved";
 
 export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
   {
@@ -38,6 +47,18 @@ export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
     flag: "ai_member_cover_letter",
     name: "Offer cover letter",
     what: "For buyers: a cover letter about the offer's terms only (price, timing, flexibility, preapproval). Notes about the buyer's family, background, faith, age or health are refused (Fair Housing). The letter goes to the agent only, as a portal message the member sends.",
+  },
+  {
+    flag: "ai_member_compare",
+    name: "Compare homes",
+    what: "Compares 2 to 4 of the member's saved homes from the listing fields they may see (IDX, or VOW once accepted): differences and questions for their agent. No price opinions. Homes whose sellers opted out of automated valuations or comments are never sent. Needs the MLSListings approval switch. Nothing is kept.",
+    needsMlsApproval: true,
+  },
+  {
+    flag: "ai_member_listing",
+    name: "Ask about a home",
+    what: "Answers a member's question about one home from the listing fields they may see, naming the fields it used. No price opinions; anything the listing doesn't say goes to their agent. Opted-out homes are never sent. Needs the MLSListings approval switch. Nothing is kept.",
+    needsMlsApproval: true,
   },
 ];
 

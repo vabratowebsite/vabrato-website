@@ -5,6 +5,9 @@ import { cityLine, formatPrice, listingPath, listingTitle, propertyTypeLabel } f
 import { openHouseLong } from "@/lib/listing-view";
 import { mlsLastUpdated } from "@/lib/public/listings";
 import { MemberShell } from "@/member/components/MemberShell";
+import { CompareWithAskVabrato } from "@/member/components/CompareWithAskVabrato";
+import { aiKeyConfigured } from "@/member/ai";
+import { memberAiStatus } from "@/member/ai-status";
 import { cards, savedListings } from "@/member/listings";
 import { buys } from "@/member/roles";
 import { LISTING_KEY } from "@/member/saved";
@@ -19,10 +22,13 @@ export default async function ComparePage({ searchParams }: Props) {
   if (!buys(member.role)) redirect("/my/seller");
   const sp = await searchParams;
   const asked = [sp.key ?? []].flat().filter((k) => LISTING_KEY.test(k)).slice(0, 4);
-  const [rows, lastUpdated] = await Promise.all([
+  const [rows, lastUpdated, ai] = await Promise.all([
     asked.length ? cards(member.supabase, asked) : savedListings(member.supabase).then((s) => s.rows.slice(0, 4)),
     mlsLastUpdated(),
+    memberAiStatus(member.supabase),
   ]);
+  // S5b PR 4: only while "Compare homes" is on (it needs MLSListings' approval too).
+  const canAsk = aiKeyConfigured() && ai.on.includes("ai_member_compare");
   const ordered = asked.length ? asked.map((k) => rows.find((r) => r.listing_key === k)).filter((r): r is (typeof rows)[number] => Boolean(r)) : rows;
 
   const facts: [string, (r: (typeof ordered)[number]) => string][] = [
@@ -82,6 +88,7 @@ export default async function ComparePage({ searchParams }: Props) {
           </table>
         </div>
       )}
+      {canAsk && ordered.length >= 2 && <CompareWithAskVabrato keys={ordered.map((r) => r.listing_key)} />}
       <MlsAttribution lastUpdated={lastUpdated} />
     </MemberShell>
   );

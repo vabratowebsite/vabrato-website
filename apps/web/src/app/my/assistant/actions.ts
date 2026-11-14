@@ -8,6 +8,9 @@ import { explainTerm, searchBySentence, summarizeDocument } from "@/member/assis
 import { loadMemberFile, parseDocRef } from "@/member/assistant/files";
 import { SUMMARY_LIMITS, cleanLine } from "@/member/assistant/summary";
 import { DRAFT_MESSAGES, resolveHome, writeDraft } from "@/member/assistant/drafts";
+import { askAboutHome, compareHomes } from "@/member/assistant/listing-ask";
+import { MAX_COMPARE, memberListingsForAi } from "@/member/assistant/listings";
+import { LISTING_KEY } from "@/member/saved";
 import { isRecipient, type AskCard } from "@/member/assistant/kinds";
 import { buys } from "@/member/roles";
 import { assignedAgent, requirePortalMember } from "@/member/session";
@@ -152,4 +155,38 @@ export async function askCoverLetterAction(ask: DraftAsk): Promise<AskCard> {
     },
     await draftNames(member),
   );
+}
+
+// --- Listings (S5b PR 4) -----------------------------------------------------------------------
+// Compare homes and ask about a home, from the listing fields the member may
+// see. Records are read with the member's own client; the MLSListings
+// approval switch and each feature's switch are checked (and the database
+// refuses those switches without approval, 0039). Nothing is stored.
+
+async function listingLevel(member: Awaited<ReturnType<typeof requirePortalMember>>) {
+  return memberDataLevel(member, await flagEnabled("vow_enabled"));
+}
+
+export async function askCompareAction(keys: string[]): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Compare homes";
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "compare", question, message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!buys(member.role)) return fail("Comparing homes is for buyers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_compare")) return fail("Ask Vabrato can't compare homes right now.");
+  const list = (Array.isArray(keys) ? keys : []).filter((k): k is string => typeof k === "string" && LISTING_KEY.test(k)).slice(0, MAX_COMPARE);
+  const loaded = await memberListingsForAi(member.supabase, list, await listingLevel(member));
+  return compareHomes(aiDeps(member.supabase), loaded);
+}
+
+export async function askListingAction(key: string, text: string): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = String(text ?? "").slice(0, 400) || "Ask about a home";
+  const fail = (message: string): AskCard => ({ kind: "error", feature: "listing", question, message });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!buys(member.role)) return fail("Asking about homes is for buyers.");
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_listing")) return fail("Ask Vabrato can't answer questions about homes right now.");
+  if (typeof key !== "string" || !LISTING_KEY.test(key)) return fail("Choose a home first.");
+  const loaded = await memberListingsForAi(member.supabase, [key], await listingLevel(member));
+  return askAboutHome(aiDeps(member.supabase), loaded, text);
 }
