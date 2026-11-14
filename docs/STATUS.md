@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 built (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041, after merge: apply 0041; no AI images yet). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). Next: PR 7 (final QA and the member calls in the live run). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -996,7 +996,8 @@ with the member daily limits, and the site-wide monthly budget.
   - **Security advisor:** nothing new. The two replaced trigger functions
     still can't be run by signed-in users or the public.
 - **PR 6 (design: colors and moodboard, staging ideas, open-house flyer and
-  posts; migration 0041; owner answers 2026-11-14; after merge: apply 0041):**
+  posts; migration 0041, merged as #59, on hosted 2026-11-14; owner answers
+  2026-11-14):**
   - **Owner answers:**
     - **Drawing:** our own templates. The assistant returns words and color
       choices only; our code checks every color and draws the swatches,
@@ -1086,6 +1087,31 @@ with the member daily limits, and the site-wide monthly budget.
   - **Not in this PR:** AI images and room photos, model-written markup,
     posting to social networks, and the agent editing a member's flyer (they
     decline it with a note instead).
+  - **On hosted (2026-11-14):** 0041 applied after checking that:
+    - main's file matched the tested one byte for byte;
+    - hosted ended at 0040, with no `member_promos` table;
+    - the notification-kind check it replaces matched 0037's list.
+
+    `hosted-design-check.sql` (rolled back) passed:
+    - the three switches arrive off;
+    - a seller sends a flyer: it waits, with one bell alert to their agent;
+    - a buyer can't send one, and a seller can't send one for someone else,
+      send one already approved, edit one, or decide one (`staff_only`);
+    - another seller sees nothing;
+    - the agent can't approve with another brokerage's listing
+      (`not_our_listing`) or another listing's open house
+      (`not_this_open_house`); approves with our listing and its open
+      house; can't decide it again (`not_found`);
+    - the seller can't delete the approved one; "Delete my assistant data"
+      removes both of their flyers.
+
+    Nothing was left behind: no check accounts, listings, flyers or audit
+    rows, and every AI switch off (13 member switches in all).
+  - **Security advisor:** the only new entry is `decide_member_promo`,
+    callable by signed-in users as intended. Staff use it, and it checks
+    `is_staff` inside, like `decide_member_todo`. The public can't call it,
+    and the two trigger functions can't be run by signed-in users or the
+    public.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
