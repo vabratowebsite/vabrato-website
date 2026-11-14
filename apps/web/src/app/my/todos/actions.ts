@@ -5,7 +5,8 @@ import { z } from "zod";
 import { requirePortalMember } from "@/member/session";
 
 // "My to-dos" (S5b PR 2, 0037). The member ticks approved to-dos, deletes
-// their own, and deletes their assistant data (waiting and declined to-dos).
+// their own, and deletes their assistant data (saved drafts, 0038, and
+// waiting and declined to-dos).
 // Changes go through the database functions, which check the member.
 
 export type TodoActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -38,5 +39,6 @@ export async function deleteAssistantDataAction(): Promise<TodoActionResult> {
   if (error) return { ok: false, error: "We couldn't delete that. Please try again." };
   const n = Number(data ?? 0);
   revalidatePath("/my/todos");
-  return { ok: true, message: n === 0 ? "There was nothing to delete." : `Deleted ${n} to-do${n === 1 ? "" : "s"} that were waiting or declined.` };
+  revalidatePath("/my/drafts");
+  return { ok: true, message: n === 0 ? "There was nothing to delete." : `Deleted ${n} item${n === 1 ? "" : "s"}: your saved drafts, and to-dos that were waiting or declined.` };
 }

@@ -43,21 +43,5 @@ export const MAX_BODY = 8000;
 /** A portal message holds at most this much (0019). */
 export const MAX_PORTAL_MESSAGE = 4000;
 
-const EMAIL = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]+$/;
-
-/**
- * A mailto: link with the subject and body filled in, for the person's own
- * mail app. Addresses come from our records, never from the model; anything
- * that isn't a plain address is left out.
- */
-export function mailtoHref(to: string[], subject: string, body: string): string {
-  const addresses = to.map((a) => a.trim()).filter((a) => EMAIL.test(a));
-  const query = [`subject=${encodeURIComponent(subject)}`, `body=${encodeURIComponent(body.replace(/\r?\n/g, "\r\n"))}`].join("&");
-  return `mailto:${addresses.map((a) => encodeURIComponent(a).replace(/%40/g, "@")).join(",")}?${query}`;
-}
-
-/** First name for a greeting: "Dana Example, Trustee of …" → "Dana". */
-export function firstName(full: string | null | undefined): string | null {
-  const word = (full ?? "").trim().split(/[\s,]+/)[0] ?? "";
-  return /^[\p{L}][\p{L}'’-]{0,39}$/u.test(word) ? word : null;
-}
+// mailto links and greeting names: shared with the members' drafts (S5b PR 3).
+export { firstName, mailtoHref } from "@vabrato/lib";

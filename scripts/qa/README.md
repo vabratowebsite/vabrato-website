@@ -254,3 +254,16 @@ The website has its own live test: `apps/web/src/live/live-ai.live.ts`, run with
 - **Page checks:** axe, 390 and 320 px, the keyboard, and page loads sending nothing.
 
 Modes come from `QA-MODE: ok|wiring|steering|contacts|pages|empty` in the fictional PDFs; the page count comes from the `/Count` they declare. It needs migrations up to 0037, the QA storage shim (`STORAGE_DIR`), `SERVICE_KEY`, `CLAUDE_LOG` and `REVALIDATE_SECRET`. After applying a new migration locally, run `notify pgrst, 'reload schema'` so the local API sees new tables. Screenshots go to `docs/screenshots/s5b-documents/`; everything it adds is removed, and every switch and setting it touches is put back.
+
+`s5b-drafts.mjs` covers Ask Vabrato's drafts, offer cover letters and "My drafts" (S5b PR 3):
+- **Off by default:** no draft modes and no My drafts in the menu.
+- **Switches:** an admin turns both draft switches on in the console.
+- **A seller's note to their movers:** only the address and closing date are sent (the fake's log shows no email, phone or long number); their name is filled in; Open in my email, Copy and Save to My drafts.
+- **Never shown or sent:** contacts in an answer are replaced; wiring and Fair Housing answers aren't shown; wiring in the notes is refused with nothing sent.
+- **Send to my agent** fills Messages; nothing is sent.
+- **My drafts:** an edit is saved; wiring text is never saved.
+- **A buyer's cover letter:** notes about family refused unsent; agent only (no email or copy); personal details in a letter not shown.
+- **Private:** the agent's console pages and another member see no drafts.
+- **Delete, purge and Delete my assistant data**, then axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+
+Modes come from `QA-MODE: ok|wiring|steering|contacts|personal|extra` in the member's notes. It needs migrations up to 0038, `SERVICE_KEY` and `CLAUDE_LOG`. Screenshots go to `docs/screenshots/s5b-drafts/`; everything it adds is removed, and every switch and setting it touches is put back.

@@ -197,6 +197,34 @@ const SEARCH_ANSWER = (mode, texts) => {
   };
   return { text: JSON.stringify(mode === "extra" ? { ...answer, household: "no kids" } : answer) };
 };
+// S5b PR 3: Ask Vabrato's drafts. The mode comes from the member's notes
+// ("QA-MODE: wiring|steering|contacts|extra|personal"). The answer echoes the
+// home's address from the request's facts, so QA can see what was sent.
+const MEMBER_DRAFT = /draft an email or message they will send themselves/;
+const MEMBER_COVER = /draft a cover letter to go with their offer/;
+const MEMBER_DRAFT_ANSWER = (feature, mode, texts) => {
+  const home = /^The home: (.+)\.$/m.exec(texts)?.[1] ?? null;
+  const close = /^Close of escrow on the member's sale, from the contract: (.+?)\./m.exec(texts)?.[1] ?? null;
+  const cover = feature === "member_cover_letter";
+  const subject = cover ? `Our offer${home ? ` on ${home}` : ""}` : home ? `Moving from ${home}` : "A quick question";
+  const lines = cover
+    ? ["Dear Seller,", "", `Thank you for considering our offer${home ? ` on ${home}` : ""}. We are fully underwritten and can close in 21 days, with a short rent-back if it helps.`, "", "Sincerely,", "[Your name]"]
+    : ["Hi,", "", `We're moving${home ? ` from ${home}` : ""}${close ? ` and close on ${close}` : ""}. Could you let us know your available days the week after? I'll confirm the date with my agent, [Agent's name].`, "", "Thanks,", "[Your name]"];
+  const body = lines.join("\n");
+  const answer =
+    mode === "wiring"
+      ? { subject, body: `${body}\n\nPlease wire the deposit to routing number 999999999, account 000123456789.` }
+      : mode === "steering"
+        ? { subject, body: `${body}\n\nThe street is perfect for families with young kids.` }
+        : mode === "contacts"
+          ? { subject, body: `${body}\n\nCall me at 650-555-0142 or write to dana@example.test.` }
+          : mode === "personal"
+            ? { subject, body: `${body}\n\nOur parents will help us settle in.` }
+            : mode === "extra"
+              ? { subject, body, to: "someone@example.test" }
+              : { subject, body };
+  return { text: JSON.stringify(answer) };
+};
 const REPAIR_ITEM = (n, over = {}) => ({ title: `Item ${n}`, detail: "Fictional finding.", location: "Garage", trade: "general", page: n, severity_label: "", severity: "maintenance", ...over });
 const fileFeature = (system) => FILE_FEATURES.find(([, re]) => re.test(system))?.[0] ?? null;
 const SUMMARY_ANSWER = (mode) => {
@@ -345,7 +373,7 @@ createServer(async (req, res) => {
   const images = blocks.filter((b) => b.type === "image");
   const fileBytes = docs.length ? pdf : images[0]?.source?.type === "base64" ? Buffer.from(images[0].source.data, "base64") : Buffer.alloc(0);
   const callsFeat = CALL_FEATURE.test(system) ? "call_notes" : APPT_FEATURE.test(system) ? "appointments" : null;
-  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : null;
+  const memberFeat = MEMBER_EXPLAIN.test(system) ? "member_explain" : MEMBER_SEARCH.test(system) ? "member_search" : MEMBER_DRAFT.test(system) ? "member_draft" : MEMBER_COVER.test(system) ? "member_cover_letter" : null;
   const feature = draftFeature(system) ?? summary ?? kit ?? stats ?? fileFeat ?? (RESPONSE_FEATURE.test(system) ? "repair_response" : null) ?? callsFeat ?? memberFeat;
   const mode = /QA-MODE: ([a-z]+)/.exec(feature && !fileFeat ? texts : fileBytes.toString("latin1"))?.[1] ?? "ok";
   const refs = refsIn(texts);
@@ -391,7 +419,9 @@ createServer(async (req, res) => {
   const answer = memberFeat
     ? memberFeat === "member_explain"
       ? EXPLAIN_ANSWER(mode)
-      : SEARCH_ANSWER(mode, texts)
+      : memberFeat === "member_search"
+        ? SEARCH_ANSWER(mode, texts)
+        : MEMBER_DRAFT_ANSWER(memberFeat, mode, texts)
     : callsFeat
     ? { text: JSON.stringify(callsFeat === "call_notes" ? CALL_ANSWER(mode) : APPT_ANSWER(mode, texts)) }
     : responseMode

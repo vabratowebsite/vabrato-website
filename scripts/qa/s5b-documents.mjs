@@ -242,7 +242,7 @@ check("my to-dos: ticking it marks it done", sql(`select done from member_todos 
 await shot(buyer, "todos");
 buyer.once("dialog", (d) => d.accept());
 await buyer.getByRole("button", { name: "Delete my assistant data" }).click();
-await buyer.getByText(/^Deleted 1 to-do/).waitFor({ timeout: 10000 });
+await buyer.getByText(/^Deleted 1 item/).waitFor({ timeout: 10000 });
 check("delete my assistant data: the declined one goes, the approved one stays", sql(`select string_agg(status, ',') from member_todos where profile_id = '${jordan}'`) === "approved");
 
 // --- 6. A seller and a file their transaction desk shared ------------------------------------------

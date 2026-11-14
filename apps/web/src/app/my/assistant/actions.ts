@@ -7,9 +7,11 @@ import { memberAiStatus, memberDataLevel } from "@/member/ai-status";
 import { explainTerm, searchBySentence, summarizeDocument } from "@/member/assistant/ask";
 import { loadMemberFile, parseDocRef } from "@/member/assistant/files";
 import { SUMMARY_LIMITS, cleanLine } from "@/member/assistant/summary";
-import type { AskCard } from "@/member/assistant/kinds";
+import { DRAFT_MESSAGES, resolveHome, writeDraft } from "@/member/assistant/drafts";
+import { isRecipient, type AskCard } from "@/member/assistant/kinds";
 import { buys } from "@/member/roles";
-import { requirePortalMember } from "@/member/session";
+import { assignedAgent, requirePortalMember } from "@/member/session";
+import { firstName } from "@vabrato/lib";
 
 // Ask Vabrato (S5b PR 1). Each request is answered on its own and the answer
 // goes back to the page only: nothing is stored (owner decision 2026-11-13).
@@ -72,4 +74,82 @@ export async function addTodosAction(sourceName: string, todos: { title: string;
   if (error) return { ok: false, error: /too_many/.test(error.message) ? "You have a lot of to-dos waiting for your agent. Try again once they've looked at them." : "We couldn't add those. Please try again." };
   revalidatePath("/my/todos");
   return { ok: true, added: rows.length };
+}
+
+// --- Drafts (S5b PR 3) -------------------------------------------------------------------------
+// The draft comes back to the page; it's stored only if the member saves it
+// (app/my/drafts/actions.ts). The member edits and sends it; AI never sends.
+
+export interface DraftAsk {
+  recipient?: string;
+  /** "deal:<id>", "tracked:<id>", "typed" (cover letters) or "" for none. */
+  home?: string;
+  typedAddress?: string;
+  notes?: string;
+}
+
+async function draftNames(member: Awaited<ReturnType<typeof requirePortalMember>>) {
+  const agent = await assignedAgent(member.supabase, member.profile.agent_id);
+  return { member: member.profile.full_name, agent: firstName(agent?.display_name) };
+}
+
+export async function askDraftAction(ask: DraftAsk): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Draft an email or message";
+  const fail = (message: string): AskCard => ({
+    kind: "error",
+    feature: "message",
+    question,
+    message,
+  });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_draft"))
+    return fail("Ask Vabrato can't write drafts right now.");
+  if (!isRecipient(ask?.recipient)) return fail("Choose who the message is for.");
+  const home = await resolveHome(member.supabase, member.profile.id, ask.home, null, "message");
+  if (home === null) return fail(DRAFT_MESSAGES.home);
+  return writeDraft(
+    aiDeps(member.supabase),
+    {
+      kind: "message",
+      recipient: ask.recipient,
+      notes: ask.notes,
+      home: home === "none" ? null : home,
+    },
+    await draftNames(member),
+  );
+}
+
+export async function askCoverLetterAction(ask: DraftAsk): Promise<AskCard> {
+  const member = await requirePortalMember("/my/assistant");
+  const question = "Offer cover letter";
+  const fail = (message: string): AskCard => ({
+    kind: "error",
+    feature: "cover_letter",
+    question,
+    message,
+  });
+  if (!aiKeyConfigured()) return fail(NOT_SET_UP);
+  if (!buys(member.role)) return fail(DRAFT_MESSAGES.coverOnly);
+  if (!(await memberAiStatus(member.supabase)).on.includes("ai_member_cover_letter"))
+    return fail("Ask Vabrato can't write cover letters right now.");
+  const home = await resolveHome(
+    member.supabase,
+    member.profile.id,
+    ask?.home,
+    ask?.typedAddress,
+    "cover_letter",
+  );
+  if (home === null)
+    return fail(ask?.home === "typed" ? "Type the home's address." : DRAFT_MESSAGES.home);
+  return writeDraft(
+    aiDeps(member.supabase),
+    {
+      kind: "cover_letter",
+      recipient: "agent",
+      notes: ask?.notes,
+      home: home === "none" ? null : home,
+    },
+    await draftNames(member),
+  );
 }

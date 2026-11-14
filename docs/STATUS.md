@@ -30,7 +30,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S3 | MLS package (mock first) | Mock complete 2026-11-10; live 7-day criterion blocked on MLSListings credentials |
 | S4 | Public website | Built and QA'd 2026-11-10; launch content and MLSListings material outstanding (not blocking S5) |
 | S5 | Membership portal | Built and QA'd 2026-11-10 (PRs #12–#17; 0015–0021 on hosted). Live alert delivery waits on MLSListings credentials, Render and Resend; VOW built, off pending MLSListings |
-| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). Next: PR 3 (drafts). Every switch off |
+| S5b | Member AI assistant (Ask Vabrato) | In progress: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 built (drafts and offer cover letters, My drafts; 0038, after merge: apply 0038). Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
 | S7 | Mobile app | Not started |
@@ -720,6 +720,91 @@ with the member daily limits, and the site-wide monthly budget.
     `delete_my_assistant_data`). They are listed like the existing
     signed-in functions; each checks its caller, and the public can't run
     them.
+- **PR 3 (drafts and offer cover letters, "My drafts"; migration 0038;
+  owner answers 2026-11-14; after merge: apply 0038):**
+  - **Owner answers:**
+    - **Saving:** a draft is kept only if the member saves it, in "My
+      drafts". Each is deleted 30 days after its last edit; the member can
+      delete one sooner, and "Delete my assistant data" removes them all.
+    - **Private:** the agent doesn't see saved drafts. They see one only
+      when the member presses "Send to my agent", which fills a portal
+      message the member still sends.
+    - **Offer cover letters:** their own switch, about the offer's terms
+      only (price, timing, flexibility, preapproval, care for the home); no
+      personal or family details and no photos. They go to the agent only:
+      no email or copy button.
+    - **What's sent:** the member's notes, who it's for, and the home they
+      pick (their sale or a home they track): its address, plus the closing
+      date for a sale. The member's and agent's names are filled in
+      afterwards and never sent; no price, escrow number or contact details.
+  - **Draft an email or message** (switch `ai_member_draft`): to movers, a
+    contractor, the lender, the agent or someone else.
+    - **Refused before anything is sent:** bank, account or wiring details
+      in the notes. Contact details in the notes are replaced before they're
+      sent.
+    - **The answer:** a subject and a short message as the member. Our code
+      replaces any phone number or email address, fills in
+      `[Your name]` and `[Agent's name]`, and caps the length (3,500
+      characters). Wiring details and Fair Housing wording are never shown.
+    - **The card** (mockup 11, "AI draft · You send it"): editable subject
+      and message, "Open in my email" (a mailto with an optional To address
+      the member types, which isn't sent to the model or saved), "Copy",
+      "Save to My drafts", and "Send to my agent" for notes to the agent.
+  - **Offer cover letter** (switch `ai_member_cover_letter`, buyers only):
+    notes mentioning family, children, marriage, faith, heritage, age,
+    health or photos are refused before anything is sent; a letter that
+    mentions them anyway isn't shown. The home is a tracked home or a typed
+    address.
+  - **`member_drafts` (0038):**
+    - **Who:** only the member reads, adds, edits and deletes their own
+      drafts; there's no staff policy. Cover letters only for buyers, always
+      to the agent; who it's for, the kind and the home can't change.
+    - **Limits:** 50 per member; 3,500 characters.
+    - **Purge:** `purge_member_drafts()` (service role only), daily with
+      pg_cron (`vabrato-purge-member-drafts`, 11:47 UTC): drafts not edited
+      for 30 days.
+    - **Never stored:** saving or sending to the agent re-checks the text
+      for payment details, Fair Housing wording and (cover letters) personal
+      details, since the member may have edited it.
+    - `delete_my_assistant_data()` now also deletes the caller's drafts.
+  - **"My drafts" (`/my/drafts`):** saved drafts, newest first, with the same
+    buttons plus Delete, and when each was used. It's in the Assistant menu
+    group when a draft switch is on or the member has drafts. My to-dos and
+    the Ask Vabrato page now say drafts are stored only when saved.
+  - **Also:** `mailtoHref`, `firstName` and `redactContacts` moved to
+    `packages/lib` (`draft-text.ts`); the console uses them from there.
+  - **Tests:**
+    - 22 database tests (`member-drafts.test.ts`) and
+      `hosted-member-drafts-check.sql`, which passes locally.
+    - 15 feature tests, covering:
+      - what's sent (address and closing date; no name, contacts, price or
+        escrow number) and the run against the member's deal;
+      - names filled, contacts replaced, lengths capped;
+      - wiring in the notes refused unsent; wiring and Fair Housing answers
+        blocked; an extra field refused;
+      - cover-letter notes about family refused unsent; personal details in
+        a letter not shown;
+      - the save check, and the agent link within 4,000 characters.
+    - **The website's live test:** 5 calls (the new ones: a movers note
+      and a cover letter). The fake run is 5 of 5 ok.
+    - Browser QA `scripts/qa/s5b-drafts.mjs`: 50 checks pass on the local
+      stack with the fake Claude. They cover:
+      - off by default, and the console switches;
+      - a seller's movers note: address and closing date sent, no email,
+        phone or long number, name filled in; Open in my email, Copy, Save;
+      - contacts replaced; wiring and Fair Housing answers not shown;
+        wiring in the notes refused unsent;
+      - Send to my agent filling Messages without sending;
+      - editing in My drafts, and wiring text never saved;
+      - a buyer's cover letter: family notes refused unsent, agent only,
+        saved, personal details not shown, sent to the agent for review;
+      - private: the agent's console pages and another member see none;
+      - delete, the 30-day purge, and Delete my assistant data;
+      - axe, 390 and 320 px, the keyboard, and page loads sending nothing.
+    - `s5b-assistant.mjs` (65; its notice check updated for the new
+      wording), `s5b-documents.mjs` (53; "Deleted 1 item"), `s5-qa.mjs`
+      (100) and `s6b-drafts.mjs` (42, after the helpers moved) still pass.
+      Screenshots in `docs/screenshots/s5b-drafts/`.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 

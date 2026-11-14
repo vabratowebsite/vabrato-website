@@ -107,7 +107,7 @@ await assistantLink(buyer).click();
 await buyer.waitForURL(`${BASE}/my/assistant`);
 check("on: both features offered", (await buyer.getByRole("radio").count()) === 2);
 check("on: the daily allowance shown", await buyer.getByText("30 of 30 questions left today").isVisible());
-check("on: says nothing is kept and the agent doesn't see questions", await buyer.getByText(/Nothing you type here is kept/).isVisible());
+check("on: says nothing is kept unless saved, and the agent doesn't see questions or drafts", await buyer.getByText(/Nothing you type is kept unless you save a draft or add a to-do.*Your agent doesn.t see your questions or drafts/).isVisible());
 const loadsBefore = memberCalls();
 await buyer.reload();
 check("page loads send nothing to the model", memberCalls() === loadsBefore && loadsBefore === callsAtStart);
