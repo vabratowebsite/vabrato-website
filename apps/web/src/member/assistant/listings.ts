@@ -56,8 +56,8 @@ export function homeForAi(row: Row, vow: Fields | null, level: "IDX" | "VOW"): {
   return { home: { key: row.listing_key, label, broker, fields: listingForAi(record, level) } };
 }
 
-export async function memberListingsForAi(db: SupabaseDb, keysIn: string[], level: "IDX" | "VOW"): Promise<HomesForAi> {
-  const keys = [...new Set(keysIn.filter((k) => KEY.test(k)))].slice(0, MAX_COMPARE);
+export async function memberListingsForAi(db: SupabaseDb, keysIn: string[], level: "IDX" | "VOW", max: number = MAX_COMPARE): Promise<HomesForAi> {
+  const keys = [...new Set(keysIn.filter((k) => KEY.test(k)))].slice(0, max);
   const out: HomesForAi = { homes: [], excluded: [], missing: [] };
   if (!keys.length) return out;
   const { data } = await db.from("mls_listings").select("listing_key, city, list_office_name, address_display, avm_display, comments_display, data").in("listing_key", keys);
@@ -107,6 +107,8 @@ export function compareFields(f: Fields): Fields {
 
 /** Each home as a labelled data block: Home A, Home B, ... The model refers to homes by letter. */
 export const HOME_LETTERS = ["A", "B", "C", "D"] as const;
+/** A tour day takes up to six homes (S5b PR 5). */
+export const HOME_LETTERS_TOUR = ["A", "B", "C", "D", "E", "F"] as const;
 
 export function compareParts(homes: AiHome[]): InputPart[] {
   return homes.map((h, i) => ({ type: "text", text: wrapData(`Home ${HOME_LETTERS[i]} (listing facts)`, JSON.stringify(compareFields(h.fields))) }));
