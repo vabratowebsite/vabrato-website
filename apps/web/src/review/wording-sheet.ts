@@ -73,7 +73,7 @@ export function modeHints(): { label: string; field: string; hint: string }[] {
 }
 
 /** The repair-response wording waiting for Mark (apps/va repair-kinds.ts, "confirm with Mark"). */
-export function repairWording(): { name: string; text: string }[] {
+export function repairWording(): { name: string; where: string; text: string }[] {
   const src = read("apps/va/src/lib/repair-kinds.ts");
   const where: Record<string, string> = { REPAIR_WORDING: "Each item the seller will repair", FORM_GOVERNS: "Last line of the response" };
   return [...src.matchAll(/export const (\w+) = "([^"]+)";\s*\/\/ confirm with Mark/g)].map((m) => ({ name: m[1]!, where: where[m[1]!] ?? m[1]!, text: m[2]! }));
