@@ -64,7 +64,6 @@ sql(`update feature_flags set enabled = false where key in ('ai_enabled', 'ai_ml
 // The fake reports 61,000 input tokens a call; the member token limit is raised for the run.
 sql(`update app_settings set ai_zdr_confirmed_at = coalesce(ai_zdr_confirmed_at, now()), ai_daily_tokens_member = 100000000`);
 await revalidate();
-const mark = sql(`select id from profiles where email = '${STAFF_EMAIL}'`);
 
 const newPage = async () => (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
 const cards = (page) => page.locator("ol[aria-label^='Your questions'] > li");

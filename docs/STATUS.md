@@ -885,7 +885,28 @@ with the member daily limits, and the site-wide monthly budget.
     - **The website's live test:** 7 calls (the new ones compare FX-001
       and FX-002, and ask about FX-001 with an injection in its remarks).
       The fake run is 7 of 7 ok.
-    - QA_PLACEHOLDER
+    - Browser QA `scripts/qa/s5b-listings.mjs`: 44 checks pass, twice, on
+      the local stack with the fake Claude and the MLS fixtures. They cover:
+      - off by default; the approval switch locking both switches in the
+        console and in the database, then turning them off again;
+      - compare from `/my/compare` and from Ask Vabrato: only FX-001 and
+        FX-002 sent, FX-013 listed as not included, no FULL fields,
+        contacts, internal notes or VOW fields for an IDX buyer;
+      - price opinions, invented dollar figures, Fair Housing and wiring
+        answers not shown;
+      - ask about a home from the listing page's link, with sources limited
+        to fields we sent; a steering question and an opted-out home
+        refused unsent;
+      - a VOW buyer's request carries VOW fields; an IDX buyer isn't
+        offered a sold home, even by link;
+      - signed out: no link, no assistant request, no AI text on the
+        public page;
+      - axe, 390 and 320 px, the keyboard (which also found the comparison
+        table needed to be reachable by keyboard on phones, now fixed), and
+        page loads sending nothing.
+    - `s5b-assistant.mjs` (65), `s5b-drafts.mjs` (50), `s6b-assistant.mjs`
+      (64) and `s5-qa.mjs` (100) still pass. Screenshots in
+      `docs/screenshots/s5b-listings/`.
 
 ### S6b staff AI assistant, the VA assistant (built 2026-11-13)
 
