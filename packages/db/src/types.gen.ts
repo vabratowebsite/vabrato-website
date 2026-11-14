@@ -1166,6 +1166,48 @@ export type Database = {
         }
         Relationships: []
       }
+      member_drafts: {
+        Row: {
+          about: string | null
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          profile_id: string
+          recipient: string
+          sent_via: string | null
+          subject: string
+          updated_at: string
+          used_at: string | null
+        }
+        Insert: {
+          about?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          kind: string
+          profile_id?: string
+          recipient: string
+          sent_via?: string | null
+          subject?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Update: {
+          about?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          profile_id?: string
+          recipient?: string
+          sent_via?: string | null
+          subject?: string
+          updated_at?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       member_todos: {
         Row: {
           created_at: string
@@ -2504,6 +2546,7 @@ export type Database = {
       publish_content: { Args: { p_revision: string }; Returns: string }
       purge_ai_drafts: { Args: never; Returns: number }
       purge_member_alert_data: { Args: { p_all?: boolean }; Returns: Json }
+      purge_member_drafts: { Args: never; Returns: number }
       purge_old_leads: { Args: { p_months?: number }; Returns: number }
       reassign_lead: { Args: { p_agent: string; p_lead: string }; Returns: undefined }
       record_listing_view: { Args: { p_key: string; p_listing_key: string; p_visitor: string }; Returns: boolean }

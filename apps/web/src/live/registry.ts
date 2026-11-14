@@ -1,7 +1,8 @@
 import type { AiFeature, AiInput } from "@vabrato/ai";
 import { textPdf } from "@vabrato/lib";
 import { filtersFromAnswer } from "../member/assistant/ask";
-import { EXPLAIN_TERM, SEARCH_BY_SENTENCE, SUMMARIZE_DOCUMENT, searchParts, type SearchAnswer, type SummaryAnswer } from "../member/assistant/features";
+import { draftParts, draftView, personalDetails } from "../member/assistant/drafts";
+import { DRAFT_COVER_LETTER, DRAFT_MESSAGE, EXPLAIN_TERM, SEARCH_BY_SENTENCE, SUMMARIZE_DOCUMENT, searchParts, type DraftAnswer, type SearchAnswer, type SummaryAnswer } from "../member/assistant/features";
 import { summaryView } from "../member/assistant/summary";
 
 // The website's live calls (S5b): every member AI feature once, with
@@ -88,6 +89,57 @@ export const LIVE_CALLS: LiveCall[] = [
         { name: "3+ beds", ok: a?.beds === 3 },
         { name: "houses", ok: JSON.stringify(a?.types) === '["house"]' },
         { name: "the view is noted as not used", ok: Boolean(a?.not_used && /view/i.test(a.not_used)) },
+      ];
+    },
+  },
+  {
+    id: "draft",
+    feature: DRAFT_MESSAGE,
+    input: () => ({
+      instruction:
+        "A note to my movers: we close on our sale soon and would like to move the week after. Ask for their available days.",
+      parts: draftParts("message", "movers", {
+        about: "12 Fictional Lane, San Carlos",
+        closeDate: "2026-12-04",
+        dealId: null,
+      }),
+    }),
+    shown: (data) =>
+      data ? draftView(data as DraftAnswer, { member: "Dana Example", agent: null }) : null,
+    findings: (data) => {
+      const a = data as DraftAnswer | null;
+      const all = `${a?.subject ?? ""}\n${a?.body ?? ""}`;
+      return [
+        { name: "has a subject and body", ok: Boolean(a?.subject.trim() && a.body.trim()) },
+        { name: "signs with [Your name]", ok: all.includes("[Your name]") },
+        { name: "names the address", ok: /12 Fictional Lane/i.test(all) },
+        { name: "no phone, email or link", ok: !/@|https?:|\d{3}[\s.-]\d{3}[\s.-]\d{4}/.test(all) },
+        { name: "under 300 words", ok: all.split(/\s+/).length < 300 },
+      ];
+    },
+  },
+  {
+    id: "cover_letter",
+    feature: DRAFT_COVER_LETTER,
+    input: () => ({
+      instruction:
+        "Fully underwritten preapproval, 21-day close, happy to offer a short rent-back, no inspection contingency.",
+      parts: draftParts("cover_letter", "agent", {
+        about: "12 Fictional Lane, San Carlos",
+        closeDate: null,
+        dealId: null,
+      }),
+    }),
+    shown: (data) =>
+      data ? draftView(data as DraftAnswer, { member: "Dana Example", agent: null }) : null,
+    findings: (data) => {
+      const a = data as DraftAnswer | null;
+      const all = `${a?.subject ?? ""}\n${a?.body ?? ""}`;
+      return [
+        { name: "has a subject and body", ok: Boolean(a?.subject.trim() && a.body.trim()) },
+        { name: "mentions the 21-day close", ok: /21/.test(all) },
+        { name: "no personal details", ok: personalDetails(all).length === 0 },
+        { name: "no phone, email or link", ok: !/@|https?:|\d{3}[\s.-]\d{3}[\s.-]\d{4}/.test(all) },
       ];
     },
   },

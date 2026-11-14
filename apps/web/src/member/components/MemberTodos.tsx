@@ -85,7 +85,7 @@ export function DeleteAssistantData({ count }: { count: number }) {
       <button
         type="button"
         disabled={pending || count === 0}
-        onClick={() => window.confirm("Delete your assistant data? To-dos waiting for your agent and ones your agent declined are removed. Approved to-dos stay.") && run(deleteAssistantDataAction)}
+        onClick={() => window.confirm("Delete your assistant data? Your saved drafts, to-dos waiting for your agent and ones your agent declined are removed. Approved to-dos stay.") && run(deleteAssistantDataAction)}
         className={`${btn} border border-red px-4 text-red hover:bg-red/5`}
       >
         Delete my assistant data

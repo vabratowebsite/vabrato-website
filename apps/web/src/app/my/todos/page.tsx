@@ -17,6 +17,7 @@ export default async function TodosPage() {
     .order("created_at", { ascending: false })
     .limit(300);
   const rows = data ?? [];
+  const { count: drafts } = await member.supabase.from("member_drafts").select("id", { count: "exact", head: true }).eq("profile_id", member.profile.id);
   const source = (r: (typeof rows)[number]) => (r.source_name ? `From ${r.source_name}${r.page ? `, p. ${r.page}` : ""}` : "");
   const toRow = (r: (typeof rows)[number]): TodoRow => ({ id: r.id, title: r.title, source: source(r), done: r.done });
   const pending = rows.filter((r) => r.status === "pending");
@@ -87,8 +88,14 @@ export default async function TodosPage() {
 
       <Panel title="Your assistant data">
         <div className="space-y-3 font-body text-body-sm text-ink">
-          <p>Ask Vabrato doesn&apos;t keep your questions or summaries. The only things it stores are the to-dos above. This removes the ones waiting for your agent and the ones your agent declined; approved to-dos stay until you delete them.</p>
-          <DeleteAssistantData count={pending.length + declined.length} />
+          <p>
+            Ask Vabrato doesn&apos;t keep your questions or summaries. It stores only the to-dos above and the drafts you save (
+            <a href="/my/drafts" className="text-navy underline">
+              My drafts
+            </a>
+            ). This removes your saved drafts, the to-dos waiting for your agent and the ones your agent declined; approved to-dos stay until you delete them.
+          </p>
+          <DeleteAssistantData count={pending.length + declined.length + (drafts ?? 0)} />
         </div>
       </Panel>
     </MemberShell>

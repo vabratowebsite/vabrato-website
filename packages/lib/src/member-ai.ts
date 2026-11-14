@@ -29,6 +29,16 @@ export const MEMBER_AI_FEATURES: MemberAiFeature[] = [
     name: "Summarize a document",
     what: "Summarizes one of the member's documents (their uploads, or files their agent shared; 50 pages at most) with page references, and suggests questions and to-dos. The summary isn't kept. To-dos the member adds wait for their agent's approval on the member's page here.",
   },
+  {
+    flag: "ai_member_draft",
+    name: "Draft an email or message",
+    what: "Drafts an email or message for the member to their movers, a contractor, their lender, their agent or someone else. Only the home's address (and a sale's closing date) goes with their notes. The member edits and sends it themselves; AI never sends. Saved drafts are private to the member (not shown here) and deleted 30 days after the last edit.",
+  },
+  {
+    flag: "ai_member_cover_letter",
+    name: "Offer cover letter",
+    what: "For buyers: a cover letter about the offer's terms only (price, timing, flexibility, preapproval). Notes about the buyer's family, background, faith, age or health are refused (Fair Housing). The letter goes to the agent only, as a portal message the member sends.",
+  },
 ];
 
 /** The pipeline's feature key for a member switch ("ai_member_explain" → "member_explain"). */

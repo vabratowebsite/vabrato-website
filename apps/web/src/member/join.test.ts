@@ -175,6 +175,12 @@ describe("portal nav", () => {
     }
   });
 
+  it("lists My to-dos and My drafts under Assistant when asked (S5b PRs 2-3)", () => {
+    const items = portalNav("buyer", { assistant: true, todos: true, drafts: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href);
+    expect(items).toEqual(["/my/assistant", "/my/todos", "/my/drafts"]);
+    expect(portalNav("seller", { drafts: true }).find((g) => g.label === "Assistant")?.items.map((i) => i.href)).toEqual(["/my/drafts"]);
+  });
+
   it("makes initials", () => {
     expect(initials("Jordan Lee Example", "j@example.test")).toBe("JE");
     expect(initials("", "avery@example.test")).toBe("A");

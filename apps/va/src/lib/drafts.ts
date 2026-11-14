@@ -3,6 +3,7 @@ import type { EmailDraftKind } from "@vabrato/db";
 import { fairHousingBlocks, listingForAi, paymentInstructionMatches, type AiFeature, type InputPart } from "@vabrato/ai";
 import { MAX_BODY, MAX_SUBJECT, firstName } from "./draft-kinds";
 import { payloadRows } from "./leads";
+import { redactContacts } from "@vabrato/lib";
 
 // AI drafts (S6b PR 3), server side: the four features and what each one
 // sends to the model. Our code picks the facts; the model only writes the
@@ -57,15 +58,8 @@ export function tidyDraft(d: DraftText): DraftText {
 
 // --- What each draft sends ---------------------------------------------------------------------
 
-/**
- * Free text someone typed (a lead's message, a task title) can hold an email
- * address or phone number; contact details never go to the model.
- */
-export function redactContacts(text: string): string {
-  return text
-    .replace(/[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}/gi, "[email]")
-    .replace(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g, "[phone]");
-}
+// Contact details never go to the model (shared helper, packages/lib).
+export { redactContacts };
 
 type Fields = Record<string, unknown>;
 const LEAD_KIND_LABEL: Record<string, string> = {

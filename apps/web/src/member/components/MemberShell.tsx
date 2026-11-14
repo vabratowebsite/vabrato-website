@@ -30,7 +30,7 @@ export async function MemberShell({
   topRight?: ReactNode;
   children: ReactNode;
 }) {
-  const [agent, vow, unseen, unread, ai, todoCount] = await Promise.all([
+  const [agent, vow, unseen, unread, ai, todoCount, draftCount] = await Promise.all([
     assignedAgent(member.supabase, member.profile.agent_id),
     flagEnabled("vow_enabled"),
     buys(role) ? unseenAlertCount(member.supabase) : Promise.resolve(0),
@@ -47,8 +47,13 @@ export async function MemberShell({
       .select("id", { count: "exact", head: true })
       .eq("profile_id", member.profile.id)
       .then((r) => r.count ?? 0),
+    member.supabase
+      .from("member_drafts")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", member.profile.id)
+      .then((r) => r.count ?? 0),
   ]);
-  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0, todos: ai.on.includes("ai_member_summarize") || todoCount > 0 }).map((g) => ({
+  const nav = portalNav(role, { vow, unreadMessages: current === "messages" ? 0 : unread, assistant: ai.on.length > 0, todos: ai.on.includes("ai_member_summarize") || todoCount > 0, drafts: ai.on.includes("ai_member_draft") || ai.on.includes("ai_member_cover_letter") || draftCount > 0 }).map((g) => ({
     label: g.label,
     items: g.items.map((it) => ({ label: it.label, href: it.href, current: it.key === current, ...(it.count ? { count: it.count } : {}) })),
   }));

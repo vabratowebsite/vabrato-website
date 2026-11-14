@@ -3,13 +3,15 @@
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { AIDraftLabel, SparkleIcon } from "@vabrato/ui/web";
 import { Markdown } from "@vabrato/ui/markdown";
-import { addTodosAction, askExplainAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
-import { ASK_LIMITS, askMyAgentHref, type AskCard, type AskKind } from "../assistant/kinds";
+import { addTodosAction, askCoverLetterAction, askDraftAction, askExplainAction, askSearchAction, askSummarizeAction } from "@/app/my/assistant/actions";
+import { ASK_LIMITS, DRAFT_LIMITS, DRAFT_RECIPIENTS, askMyAgentHref, isRecipient, type AskCard, type AskKind, type DraftKind, type Recipient } from "../assistant/kinds";
+import { DraftEditor } from "./DraftEditor";
 import { pagesLabel } from "../assistant/summary";
 
-// Ask Vabrato (mockup 11, S5b PR 1). Answers stay in this page's memory only:
-// leaving the page clears them, and nothing is stored (owner decision
-// 2026-11-13). No model code here; the actions run on the server.
+// Ask Vabrato (mockup 11, S5b PRs 1-3). Answers stay in this page's memory
+// only: leaving the page clears them (owner decision 2026-11-13). A draft is
+// stored only if the member saves it (2026-11-14). No model code here; the
+// actions run on the server.
 
 const MODES: Record<AskKind, { label: string; field: string; hint: string; button: string }> = {
   explain: {
@@ -30,7 +32,27 @@ const MODES: Record<AskKind, { label: string; field: string; hint: string; butto
     hint: "Up to 50 pages: PDFs, JPGs, PNGs or WebP images (not iPhone photos, HEIC). Pick from your documents.",
     button: "Summarize",
   },
+  message: {
+    label: "Draft an email or message",
+    field: "What should it say?",
+    hint: "For example: Ask the movers for a date the week after we close. Your notes and the home's address are sent; your name and contact details aren't.",
+    button: "Write the draft",
+  },
+  cover_letter: {
+    label: "Offer cover letter",
+    field: "What makes your offer strong?",
+    hint: "Price, timing, flexibility, preapproval. Leave out anything about your family, background, faith, age or health (Fair Housing).",
+    button: "Write the letter",
+  },
 };
+
+export interface HomeChoice {
+  /** "deal:<id>" or "tracked:<id>" */
+  ref: string;
+  label: string;
+}
+
+const isDraft = (k: AskKind): k is DraftKind => k === "message" || k === "cover_letter";
 
 export interface DocOption {
   /** "upload:<id>" or "deal:<path>" */
@@ -38,14 +60,35 @@ export interface DocOption {
   label: string;
 }
 
+const selectCls =
+  "mt-2 block min-h-[44px] w-full border border-muted bg-white px-3 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy";
+
 const linkBtn =
   "inline-flex min-h-[44px] items-center justify-center px-4 font-body text-label font-medium uppercase tracking-label focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 
-export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kinds: AskKind[]; left: number; limit: number; docs?: DocOption[]; initialDoc?: string }) {
+export function AskVabrato({
+  kinds,
+  left,
+  limit,
+  docs = [],
+  initialDoc,
+  homes = { message: [], cover_letter: [] },
+}: {
+  kinds: AskKind[];
+  left: number;
+  limit: number;
+  docs?: DocOption[];
+  initialDoc?: string;
+  homes?: Record<DraftKind, HomeChoice[]>;
+}) {
   const startDoc = initialDoc && docs.some((d) => d.ref === initialDoc) ? initialDoc : undefined;
   const [mode, setMode] = useState<AskKind>(startDoc && kinds.includes("summarize") ? "summarize" : kinds[0]!);
   const [text, setText] = useState("");
   const [doc, setDoc] = useState(startDoc ?? docs[0]?.ref ?? "");
+  const [recipient, setRecipient] = useState<Recipient>("movers");
+  const [home, setHome] = useState("");
+  const [letterHome, setLetterHome] = useState(homes.cover_letter[0]?.ref ?? "typed");
+  const [typed, setTyped] = useState("");
   const [cards, setCards] = useState<(AskCard & { id: number })[]>([]);
   const [remaining, setRemaining] = useState(left);
   const [pending, start] = useTransition();
@@ -53,8 +96,8 @@ export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kind
   const newest = useRef<HTMLHeadingElement>(null);
   const uid = useId();
   const m = MODES[mode];
-  const max = mode === "summarize" ? 0 : ASK_LIMITS[mode];
-  const ready = mode === "summarize" ? Boolean(doc) : Boolean(text.trim());
+  const max = mode === "summarize" ? 0 : isDraft(mode) ? DRAFT_LIMITS.notes : ASK_LIMITS[mode];
+  const ready = mode === "summarize" ? Boolean(doc) : mode === "cover_letter" && letterHome === "typed" ? Boolean(text.trim() && typed.trim()) : Boolean(text.trim());
 
   // Focus moves to each new answer, so it's read out once (not a live region).
   useEffect(() => newest.current?.focus(), [cards.length]);
@@ -66,7 +109,16 @@ export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kind
     start(async () => {
       let card: AskCard;
       try {
-        card = mode === "explain" ? await askExplainAction(question) : mode === "search" ? await askSearchAction(question) : await askSummarizeAction(doc);
+        card =
+          mode === "explain"
+            ? await askExplainAction(question)
+            : mode === "search"
+              ? await askSearchAction(question)
+              : mode === "message"
+                ? await askDraftAction({ recipient, home, notes: question })
+                : mode === "cover_letter"
+                  ? await askCoverLetterAction({ home: letterHome, typedAddress: typed, notes: question })
+                  : await askSummarizeAction(doc);
         if (mode === "summarize" && card.kind === "error") card = { ...card, question };
       } catch {
         card = { kind: "error", feature: mode, question, message: "Something went wrong. Please try again." };
@@ -126,7 +178,70 @@ export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kind
             )}
           </div>
         ) : (
-          <div>
+          <div className="space-y-4">
+            {mode === "message" && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor={`${uid}-to`} className="block text-body-sm font-medium text-ink">
+                    Who it&apos;s for
+                  </label>
+                  <select id={`${uid}-to`} value={recipient} onChange={(e) => isRecipient(e.target.value) && setRecipient(e.target.value)} className={selectCls}>
+                    {Object.entries(DRAFT_RECIPIENTS).map(([k, label]) => (
+                      <option key={k} value={k}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor={`${uid}-home`} className="block text-body-sm font-medium text-ink">
+                    Which home
+                  </label>
+                  <select id={`${uid}-home`} value={home} onChange={(e) => setHome(e.target.value)} className={selectCls}>
+                    <option value="">Not about a particular home</option>
+                    {homes.message.map((h) => (
+                      <option key={h.ref} value={h.ref}>
+                        {h.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+            {mode === "cover_letter" && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor={`${uid}-lhome`} className="block text-body-sm font-medium text-ink">
+                    The home you&apos;re offering on
+                  </label>
+                  <select id={`${uid}-lhome`} value={letterHome} onChange={(e) => setLetterHome(e.target.value)} className={selectCls}>
+                    {homes.cover_letter.map((h) => (
+                      <option key={h.ref} value={h.ref}>
+                        {h.label}
+                      </option>
+                    ))}
+                    <option value="typed">Another address (type it)</option>
+                  </select>
+                </div>
+                {letterHome === "typed" && (
+                  <div>
+                    <label htmlFor={`${uid}-addr`} className="block text-body-sm font-medium text-ink">
+                      Address
+                    </label>
+                    <input
+                      id={`${uid}-addr`}
+                      value={typed}
+                      onChange={(e) => setTyped(e.target.value.slice(0, DRAFT_LIMITS.about))}
+                      maxLength={DRAFT_LIMITS.about}
+                      required
+                      autoComplete="off"
+                      className="mt-2 block min-h-[44px] w-full border border-muted bg-white px-3 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+            <div>
             <label htmlFor={`${uid}-q`} className="block text-body-sm font-medium text-ink">
               {m.field}
             </label>
@@ -138,7 +253,7 @@ export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kind
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, max))}
               maxLength={max}
-              rows={3}
+              rows={isDraft(mode) ? 5 : 3}
               required
               aria-describedby={`${uid}-hint ${uid}-count`}
               className="mt-2 block w-full border border-muted bg-white px-3 py-2 text-body text-ink focus:border-navy focus:outline-none focus:ring-2 focus:ring-navy"
@@ -146,6 +261,7 @@ export function AskVabrato({ kinds, left, limit, docs = [], initialDoc }: { kind
             <p id={`${uid}-count`} className="mt-1 text-caption text-muted">
               {text.length} of {max} characters
             </p>
+            </div>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-4">
@@ -218,6 +334,17 @@ function Answer({ card, headingRef }: { card: AskCard; headingRef?: React.Ref<HT
     );
   }
   if (card.kind === "summary") return <SummaryAnswer card={card} heading={heading} />;
+  if (card.kind === "draft")
+    return (
+      <DraftEditor
+        draftKind={card.draftKind}
+        recipient={card.recipient}
+        about={card.about}
+        subject={card.subject}
+        body={card.body}
+        heading={heading(card.draftKind === "cover_letter" ? "Your cover letter" : "Your draft")}
+      />
+    );
   return (
     <div className="space-y-4 border border-line bg-soft p-4 font-body sm:p-6">
       <AIDraftLabel />
