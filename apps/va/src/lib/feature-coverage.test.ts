@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { schemaProblems } from "@vabrato/ai";
 import { LIVE_CALLS } from "../live/registry";
 import * as appointments from "./appointments";
 import { ASSISTANT_FEATURES } from "./assistant";
@@ -48,5 +49,13 @@ describe("live test coverage", () => {
   it("call ids are unique, and the two injection pages are on document calls", () => {
     expect(new Set(LIVE_CALLS.map((c) => c.id)).size).toBe(LIVE_CALLS.length);
     expect(LIVE_CALLS.filter((c) => c.injection).map((c) => c.id)).toEqual(["document_check", "inspection_items"]);
+  });
+
+  it("every JSON answer's schema is within Anthropic's structured-output limits", () => {
+    // Over a limit, the API refuses the request with a 400 before the model runs (found in the first live run).
+    for (const f of ALL) {
+      const output = f.output as { kind: string; jsonSchema?: Record<string, unknown> };
+      if (output.kind === "json") expect(schemaProblems(output.jsonSchema!), f.key).toEqual([]);
+    }
   });
 });

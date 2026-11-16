@@ -3,6 +3,7 @@ import { ModelError } from "./client";
 import { costMicros } from "./models";
 import { ALWAYS_RULES } from "./rules";
 import { fairHousingBlocks, linkHosts, paymentInstructionMatches, removeForeignLinks, removeForeignLinksDeep, wrapData } from "./safety";
+import { schemaProblems } from "./schema-limits";
 import type { AiStore, FinishInfo } from "./store";
 
 // The one way to call the model. Every AI feature, staff or member, goes
@@ -119,6 +120,11 @@ export async function runAi<T = never>(deps: AiDeps, feature: AiFeature<T>, inpu
   const started = now();
   const parts = input.parts ?? [];
   if (feature.output.kind === "json" && usesCitations(parts)) throw new Error(`${feature.key}: citations can't be combined with JSON output`);
+  // The API would refuse it with a 400 before the model runs; a developer error, like the line above.
+  if (feature.output.kind === "json") {
+    const problems = schemaProblems(feature.output.jsonSchema);
+    if (problems.length) throw new Error(`${feature.key}: the JSON schema is over Anthropic's limits: ${problems.join("; ")}`);
+  }
   if (!input.instruction?.trim() && parts.length === 0) throw new Error(`${feature.key}: nothing to send`);
 
   const fail = (reason: AiFailure, extra: { phrases?: string[] } = {}): AiResult<T> => {

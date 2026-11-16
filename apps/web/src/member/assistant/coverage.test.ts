@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { schemaProblems } from "@vabrato/ai";
 import { MEMBER_AI_FEATURES, memberFeatureKey } from "@vabrato/lib";
 import { LIVE_CALLS } from "../../live/registry";
 import * as features from "./features";
@@ -28,5 +29,13 @@ describe("member assistant coverage", () => {
   it("call ids are unique; the sentence search, the document and the listing remarks carry injections", () => {
     expect(new Set(LIVE_CALLS.map((c) => c.id)).size).toBe(LIVE_CALLS.length);
     expect(LIVE_CALLS.filter((c) => c.injection).map((c) => c.id).sort()).toEqual(["listing", "search", "summarize"]);
+  });
+
+  it("every JSON answer's schema is within Anthropic's structured-output limits", () => {
+    // Over a limit, the API refuses the request with a 400 before the model runs.
+    for (const f of ALL) {
+      const output = f.output as { kind: string; jsonSchema?: Record<string, unknown> };
+      if (output.kind === "json") expect(schemaProblems(output.jsonSchema!), f.key).toEqual([]);
+    }
   });
 });

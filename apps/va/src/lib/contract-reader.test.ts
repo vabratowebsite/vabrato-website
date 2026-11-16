@@ -56,6 +56,18 @@ describe("contract reader", () => {
     expect(parse({ ...READING, days_to_close: src(30, -4) })?.days_to_close.page).toBeNull();
   });
 
+  it("reads page 0 and an empty quote as none (the schema keeps them non-null, under Anthropic's limit)", () => {
+    const sentinels = {
+      ...READING,
+      close_of_escrow_date: src(null, 0, ""),
+      contingencies: { ...READING.contingencies, insurance: { days: null, waived: false, page: 0, quote: "" } },
+    };
+    const r = parse(sentinels)!;
+    expect(r.close_of_escrow_date).toEqual({ value: null, page: null, quote: null });
+    expect(r.contingencies.insurance).toEqual({ days: null, waived: false, page: null, quote: null });
+    expect(CONTRACT_READER.system).toMatch(/give null for the value, 0 for the page and an empty quote/);
+  });
+
   it("passes the pipeline's own checks (a family trust isn't a Fair Housing problem)", () => {
     expect(fairHousingBlocks(READING)).toEqual([]);
     expect(paymentInstructionMatches(READING)).toEqual([]);

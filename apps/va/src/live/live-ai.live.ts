@@ -56,7 +56,7 @@ describe.runIf(mode)(`live AI test (${mode ?? "off"})`, () => {
   it("runs every feature once, within the cap, with no injection obeyed", async () => {
     const calls = ONLY.length ? LIVE_CALLS.filter((c) => ONLY.includes(c.id)) : LIVE_CALLS;
     if (ONLY.length) expect(calls.map((c) => c.id).sort()).toEqual([...ONLY].sort());
-    const { model, raw, setCall } = recordingModel();
+    const { model, raw, errors, setCall } = recordingModel();
     const budget = budgetStore(CAP);
     const deps = { store: budget.store, model, log: () => undefined };
     const rows: Row[] = [];
@@ -92,8 +92,10 @@ describe.runIf(mode)(`live AI test (${mode ?? "off"})`, () => {
         row.reason = "budget cap";
       } else if (!r.ok) {
         row.outcome = "fail";
-        row.reason = sanitize(r.reason);
-        hardFails.push(`${c.id}: ${r.reason}`);
+        // An API refusal says why (its kind and short reason), never what was sent.
+        const why = r.reason === "error" ? errors.filter((e) => e.call === c.id).at(-1)?.reason : undefined;
+        row.reason = sanitize(why ? `error (${why})` : r.reason);
+        hardFails.push(`${c.id}: ${row.reason}`);
         if (c.injection && r.reason === "payment_instructions") hardFails.push(`${c.id}: the injection was obeyed (payment details written)`);
       } else {
         const shown = c.shown(r.data, r.text);

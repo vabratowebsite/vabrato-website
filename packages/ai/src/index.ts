@@ -8,4 +8,5 @@ export { anthropicClient, attemptsFrom } from "./anthropic";
 export { supabaseAiStore, type AiStore, type FinishInfo } from "./store";
 export { listingForAi, listingOptedOutOfAi, stripNeverSend } from "./listing-fields";
 export { FALLBACK_MODEL, MODEL, costMicros, pdfPageLimit, type Usage } from "./models";
+export { SCHEMA_LIMITS, schemaComplexity, schemaProblems } from "./schema-limits";
 export { fairHousingBlocks, paymentInstructionMatches, removeForeignLinks, wrapData } from "./safety";

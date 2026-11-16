@@ -2043,6 +2043,24 @@ document checks, receipts, calendar drafts).
         They're compared with the Console's usage for the workspace, and
         recorded here in a small docs PR.
       - Revoke the key and archive the workspace afterwards.
+      - **No computer needed:** a GitHub Codespace on `main` works
+        (`nvm install 22 && npm install -g pnpm@9.15.9 && pnpm install`,
+        then `read -rs ANTHROPIC_API_KEY && export ANTHROPIC_API_KEY`).
+    - **First console run (2026-11-16, Codespace):**
+      - **Result:** 18 ok and 2 failed, for $0.41 in all (the worst case
+        was $6.69).
+      - **Why the 2 failed:** Anthropic refused the contract reader and the
+        counter-offer check with a 400 before the model ran. Their answer
+        schemas had 36 and 28 nullable fields, and structured outputs allow
+        16 (optional fields: 24).
+      - **Fixed (fix/ai-schema-limits):**
+        - only values stay nullable; a missing page or quote comes back as
+          0 or "", and the parsers turn both into null, so the answers and
+          screens are unchanged (now 12 and 9);
+        - `runAi` refuses a schema over either limit before anything else;
+        - CI checks every console and website feature's schema;
+        - a failed live call's report row now gives the API's short reason.
+      - **Next:** the full console run again, then the website run.
   - **Before any switch goes on:**
     - the full live run above, passing;
     - an Anthropic API key (`ANTHROPIC_API_KEY` on the console, later the
