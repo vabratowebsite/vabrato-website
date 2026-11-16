@@ -2460,7 +2460,18 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
   - `hosted-ai-test-mode-check.sql` returns its expected values on the local Postgres stack. Its first run caught a briefing request with a test deal being allowed; with-deal requests are now limited to features that work on one deal;
   - `scripts/qa/ai-test-mode.mjs`: 53 of 53 checks, including axe, sideways-scroll and console-error checks;
   - reruns: `s6b-final` 1,231 checks pass, with one failure: the known React #418 on the presentation page, already queued as its own task; `s5b-final` 587 of 587; both live tests in fake mode pass (20 and 13).
-- **Needs you, after merge and apply:**
+- **Applied to hosted 2026-11-16 (#69):**
+  - main's 0044 is byte-identical to the tested file, and hosted was at 0043 before.
+  - `hosted-ai-test-mode-check.sql` was run and rolled back; every value matched:
+    - the lock held;
+    - the tester could run on the test deal and the contract reader;
+    - a real deal, the briefing (with or without a test deal), a lead reply and the listing kit each returned `test_only`;
+    - a non-tester got `off`;
+    - the buyer could use explain, and compare returned `test_only`;
+    - the master switch is still guarded by ZDR.
+  - **Nothing left behind:** 0 check users, 0 deals, 0 AI runs, 0 testers, every AI switch off (test mode included).
+  - **Security advisor:** `ai_features_available`, `ai_testers` and `set_ai_tester` join the signed-in callable list. All three check who is asking, as the existing functions there do. `ai_test_scope` and `ai_refusal` aren't callable, and nothing new is open to signed-out visitors.
+- **Needs you:**
   1. Add the production `ANTHROPIC_API_KEY` to both Vercel projects (Production only) and redeploy.
   2. On /assistant, turn on **AI test mode** and add the testers (admin, agent, VA, buyer, seller accounts).
   3. As the agent, create a deal with **Test deal** ticked, then give the test seller access.
