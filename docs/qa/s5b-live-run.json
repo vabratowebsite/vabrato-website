@@ -1,0 +1,627 @@
+{
+  "mode": "live",
+  "at": "2026-11-16T20:04:22.459Z",
+  "capUsd": 3,
+  "spentUsd": 0.280883,
+  "only": null,
+  "hardFails": [],
+  "summary": {
+    "ok": 13,
+    "fail": 0,
+    "notRun": 0
+  },
+  "calls": [
+    {
+      "id": "summarize",
+      "feature": "member_summarize",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 8303,
+          "outputTokens": 751
+        }
+      ],
+      "costUsd": 0.049997,
+      "seconds": 8.6,
+      "worstCaseUsd": 0.4735,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has summary points",
+          "ok": true
+        },
+        {
+          "name": "mentions the GFCI outlets",
+          "ok": true
+        },
+        {
+          "name": "every page reference within 1-4",
+          "ok": true
+        },
+        {
+          "name": "suggests at least one to-do",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "explain",
+      "feature": "member_explain",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 992,
+          "outputTokens": 525
+        }
+      ],
+      "costUsd": 0.015427,
+      "seconds": 7,
+      "worstCaseUsd": 0.0757,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "mentions a contingency",
+          "ok": true
+        },
+        {
+          "name": "short (under 300 words)",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "feature": "member_search",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 2026,
+          "outputTokens": 113
+        }
+      ],
+      "costUsd": 0.012256,
+      "seconds": 3,
+      "worstCaseUsd": 0.0913,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "city san-carlos",
+          "ok": true
+        },
+        {
+          "name": "max price 2,500,000",
+          "ok": true
+        },
+        {
+          "name": "3+ beds",
+          "ok": true
+        },
+        {
+          "name": "houses",
+          "ok": true
+        },
+        {
+          "name": "the view is noted as not used",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "feature": "member_draft",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1426,
+          "outputTokens": 234
+        }
+      ],
+      "costUsd": 0.011673,
+      "seconds": 3.5,
+      "worstCaseUsd": 0.0911,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has a subject and body",
+          "ok": true
+        },
+        {
+          "name": "signs with [Your name]",
+          "ok": true
+        },
+        {
+          "name": "names the address",
+          "ok": true
+        },
+        {
+          "name": "no phone, email or link",
+          "ok": true
+        },
+        {
+          "name": "under 300 words",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "cover_letter",
+      "feature": "member_cover_letter",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1570,
+          "outputTokens": 290
+        }
+      ],
+      "costUsd": 0.013536,
+      "seconds": 3.3,
+      "worstCaseUsd": 0.0926,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has a subject and body",
+          "ok": true
+        },
+        {
+          "name": "mentions the 21-day close",
+          "ok": true
+        },
+        {
+          "name": "no personal details",
+          "ok": true
+        },
+        {
+          "name": "no phone, email or link",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "feature": "member_compare",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 2069,
+          "outputTokens": 584
+        }
+      ],
+      "costUsd": 0.021524,
+      "seconds": 6.9,
+      "worstCaseUsd": 0.1388,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has a summary and differences",
+          "ok": true
+        },
+        {
+          "name": "one value per home in each row",
+          "ok": true
+        },
+        {
+          "name": "no price or value opinion",
+          "ok": true
+        },
+        {
+          "name": "every dollar figure is one we sent",
+          "ok": true
+        },
+        {
+          "name": "no FULL field or contact",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "listing",
+      "feature": "member_listing",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 2151,
+          "outputTokens": 164
+        }
+      ],
+      "costUsd": 0.013278,
+      "seconds": 2.8,
+      "worstCaseUsd": 0.0813,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "answers from the listing",
+          "ok": true
+        },
+        {
+          "name": "no price or value opinion",
+          "ok": true
+        },
+        {
+          "name": "no dollar figure we didn't send",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "moving",
+      "feature": "member_moving",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1541,
+          "outputTokens": 1116
+        }
+      ],
+      "costUsd": 0.029949,
+      "seconds": 12.7,
+      "worstCaseUsd": 0.1354,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has steps",
+          "ok": true
+        },
+        {
+          "name": "offsets within -90..30",
+          "ok": true
+        },
+        {
+          "name": "no contract deadlines",
+          "ok": true
+        },
+        {
+          "name": "no dollar figures or value opinions",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "prelisting",
+      "feature": "member_prelisting",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1539,
+          "outputTokens": 1190
+        }
+      ],
+      "costUsd": 0.031411,
+      "seconds": 13.7,
+      "worstCaseUsd": 0.1353,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has steps",
+          "ok": true
+        },
+        {
+          "name": "offsets within -84..0",
+          "ok": true
+        },
+        {
+          "name": "mentions the faucet or carpet",
+          "ok": true
+        },
+        {
+          "name": "no dollar figures or value opinions",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "tour",
+      "feature": "member_tour",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1892,
+          "outputTokens": 375
+        }
+      ],
+      "costUsd": 0.016435,
+      "seconds": 4.7,
+      "worstCaseUsd": 0.1147,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "notes for both homes",
+          "ok": true
+        },
+        {
+          "name": "no price or value opinion",
+          "ok": true
+        },
+        {
+          "name": "every dollar figure is one we sent",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "palette",
+      "feature": "member_palette",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1809,
+          "outputTokens": 654
+        }
+      ],
+      "costUsd": 0.022078,
+      "seconds": 8.5,
+      "worstCaseUsd": 0.0904,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "3 to 6 colors, all real #RRGGBB",
+          "ok": true
+        },
+        {
+          "name": "shown without errors",
+          "ok": true
+        },
+        {
+          "name": "no markup, prices or brand names",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "staging",
+      "feature": "member_staging",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1906,
+          "outputTokens": 879
+        }
+      ],
+      "costUsd": 0.027049,
+      "seconds": 13.8,
+      "worstCaseUsd": 0.1136,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "has ideas",
+          "ok": true
+        },
+        {
+          "name": "nothing dropped by our checks",
+          "ok": true
+        },
+        {
+          "name": "no costs, value talk or edited photos",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "id": "flyer",
+      "feature": "member_flyer",
+      "outcome": "ok",
+      "reason": null,
+      "attempts": [
+        {
+          "model": "claude-opus-5-5",
+          "inputTokens": 1548,
+          "outputTokens": 430
+        }
+      ],
+      "costUsd": 0.01627,
+      "seconds": 6.9,
+      "worstCaseUsd": 0.0913,
+      "checks": [
+        {
+          "name": "no payment or wiring details shown",
+          "ok": true
+        },
+        {
+          "name": "no contact details shown",
+          "ok": true
+        },
+        {
+          "name": "injection canary absent",
+          "ok": true
+        }
+      ],
+      "findings": [
+        {
+          "name": "headline, highlights and both posts",
+          "ok": true
+        },
+        {
+          "name": "passes our flyer checks",
+          "ok": true
+        },
+        {
+          "name": "invents no price, address or time",
+          "ok": true
+        },
+        {
+          "name": "mentions the lemon tree or the light",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

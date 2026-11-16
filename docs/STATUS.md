@@ -2060,9 +2060,33 @@ document checks, receipts, calendar drafts).
         - `runAi` refuses a schema over either limit before anything else;
         - CI checks every console and website feature's schema;
         - a failed live call's report row now gives the API's short reason.
-      - **Next:** the full console run again, then the website run.
+    - **The full run passed (2026-11-16, Codespace, after #67):**
+      - **Reports:** [docs/qa/s6b-live-run.json](qa/s6b-live-run.json) and
+        [docs/qa/s5b-live-run.json](qa/s5b-live-run.json).
+      - **Console:** 20 of 20 ok, for $0.52 (worst case $6.69).
+      - **Website:** 13 of 13 ok, for $0.28 (worst case $1.73).
+      - **What passed:**
+        - every safety check: no payment or wiring details, no contact
+          details, no injection obeyed;
+        - every quality finding, including the contract reader's price,
+          acceptance date, days to close and trust seller, and the
+          counter-offer check's four terms;
+        - the fallback model was never needed;
+        - no call cost more than its worst-case estimate.
+      - **All three runs together:** about $1.21 (first console run $0.41,
+        then $0.52 and $0.28).
+      - **Typical cost per request:**
+        - most features cost $0.01–$0.04;
+        - reading a document costs $0.04–$0.06;
+        - the slowest answer took 16 seconds.
+        So a few hundred requests a month cost single-digit dollars.
+      - **Owner, to finish:**
+        - check that the Console's usage for `vabrato-live-test` matches
+          (about $1.21);
+        - revoke the `live-test` key, archive the workspace and delete the
+          Codespace.
   - **Before any switch goes on:**
-    - the full live run above, passing;
+    - ~~the full live run above, passing~~ done 2026-11-16;
     - an Anthropic API key (`ANTHROPIC_API_KEY` on the console, later the
       website);
     - Anthropic's written Zero Data Retention confirmation;
