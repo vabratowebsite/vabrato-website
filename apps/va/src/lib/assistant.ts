@@ -133,6 +133,27 @@ export const ASSISTANT_FEATURES: AssistantFeature[] = [
 
 export const MASTER_FLAG = "ai_enabled";
 
+/** AI test mode before Zero Data Retention (0044): named testers, test deals, own typed text. */
+export const TEST_MODE_FLAG = "ai_test_mode";
+
+/**
+ * Where each staff feature works in test mode, for the /assistant page. The
+ * rule itself is in the database (0044 ai_test_scope); features not listed
+ * stay off in test mode (other people's records, MLS data).
+ */
+export const TEST_MODE_SCOPE: Partial<Record<string, "own_upload" | "test_deals">> = {
+  ai_staff_contract_reader: "own_upload",
+  ai_staff_document_check: "test_deals",
+  ai_staff_counter_changes: "test_deals",
+  ai_staff_receipt_reader: "test_deals",
+  ai_staff_inspection_items: "test_deals",
+  ai_staff_repair_response: "test_deals",
+  ai_staff_escrow_update: "test_deals",
+  ai_staff_vendor_request: "test_deals",
+  ai_staff_call_notes: "test_deals",
+  ai_staff_appointments: "test_deals",
+};
+
 /** True for deal-docs paths in the caller's own staging folder: intake/<own id>/<uuid>.pdf. */
 export function isOwnIntakePath(path: string, profileId: string): boolean {
   const m = /^intake\/([0-9a-f-]{36})\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/.exec(path);

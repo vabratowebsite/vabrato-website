@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Deal, Profile } from "@vabrato/db";
 import { computeCoe, diffDays, fmtLong, fmtShort, todayISO } from "@vabrato/lib";
-import { cx, focusLight } from "@vabrato/ui/web";
+import { Pill, cx, focusLight } from "@vabrato/ui/web";
 import { ConsoleShell } from "./console-shell";
 
 export type DealTab = "tasks" | "calendar" | "documents" | "repairs" | "receipts";
@@ -41,6 +41,12 @@ export async function DealShell({
   return (
     <ConsoleShell profile={profile} current="deals" eyebrow={sub ? `Deal · ${sub}` : "Deal"} title={deal.address}>
       <section aria-label="Deal summary" className="border border-line bg-white">
+        {deal.is_test && (
+          <p className="flex flex-wrap items-center gap-2 border-b border-line bg-gold-50 px-5 py-2 font-body text-body-sm text-gold-ink">
+            <Pill tone="gold">Test deal</Pill>
+            Fictional data only. It stays out of the daily briefing and calendars.
+          </p>
+        )}
         <dl className="grid grid-cols-2 gap-4 p-5 font-body sm:grid-cols-4">
           <Stat label="Ratified" value={fmtShort(deal.ratification_date)} />
           <Stat label="Close of escrow" value={fmtLong(coe)} />

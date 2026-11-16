@@ -37,6 +37,8 @@ Mark: ☐ keep as is  ☐ change (note below)
 | Open-house flyer and posts (card) | Written by AI from your words and can be wrong. Nothing is posted for you: once approved, you copy the posts and print the flyer yourself. |
 | Open-house flyer and posts (sent) | Sent to your agent. They approve it and add your listing, the open-house time and their details. |
 | My flyers (approved flyer, posts) | Approved by your agent. The brokerage line is added at the end. Post them yourself, with your own photos of the home. |
+| Test mode note (every /my page, testers only, 0044) | Ask Vabrato test mode: use only made-up details. It works on test homes and on your own typed text and uploads. |
+| Seller portal, test sale (testers only, 0044) | Made-up details, for trying the portal. Nothing here is a real sale. |
 | Delete my assistant data (confirmation) | Delete your assistant data? Your saved drafts, your flyers, and to-dos waiting for your agent or declined are removed. Approved to-dos stay. |
 
 Mark: ☐ keep as is  ☐ change (note below)
@@ -68,6 +70,7 @@ General (any mode):
 | Key | Wording |
 | --- | --- |
 | `off` | Ask Vabrato isn't switched on right now. |
+| `test_only` | Ask Vabrato is in test mode: it works only on test homes and your own typed text. |
 | `daily_requests` | You've reached today's limit for Ask Vabrato. It resets at midnight Pacific time. |
 | `daily_tokens` | You've reached today's limit for Ask Vabrato. It resets at midnight Pacific time. |
 | `monthly_budget` | Ask Vabrato isn't available for the rest of this month. Your agent is happy to help: send them a message. |

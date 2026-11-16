@@ -12,6 +12,7 @@ import { summaryView } from "./summary";
 /** What a member reads when a request doesn't go through (packages/ai's own messages are worded for staff). */
 export const MEMBER_MESSAGES: Record<AiFailure, string> = {
   off: "Ask Vabrato isn't switched on right now.",
+  test_only: "Ask Vabrato is in test mode: it works only on test homes and your own typed text.",
   daily_requests: "You've reached today's limit for Ask Vabrato. It resets at midnight Pacific time.",
   daily_tokens: "You've reached today's limit for Ask Vabrato. It resets at midnight Pacific time.",
   monthly_budget: "Ask Vabrato isn't available for the rest of this month. Your agent is happy to help: send them a message.",

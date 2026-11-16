@@ -31,7 +31,7 @@ export default async function DealReceiptsPage({ params }: { params: Promise<{ i
   const supabase = await supabaseServer();
   const { data: receipts } = await supabase.from("receipts").select("*").eq("deal_id", id).order("receipt_date", { ascending: false });
   const all = receipts ?? [];
-  const ai = await aiFeaturesOn(supabase, ["ai_staff_receipt_reader"]);
+  const ai = await aiFeaturesOn(supabase, ["ai_staff_receipt_reader"], id);
   const reimburse = all.reduce((sum, r) => sum + Number(r.amount), 0);
 
   return (

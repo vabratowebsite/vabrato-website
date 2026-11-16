@@ -69,7 +69,7 @@ export default async function DealDocumentsPage({ params }: { params: Promise<{ 
     supabase.from("deal_checklist_marks").select("item_key, note, marked_by, marked_at").eq("deal_id", id),
     bucket.list(`deal/${id}`, { limit: 1000 }),
     bucket.list(`deal/${id}/staff`, { limit: 1000 }),
-    aiFeaturesOn(supabase, ["ai_staff_document_check", "ai_staff_inspection_items", "ai_staff_counter_changes"]),
+    aiFeaturesOn(supabase, ["ai_staff_document_check", "ai_staff_inspection_items", "ai_staff_counter_changes"], id),
   ]);
   const sellerIds = (sellers ?? []).map((s) => s.profile_id);
   const [{ data: memberDocs }, { data: memberTypes }] = sellerIds.length

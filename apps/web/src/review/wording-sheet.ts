@@ -57,6 +57,8 @@ export const PAGE_NOTES: [string, string, string][] = [
   ["Open-house flyer and posts (card)", "apps/web/src/member/components/DesignAnswers.tsx", "Written by AI from your words and can be wrong. Nothing is posted for you: once approved, you copy the posts and print the flyer yourself."],
   ["Open-house flyer and posts (sent)", "apps/web/src/member/components/DesignAnswers.tsx", "Sent to your agent. They approve it and add your listing, the open-house time and their details."],
   ["My flyers (approved flyer, posts)", "apps/web/src/app/my/flyers/[id]/page.tsx", "Approved by your agent. The brokerage line is added at the end. Post them yourself, with your own photos of the home."],
+  ["Test mode note (every /my page, testers only, 0044)", "apps/web/src/member/components/MemberShell.tsx", "Ask Vabrato test mode: use only made-up details. It works on test homes and on your own typed text and uploads."],
+  ["Seller portal, test sale (testers only, 0044)", "apps/web/src/app/my/seller/page.tsx", "Made-up details, for trying the portal. Nothing here is a real sale."],
   ["Delete my assistant data (confirmation)", "apps/web/src/member/components/MemberTodos.tsx", "Delete your assistant data? Your saved drafts, your flyers, and to-dos waiting for your agent or declined are removed. Approved to-dos stay."],
 ];
 

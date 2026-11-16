@@ -52,7 +52,7 @@ export default async function RepairItemsPage({ params }: { params: Promise<{ id
     supabase.from("deal_documents").select("id, path").eq("id", c.document_id).eq("deal_id", id).maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", set.owner_id).maybeSingle(),
     supabase.from("ai_drafts").select("id, status, subject, content, sent_via, owner_id, created_at").eq("deal_id", id).eq("kind", "repair_response").neq("status", "discarded").eq("content->>items_id", draftId).order("created_at", { ascending: false }),
-    aiFeaturesOn(supabase, ["ai_staff_repair_response", "ai_staff_vendor_request"]),
+    aiFeaturesOn(supabase, ["ai_staff_repair_response", "ai_staff_vendor_request"], id),
   ]);
   const approved = set.status === "approved";
   const mine = set.owner_id === profile.id;

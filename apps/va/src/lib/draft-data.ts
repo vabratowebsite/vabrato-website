@@ -1,5 +1,6 @@
 import type { AiDraftKind } from "@vabrato/db";
 import type { SupabaseDb } from "@vabrato/lib";
+import { aiFeaturesOn } from "./ai-flags";
 import type { DraftView } from "./draft-actions";
 import { DRAFT_KINDS } from "./draft-kinds";
 
@@ -24,15 +25,14 @@ export interface DraftData {
 }
 
 export async function draftsFor(supabase: SupabaseDb, me: string, where: { lead_id: string } | { deal_id: string }, kinds: AiDraftKind[]): Promise<DraftData> {
-  const flags = ["ai_enabled", ...kinds.map((k) => DRAFT_KINDS[k].flag)];
+  const flags = kinds.map((k) => DRAFT_KINDS[k].flag);
   const [col, value] = "lead_id" in where ? (["lead_id", where.lead_id] as const) : (["deal_id", where.deal_id] as const);
-  const [{ data: flagRows }, { data: rows }] = await Promise.all([
-    supabase.from("feature_flags").select("key, enabled").in("key", flags),
+  // The database's answer (0044): live switches, or AI test mode on a test deal.
+  const [available, { data: rows }] = await Promise.all([
+    aiFeaturesOn(supabase, flags, "deal_id" in where ? where.deal_id : null),
     supabase.from("ai_drafts").select("id, kind, subject, body, status, sent_via, vendor_id, owner_id, approved_at, updated_at").eq(col, value).in("status", ["draft", "approved"]).order("updated_at", { ascending: false }).limit(50),
   ]);
-  const enabled = new Set((flagRows ?? []).filter((f) => f.enabled).map((f) => f.key));
-  const master = enabled.has("ai_enabled");
-  const on = Object.fromEntries(Object.values(DRAFT_KINDS).map((k) => [k.kind, master && enabled.has(k.flag)])) as Record<AiDraftKind, boolean>;
+  const on = Object.fromEntries(Object.values(DRAFT_KINDS).map((k) => [k.kind, kinds.includes(k.kind) && available[k.flag] === true])) as Record<AiDraftKind, boolean>;
 
   const open: DraftData["open"] = {};
   // The person's latest draft of each kind, while it's still being edited or

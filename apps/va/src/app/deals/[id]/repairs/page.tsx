@@ -34,7 +34,7 @@ export default async function DealRepairsPage({ params }: { params: Promise<{ id
   const [{ data: drafts }, { data: docs }, ai] = await Promise.all([
     supabase.from("ai_drafts").select("id, kind, status, owner_id, content, approved_at, created_at").eq("deal_id", id).in("kind", ["inspection_items", "repair_response"]).neq("status", "discarded").order("created_at", { ascending: false }),
     supabase.from("deal_documents").select("id, file_name, doc_types").eq("deal_id", id).overlaps("doc_types", INSPECTION_TYPES),
-    aiFeaturesOn(supabase, ["ai_staff_inspection_items"]),
+    aiFeaturesOn(supabase, ["ai_staff_inspection_items"], id),
   ]);
   const sets = (drafts ?? []).filter((d) => d.kind === "inspection_items");
   const responses = (drafts ?? []).filter((d) => d.kind === "repair_response");

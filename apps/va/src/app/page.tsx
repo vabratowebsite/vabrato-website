@@ -40,8 +40,9 @@ export default async function Today() {
     supabase.rpc("lead_admin_away_now"),
     supabase.from("notifications").select("created_at, sent_at").eq("template_key", "staff_new_lead").gte("created_at", since30).limit(500),
   ]);
-  const { data: activeDeals } = await supabase.from("deals").select("id, address, seller_type").eq("status", "active").order("ratification_date").limit(100);
+  const { data: activeDeals } = await supabase.from("deals").select("id, address, seller_type, is_test").eq("status", "active").order("ratification_date").limit(100);
   const [missingDocs, todos] = await Promise.all([loadMissing(supabase, activeDeals ?? []), todosForToday(supabase)]);
+  const testDeals = new Set((activeDeals ?? []).filter((d) => d.is_test).map((d) => d.id));
   const medianReply = medianDuration((replies.data ?? []).map((r) => ({ start: r.created_at, end: r.first_reply_at })));
   const medianMail = medianDuration((mails.data ?? []).map((m) => ({ start: m.created_at, end: m.sent_at })));
   const routedTo = routing.data ? (away.data ? (routing.data.backup_admin_id ?? routing.data.lead_admin_id) : (routing.data.lead_admin_id ?? routing.data.backup_admin_id)) : null;
@@ -76,9 +77,12 @@ export default async function Today() {
           <ul className="divide-y divide-line font-body text-body-sm text-ink">
             {missingDocs.map((d) => (
               <li key={d.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
-                <Link href={`/deals/${d.id}/documents`} className="font-medium text-navy underline">
-                  {d.address}
-                </Link>
+                <span className="flex flex-wrap items-center gap-2">
+                  <Link href={`/deals/${d.id}/documents`} className="font-medium text-navy underline">
+                    {d.address}
+                  </Link>
+                  {testDeals.has(d.id) && <Pill tone="gold">Test deal</Pill>}
+                </span>
                 <span className="text-muted">
                   {d.missing.length} of {d.total} missing: {d.missing.slice(0, 3).join(", ")}
                   {d.missing.length > 3 ? ", …" : ""}

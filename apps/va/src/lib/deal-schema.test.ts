@@ -38,7 +38,13 @@ describe("parseDealForm", () => {
         { kind: "appraisal", offsetDays: 8 },
         { kind: "property_condition", offsetDays: 8 },
       ],
+      is_test: false,
     });
+  });
+
+  it("a ticked Test deal box makes a test deal (0044)", () => {
+    expect(parseDealForm(form({ ...VALID, is_test: "on" })).data?.is_test).toBe(true);
+    expect(parseDealForm(form({ ...VALID, is_test: "yes" })).data?.is_test).toBe(false);
   });
 
   it("uses the contingency days entered, and drops blank or zero ones", () => {

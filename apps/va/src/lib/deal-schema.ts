@@ -31,6 +31,8 @@ export const dealInputSchema = z.object({
 export type DealInput = z.infer<typeof dealInputSchema> & {
   /** Contingency removals for the schedule; empty when the buyer has none. */
   contingencies: ContingencySpec[];
+  /** A test deal (fictional data, for AI test mode): set at creation, can't change after (0044). */
+  is_test: boolean;
 };
 
 /**
@@ -75,5 +77,5 @@ export function parseDealForm(
   }
   const contingencies = parseContingencies(form);
   if (contingencies.error !== null) return { data: null, error: contingencies.error };
-  return { data: { ...result.data, contingencies: contingencies.list }, error: null };
+  return { data: { ...result.data, contingencies: contingencies.list, is_test: form.get("is_test") === "on" }, error: null };
 }

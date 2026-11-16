@@ -58,6 +58,7 @@ export default async function DealsPage() {
                       <span className="mt-1 flex flex-wrap items-center gap-2 text-caption text-muted">
                         {deal.seller_name && <span>Seller {deal.seller_name}</span>}
                         {deal.escrow_number && <span>Escrow #{deal.escrow_number}</span>}
+                        {deal.is_test && <Pill tone="gold">Test deal</Pill>}
                         <Pill tone={deal.status === "active" ? "green" : deal.status === "closed" ? "navy" : "outline"}>{deal.status}</Pill>
                       </span>
                     </span>

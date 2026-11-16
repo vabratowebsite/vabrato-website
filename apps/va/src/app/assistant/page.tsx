@@ -7,9 +7,10 @@ import { WorkQuestionPanel } from "@/components/summary-panels";
 import { inputCls, labelCls, linkAction, mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
 import { MEMBER_AI_FEATURES, MLS_AI_GATE } from "@vabrato/lib";
-import { ASSISTANT_FEATURES, MASTER_FLAG, budgetPercent, usd } from "@/lib/assistant";
+import { aiAccess } from "@/lib/ai-flags";
+import { ASSISTANT_FEATURES, MASTER_FLAG, TEST_MODE_FLAG, TEST_MODE_SCOPE, budgetPercent, usd } from "@/lib/assistant";
 import { DRAFT_KINDS, DRAFT_STATUS_LABEL, SENT_VIA_LABEL } from "@/lib/draft-kinds";
-import { confirmZdrAction, setAiFlagAction, setAiLimitsAction } from "@/lib/assistant-actions";
+import { confirmZdrAction, setAiFlagAction, setAiLimitsAction, setAiTesterAction } from "@/lib/assistant-actions";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { fmtWhen } from "@/lib/today";
@@ -27,8 +28,8 @@ export default async function AssistantPage() {
   if (!isStaff) return <AccessDenied profile={profile} />;
   const isAdmin = profile.role === "admin";
   const supabase = await supabaseServer();
-  const keys = [MASTER_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)];
-  const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }, { data: myDrafts }] = await Promise.all([
+  const keys = [MASTER_FLAG, TEST_MODE_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)];
+  const [{ data: flagRows }, { data: usageRaw }, { data: s }, { data: monthRaw }, { data: myDrafts }, access, { data: testers }] = await Promise.all([
     supabase.from("feature_flags").select("key, enabled").in("key", keys),
     supabase.rpc("ai_usage_today"),
     supabase
@@ -43,11 +44,16 @@ export default async function AssistantPage() {
       .in("status", ["draft", "approved"])
       .order("updated_at", { ascending: false })
       .limit(20),
+    // What this person can start (0044): live switches, or AI test mode for a tester.
+    aiAccess(supabase, ASSISTANT_FEATURES.map((f) => f.flag)),
+    isAdmin ? supabase.rpc("ai_testers") : Promise.resolve({ data: null }),
   ]);
   const on = (key: string) => Boolean((flagRows ?? []).find((f) => f.key === key)?.enabled);
   const usage = usageRaw as unknown as AiUsageToday | null;
   const month = monthRaw as unknown as AiMonthSummary | null;
   const master = on(MASTER_FLAG);
+  const testMode = on(TEST_MODE_FLAG);
+  const mode = access.mode;
   const zdr = Boolean(s?.ai_zdr_confirmed_at);
   const keySet = aiKeyConfigured();
   const { data: confirmer } = isAdmin && s?.ai_zdr_confirmed_by ? await supabase.from("profiles").select("full_name, email").eq("id", s.ai_zdr_confirmed_by).maybeSingle() : { data: null };
@@ -58,8 +64,12 @@ export default async function AssistantPage() {
     <ConsoleShell profile={profile} current="assistant" eyebrow="Staff" title="Assistant">
       <Panel title="Status">
         <p role="status" className="flex flex-wrap items-center gap-2 font-body text-body-sm font-medium text-ink">
-          <Pill tone={master ? "green" : "neutral"}>{master ? "On" : "Off"}</Pill>
-          {master ? "The assistant is on for staff. Each feature below has its own switch." : "The assistant is off. An admin turns it on here once Anthropic's Zero Data Retention confirmation and the API key are in place."}
+          <Pill tone={master ? "green" : mode === "test" ? "gold" : "neutral"}>{master ? "On" : mode === "test" ? "Test mode" : "Off"}</Pill>
+          {master
+            ? "The assistant is on for staff. Each feature below has its own switch."
+            : mode === "test"
+              ? "AI test mode is on for you: use only fictional data. The assistant works on test deals and on your own uploads; real client records never reach it."
+              : "The assistant is off. An admin turns it on here once Anthropic's Zero Data Retention confirmation and the API key are in place."}
         </p>
         {usage && (
           <p className="mt-3 font-body text-body-sm text-ink">
@@ -76,12 +86,14 @@ export default async function AssistantPage() {
       <Panel title="What it can do">
         <ul className="divide-y divide-line">
           {ASSISTANT_FEATURES.map((f) => {
-            const live = master && on(f.flag);
+            const scope = mode === "test" ? TEST_MODE_SCOPE[f.flag] : undefined;
+            const live = mode === "live" ? access.on[f.flag] : Boolean(scope);
+            const label = mode === "live" ? (live ? "On" : "Off") : scope === "test_deals" ? "Test deals" : scope === "own_upload" ? "Test mode" : "Off";
             return (
               <li key={f.flag} className="py-4 first:pt-0 last:pb-0">
                 <h3 className="flex flex-wrap items-center gap-2 font-body text-body-md font-medium text-ink">
                   {f.name}
-                  <Pill tone={live ? "green" : "neutral"}>{live ? "On" : "Off"}</Pill>
+                  <Pill tone={mode === "test" && live ? "gold" : live ? "green" : "neutral"}>{label}</Pill>
                 </h3>
                 <p className="mt-1 font-body text-body-sm text-ink">{f.what}</p>
                 {live && (
@@ -96,7 +108,7 @@ export default async function AssistantPage() {
         <p className={`${mutedCls} mt-4`}>Drafts are yours until you approve them; discarded drafts, and drafts left untouched, are deleted after 30 days. More is on the way: listing launch kits, market updates and document checks.</p>
       </Panel>
 
-      {master && on("ai_staff_data_questions") && (
+      {access.on.ai_staff_data_questions && (
         <Panel title="Ask about your work">
           <WorkQuestionPanel />
         </Panel>
@@ -160,6 +172,54 @@ export default async function AssistantPage() {
               <input type="checkbox" name="confirm" required className="h-5 w-5 accent-navy" />
               We have Anthropic&apos;s confirmation of Zero Data Retention for this API account in writing.
             </label>
+          </ActionForm>
+        </Panel>
+      )}
+
+      {isAdmin && (
+        <Panel title="Test mode (before Zero Data Retention)">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div>
+              <p className="flex flex-wrap items-center gap-2 font-body text-body-sm font-medium text-ink">
+                AI test mode
+                <Pill tone={testMode ? "gold" : "neutral"}>{testMode ? "On" : "Off"}</Pill>
+              </p>
+              <p className={mutedCls}>
+                Lets the testers below try the assistant before Anthropic&apos;s confirmation arrives, with fictional data only. It works on test deals (ticked when the deal is created) and on their own typed text and uploads. Features that
+                read other people&apos;s records (the daily briefing, questions about your work, member summaries, lead replies, lead calls) and features that send MLS listing data stay off. Each request still counts towards the limits
+                and the monthly budget. Once the master switch is on, test mode changes nothing; turn it off then.
+              </p>
+            </div>
+            <ActionForm action={setAiFlagAction} submitLabel={testMode ? "Turn off" : "Turn on"} submitAriaLabel={`${testMode ? "Turn off" : "Turn on"}: AI test mode`} secondary={testMode}>
+              <input type="hidden" name="key" value={TEST_MODE_FLAG} />
+              <input type="hidden" name="on" value={testMode ? "false" : "true"} />
+            </ActionForm>
+          </div>
+          <h3 className="mt-6 border-t border-line pt-5 font-body text-body-md font-medium text-ink">Testers ({(testers ?? []).length})</h3>
+          {(testers ?? []).length ? (
+            <ul className="mt-2 divide-y divide-line">
+              {(testers ?? []).map((t) => (
+                <li key={t.email} className="flex flex-wrap items-center justify-between gap-3 py-2 font-body text-body-sm text-ink">
+                  <span className="min-w-0 [overflow-wrap:anywhere]">
+                    {t.full_name ? `${t.full_name} · ` : ""}
+                    {t.email} <span className="text-muted">({t.role})</span>
+                  </span>
+                  <ActionForm action={setAiTesterAction} submitLabel="Remove" submitAriaLabel={`Remove tester: ${t.email}`} secondary className="">
+                    <input type="hidden" name="email" value={t.email} />
+                    <input type="hidden" name="on" value="false" />
+                  </ActionForm>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={`${mutedCls} mt-2`}>No testers yet.</p>
+          )}
+          <ActionForm action={setAiTesterAction} submitLabel="Add tester" resetOnOk className="mt-4 space-y-3">
+            <label className={labelCls}>
+              Email the person signs in with
+              <input name="email" type="email" required maxLength={254} autoComplete="off" className={`${inputCls} mt-1`} />
+            </label>
+            <input type="hidden" name="on" value="true" />
           </ActionForm>
         </Panel>
       )}

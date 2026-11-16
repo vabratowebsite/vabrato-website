@@ -15,6 +15,8 @@ export interface SellerDeal {
   sale_price: number | null;
   status: "active" | "closed" | "cancelled";
   listing_key: string | null;
+  /** Made-up data for trying features (0044). */
+  is_test: boolean;
 }
 
 export interface SellerTodo {
@@ -27,7 +29,7 @@ export interface SellerTodo {
 export async function sellerDeals(supabase: SupabaseDb): Promise<SellerDeal[]> {
   const { data } = await supabase
     .from("deals")
-    .select("id, address, ratification_date, days_to_close, rent_back_days, sale_price, status, listing_key")
+    .select("id, address, ratification_date, days_to_close, rent_back_days, sale_price, status, listing_key, is_test")
     .order("created_at", { ascending: false })
     .limit(20);
   const deals = (data ?? []) as SellerDeal[];

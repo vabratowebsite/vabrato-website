@@ -99,6 +99,11 @@ export async function MemberShell({
         sidebarFooter={<AgentCard agent={agent} />}
       >
         <div id="main" tabIndex={-1} className="space-y-6 outline-none">
+          {ai.testMode && (
+            <p role="note" className="border border-gold bg-gold-50 px-4 py-3 font-body text-body-sm text-gold-ink">
+              Ask Vabrato test mode: use only made-up details. It works on test homes and on your own typed text and uploads.
+            </p>
+          )}
           <MemberQueryProvider>{children}</MemberQueryProvider>
         </div>
         <footer className="mt-12 flex flex-wrap items-center gap-3 border-t border-line pt-6 font-body text-caption text-muted">

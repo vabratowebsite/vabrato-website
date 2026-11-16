@@ -229,6 +229,14 @@ Staff features (the VA assistant in the agent console; each behind its own featu
 A person approves every staff draft before it is sent or published. Who approves: the agent who requested the draft; anything published on the website also needs Mark's approval. AI never sends, books or changes anything by itself.
 Guardrails (all AI features):
 - Claude API under Anthropic's Commercial Terms with Zero Data Retention, called only from server code in packages/ai.
+- Test mode before Zero Data Retention (owner decision 2026-11-16, migration 0044). While the master switch is off, an admin may turn on AI test mode. It is enforced in the database:
+  - only accounts an admin names as testers can use AI;
+  - a request about a deal runs only on a test deal, which is marked when it's created and can't be changed;
+  - a request about no deal runs only for features that use the tester's own typed text or upload;
+  - features that read other people's records (daily briefing, data questions, member summary, lead drafts and lead calls) and features that send MLS data stay off;
+  - testers use only fictional data, and every page tells them so.
+
+  Once the master switch is on, test mode changes nothing; an admin turns it off.
 - Our own code computes statistics and selects records; only that request's results are sent, through a field allowlist for the user's data level (IDX / VOW / FULL). Never send seller/occupant contact info, lockbox or showing instructions, or agent phone/email to the model.
 - A deal's own documents (contracts, disclosures, inspection reports) name the clients. Staff may send one to the model for that request only, for a deal they have access to, under Zero Data Retention. Nothing from the document is kept at Anthropic, and bank or wiring details read from a document are never stored or repeated.
 - No training, fine-tuning, embeddings or vector stores of MLS data. A member's own uploaded documents may be indexed for that member only, under RLS, and deleted on request.

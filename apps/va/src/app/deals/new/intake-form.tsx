@@ -32,7 +32,7 @@ const START: Record<FieldName, string> = {
  * in for checking. Nothing the assistant returns is saved: only what the
  * person submits here.
  */
-export function IntakeForm({ reader }: { reader: { profileId: string } | null }) {
+export function IntakeForm({ reader }: { reader: { profileId: string; testMode: boolean } | null }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(createDealAction, { error: null });
   const [values, setValues] = useState(START);
   const [draft, setDraft] = useState<IntakeProposal | null>(null);
@@ -137,6 +137,11 @@ export function IntakeForm({ reader }: { reader: { profileId: string } | null })
           <p className="font-body text-body-sm text-ink">
             Upload the ratified contract and the assistant fills in the form below, with the page and a quote for each value. It can be wrong: check every value against the contract. The file is read once and not kept.
           </p>
+          {reader.testMode && (
+            <p className="border border-gold bg-gold-50 px-3 py-2 font-body text-body-sm text-gold-ink">
+              <strong>AI test mode:</strong> upload only a fictional contract, and tick &ldquo;Test deal&rdquo; below.
+            </p>
+          )}
           <label className={labelCls}>
             Contract (PDF, up to 20 MB)
             <input ref={fileRef} type="file" accept="application/pdf,.pdf" disabled={busy} className={`${inputCls} mt-1 bg-white`} />
@@ -213,6 +218,13 @@ export function IntakeForm({ reader }: { reader: { profileId: string } | null })
             {state.error}
           </p>
         )}
+
+        <label className="flex min-h-[44px] items-start gap-3 border border-line px-4 py-3 font-body text-body-sm text-ink sm:col-span-2">
+          <input type="checkbox" name="is_test" className="mt-0.5 h-5 w-5 shrink-0 accent-navy" />
+          <span>
+            <span className="font-medium">Test deal: fictional data only.</span> For trying features, including the assistant in test mode. This can&apos;t be changed after the transaction is created.
+          </span>
+        </label>
 
         <div className="sm:col-span-2">
           <button type="submit" disabled={pending} className={btnPrimary}>

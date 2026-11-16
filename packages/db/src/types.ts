@@ -154,7 +154,7 @@ export type AiDraftStatus = "draft" | "approved" | "discarded";
 /** A staff to-do on a lead or a deal (0035). */
 export type StaffTodo = Tables["staff_todos"]["Row"];
 /** ai_begin(feature, deal) (0026). */
-export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "daily_requests" | "daily_tokens" | "monthly_budget" };
+export type AiBegin = { allowed: true; run_id: string } | { allowed: false; reason: "off" | "test_only" | "daily_requests" | "daily_tokens" | "monthly_budget" };
 /** ai_usage_today() (0026). */
 export interface AiUsageToday {
   enabled: boolean;
