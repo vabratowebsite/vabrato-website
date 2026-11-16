@@ -256,8 +256,8 @@ async function loadDocFile(supabase: Supabase, dealId: string, source: "deal" | 
   return { ok: true, file: { type, base64: bytes.toString("base64") }, docTypes };
 }
 
-/** Answers after which a batch of checks stops: the assistant is off, or a limit or the budget is reached. */
-const STOPS = new Set<AiFailure>(["off", "daily_requests", "daily_tokens", "monthly_budget"]);
+/** Answers after which a batch of checks stops: the assistant is off (or test mode doesn't cover this deal), or a limit or the budget is reached. */
+const STOPS = new Set<AiFailure>(["off", "test_only", "daily_requests", "daily_tokens", "monthly_budget"]);
 const NO_KEY = "The assistant isn't set up yet: it has no API key. Ask an admin.";
 
 export type CheckDocResult = { ok: true; result: CheckResult; recorded: boolean } | { ok: false; error: string; stop?: boolean };

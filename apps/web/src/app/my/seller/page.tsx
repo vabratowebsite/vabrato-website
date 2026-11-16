@@ -66,6 +66,13 @@ export default async function SellerHome({ searchParams }: { searchParams: Promi
     >
       <WiringBanner salePrice={deal.sale_price != null ? money(deal.sale_price) : undefined} />
 
+      {deal.is_test && (
+        <p className="flex flex-wrap items-center gap-2 border border-gold bg-gold-50 px-4 py-3 font-body text-body-sm text-gold-ink">
+          <Pill tone="gold">Test sale</Pill>
+          Made-up details, for trying the portal. Nothing here is a real sale.
+        </p>
+      )}
+
       {deals.length > 1 && (
         <nav aria-label="Your sales" className="flex flex-wrap gap-2 font-body text-body-sm">
           {deals.map((d) => (

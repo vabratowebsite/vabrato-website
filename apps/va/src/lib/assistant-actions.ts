@@ -5,7 +5,7 @@ import { z } from "zod";
 import { runAi } from "@vabrato/ai";
 import { MEMBER_AI_FEATURES, MLS_AI_GATE, STAFF_ROLES, getProfile } from "@vabrato/lib";
 import { aiDeps, aiKeyConfigured } from "@/lib/ai";
-import { ASSISTANT_FEATURES, MASTER_FLAG, aiSettingsError, checkContract, intakeFolder, isOwnIntakePath } from "@/lib/assistant";
+import { ASSISTANT_FEATURES, MASTER_FLAG, TEST_MODE_FLAG, aiSettingsError, checkContract, intakeFolder, isOwnIntakePath } from "@/lib/assistant";
 import { CONTRACT_READER, toIntakeProposal } from "@/lib/contract-reader";
 import type { IntakeProposal } from "@/lib/intake-fields";
 import type { ActionState } from "@/lib/lead-actions";
@@ -68,7 +68,7 @@ const refresh = () => {
   revalidatePath("/deals/new");
 };
 
-const FLAGS = new Set<string>([MASTER_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)]);
+const FLAGS = new Set<string>([MASTER_FLAG, TEST_MODE_FLAG, MLS_AI_GATE, ...ASSISTANT_FEATURES.map((f) => f.flag), ...MEMBER_AI_FEATURES.map((f) => f.flag)]);
 
 export async function setAiFlagAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { supabase } = await staffClient();
@@ -79,8 +79,20 @@ export async function setAiFlagAction(_prev: ActionState, form: FormData): Promi
   if (error) return { error: aiSettingsError(error.message) };
   refresh();
   const name =
-    key === MASTER_FLAG ? "The assistant" : key === MLS_AI_GATE ? "MLSListings approval of AI on listing data" : ([...ASSISTANT_FEATURES, ...MEMBER_AI_FEATURES].find((f) => f.flag === key)?.name ?? "The feature");
+    key === MASTER_FLAG ? "The assistant" : key === TEST_MODE_FLAG ? "AI test mode" : key === MLS_AI_GATE ? "MLSListings approval of AI on listing data" : ([...ASSISTANT_FEATURES, ...MEMBER_AI_FEATURES].find((f) => f.flag === key)?.name ?? "The feature");
   return { error: null, ok: `${name} is now ${on ? "on" : "off"}.` };
+}
+
+/** Adds or removes an AI test-mode tester by email (0044 set_ai_tester: admins only, audited). */
+export async function setAiTesterAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const { supabase } = await staffClient();
+  const email = z.string().trim().toLowerCase().email().max(254).safeParse(form.get("email"));
+  if (!email.success) return { error: "Enter the email address the person signs in with." };
+  const on = form.get("on") !== "false";
+  const { error } = await supabase.rpc("set_ai_tester", { p_email: email.data, p_on: on });
+  if (error) return { error: /not_found/.test(error.message) ? "No account uses that email yet. The person signs in once first, then add them." : aiSettingsError(error.message) };
+  refresh();
+  return { error: null, ok: on ? `${email.data} can now use AI test mode.` : `${email.data} is no longer a tester.` };
 }
 
 export async function confirmZdrAction(_prev: ActionState, form: FormData): Promise<ActionState> {

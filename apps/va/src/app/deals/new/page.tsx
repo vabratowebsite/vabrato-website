@@ -1,7 +1,7 @@
 import { Panel } from "@vabrato/ui/web";
 import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
-import { MASTER_FLAG } from "@/lib/assistant";
+import { aiAccess } from "@/lib/ai-flags";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 import { IntakeForm } from "./intake-form";
@@ -14,16 +14,17 @@ export const maxDuration = 300;
 export default async function NewDealPage() {
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
-  // The contract reader shows only while the assistant and the feature are
-  // both on; the database checks again on every request (ai_begin).
+  // The contract reader shows only when the database would let this person
+  // run it (live switches, or AI test mode for a tester); it checks again on
+  // every request (ai_begin).
   const supabase = await supabaseServer();
-  const { data: flags } = await supabase.from("feature_flags").select("key, enabled").in("key", [MASTER_FLAG, "ai_staff_contract_reader"]);
-  const readerOn = (flags ?? []).filter((f) => f.enabled).length === 2;
+  const ai = await aiAccess(supabase, ["ai_staff_contract_reader"]);
+  const readerOn = ai.on.ai_staff_contract_reader;
 
   return (
     <ConsoleShell profile={profile} current="deals" eyebrow="Transactions" title="New transaction">
       <Panel title="Contract details">
-        <IntakeForm reader={readerOn ? { profileId: profile.id } : null} />
+        <IntakeForm reader={readerOn ? { profileId: profile.id, testMode: ai.mode === "test" } : null} />
       </Panel>
     </ConsoleShell>
   );

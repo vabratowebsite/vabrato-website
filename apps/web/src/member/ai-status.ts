@@ -1,4 +1,4 @@
-import { MEMBER_AI_FEATURES, MLS_AI_GATE, type MemberAiFeature, type SupabaseDb } from "@vabrato/lib";
+import { MEMBER_AI_FEATURES, type MemberAiFeature, type SupabaseDb } from "@vabrato/lib";
 import type { Member } from "./session";
 
 // Ask Vabrato's switches (S5b), for the menu and the page. No model code, so
@@ -7,18 +7,22 @@ import type { Member } from "./session";
 export type MemberAiFlag = MemberAiFeature["flag"];
 
 /**
- * Which member features are on right now: the master switch and each
- * feature's own, and for listing features the MLSListings approval. Read fresh (not the 15-minute public cache) so a switch
- * takes effect at once. ai_begin checks again in the database before any
- * model call.
+ * Which member features this person can start right now, from the database's
+ * own answer (0044 ai_features_available, the same rule as ai_begin): the
+ * master switch and each feature's switch (listing features also need the
+ * MLSListings approval, 0039), or AI test mode for a named tester (their own
+ * typed text and uploads; never listing data). Read fresh, not from the
+ * public cache, so a switch takes effect at once. ai_begin checks again in
+ * the database before any model call.
  */
-export async function memberAiStatus(supabase: SupabaseDb): Promise<{ on: MemberAiFlag[] }> {
-  const keys = ["ai_enabled", MLS_AI_GATE, ...MEMBER_AI_FEATURES.map((f) => f.flag)];
-  const { data } = await supabase.from("feature_flags").select("key, enabled").in("key", keys);
-  const enabled = new Set((data ?? []).filter((r) => r.enabled).map((r) => r.key));
-  if (!enabled.has("ai_enabled")) return { on: [] };
-  // Listing features also need MLSListings' approval (the database enforces it too, 0039).
-  return { on: MEMBER_AI_FEATURES.filter((f) => enabled.has(f.flag) && (!f.needsMlsApproval || enabled.has(MLS_AI_GATE))).map((f) => f.flag) };
+export async function memberAiStatus(supabase: SupabaseDb): Promise<{ on: MemberAiFlag[]; testMode: boolean }> {
+  const { data, error } = await supabase.rpc("ai_features_available", { p_features: MEMBER_AI_FEATURES.map((f) => f.flag.replace(/^ai_/, "")) });
+  if (error || !data) return { on: [], testMode: false };
+  const answer = data as { mode?: string; features?: Record<string, boolean> };
+  return {
+    on: MEMBER_AI_FEATURES.filter((f) => answer.features?.[f.flag.replace(/^ai_/, "")] === true).map((f) => f.flag),
+    testMode: answer.mode === "test",
+  };
 }
 
 /**

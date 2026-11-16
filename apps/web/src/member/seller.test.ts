@@ -10,6 +10,7 @@ const deal = (id: string, status: SellerDeal["status"] = "active"): SellerDeal =
   sale_price: null,
   status,
   listing_key: null,
+  is_test: false,
 });
 
 describe("seller portal helpers", () => {

@@ -359,3 +359,25 @@ Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the 
   - disconnecting both revokes the access, and imports stay on the deal;
   - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors, and a keyboard pass on the import controls.
 - It needs migrations up to 0043, `SERVICE_KEY`, `GOOGLE_LOG` and `DROPBOX_LOG`. Everything is put back in `finally`; a report goes to `docs/screenshots/int-import/report.json`.
+
+## AI test mode before Zero Data Retention (0044)
+
+`ai-test-mode.mjs` checks AI test mode against the fake Claude (`fake-claude.mjs`, port 4020). Start both apps with `ANTHROPIC_BASE_URL=http://127.0.0.1:4020` and any `ANTHROPIC_API_KEY`.
+
+- **What it covers:**
+  - off: no assistant anywhere and no test-mode note; the "Test deal" box on the new-deal form;
+  - an admin turns test mode on in /assistant and adds testers by email; an unknown email is explained; switch and testers are audited;
+  - a tester agent:
+    - sees the note on every page, and no briefing or "Ask about your work";
+    - gets the contract reader at intake, with the "fictional contract" note;
+    - creates a deal with "Test deal" ticked, which shows the badge;
+    - on the test deal, "Check this document" and the escrow-update draft work, and the run is logged against the test deal;
+    - on a real deal, nothing is shown and nothing reaches the model;
+  - a staff member who isn't a tester sees no assistant, even on a test deal;
+  - members:
+    - a tester buyer gets Ask Vabrato with the note and an answer, and no listing features;
+    - a member who isn't a tester gets nothing;
+    - the tester seller invited to the test deal sees "Test sale";
+  - test mode off hides it all again;
+  - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors.
+- It needs migrations up to 0044, `SERVICE_KEY` and `CLAUDE_LOG`. Everything it adds is removed in `finally`; screenshots go to `docs/screenshots/ai-test-mode/`.

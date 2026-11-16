@@ -73,6 +73,7 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
       rent_back_days: input.rent_back_days,
       sale_price: input.sale_price,
       agent_id: auth.user.id,
+      is_test: input.is_test,
     });
   if (dealError) {
     return { error: `Could not create deal: ${dealError.message}` };

@@ -76,8 +76,9 @@ export async function desiredEvents(profileId: string): Promise<EventSpec[]> {
   const ids = (memberOf ?? []).map((m) => m.deal_id);
   const cols = "id, address, status, ratification_date, days_to_close, rent_back_days";
   const [{ data: own }, { data: joined }] = await Promise.all([
-    service.from("deals").select(cols).eq("agent_id", profileId).neq("status", "cancelled").limit(500),
-    ids.length ? service.from("deals").select(cols).in("id", ids.slice(0, 500)).neq("status", "cancelled") : Promise.resolve({ data: [] as never[] }),
+    // Test deals (fictional, 0044) never go on a real calendar.
+    service.from("deals").select(cols).eq("agent_id", profileId).neq("status", "cancelled").eq("is_test", false).limit(500),
+    ids.length ? service.from("deals").select(cols).in("id", ids.slice(0, 500)).neq("status", "cancelled").eq("is_test", false) : Promise.resolve({ data: [] as never[] }),
   ]);
   const deals = new Map<string, DealInput>();
   for (const d of [...(own ?? []), ...(joined ?? [])]) {

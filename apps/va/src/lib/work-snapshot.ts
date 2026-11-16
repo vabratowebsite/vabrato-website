@@ -191,7 +191,7 @@ export async function loadWork(supabase: SupabaseDb, today: string): Promise<Wor
   const horizon = new Date(Date.parse(`${today}T00:00:00Z`) + 30 * DAY).toISOString().slice(0, 10);
   const since = new Date(Date.parse(`${today}T00:00:00Z`) - 90 * DAY).toISOString();
   const [{ data: deals }, { data: leads }, { data: messages }] = await Promise.all([
-    supabase.from("deals").select("id, address, seller_type, ratification_date, days_to_close, rent_back_days, agent_id").eq("status", "active").order("ratification_date").limit(CAPS.deals + 1),
+    supabase.from("deals").select("id, address, seller_type, ratification_date, days_to_close, rent_back_days, agent_id").eq("status", "active").eq("is_test", false).order("ratification_date").limit(CAPS.deals + 1),
     supabase.from("leads").select("id, kind, name, status, created_at, first_reply_at, assigned_to, tour_status, listing_key").gte("created_at", since).order("created_at", { ascending: false }).limit(CAPS.leads + 1),
     supabase.from("messages").select("member_id, sender_id, created_at, read_at").order("created_at", { ascending: false }).limit(500),
   ]);

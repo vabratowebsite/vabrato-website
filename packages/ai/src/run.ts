@@ -52,6 +52,8 @@ export interface AiInput {
 
 export type AiFailure =
   | "off"
+  /** AI test mode (before Zero Data Retention): only test deals and the person's own typed text. */
+  | "test_only"
   | "daily_requests"
   | "daily_tokens"
   | "monthly_budget"
@@ -87,6 +89,7 @@ export interface AiDeps {
 
 const MESSAGES: Record<AiFailure, string> = {
   off: "The assistant isn't switched on yet.",
+  test_only: "In AI test mode this works only on test deals and your own typed text.",
   daily_requests: "You've reached today's limit for the assistant. It resets at midnight Pacific time.",
   daily_tokens: "You've reached today's limit for the assistant. It resets at midnight Pacific time.",
   monthly_budget: "The assistant has reached this month's budget. An admin can raise it in Settings.",

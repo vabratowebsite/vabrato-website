@@ -873,6 +873,7 @@ export type Database = {
           days_to_close: number
           escrow_number: string | null
           id: string
+          is_test: boolean
           listing_key: string | null
           ratification_date: string
           rent_back_days: number
@@ -890,6 +891,7 @@ export type Database = {
           days_to_close?: number
           escrow_number?: string | null
           id?: string
+          is_test?: boolean
           listing_key?: string | null
           ratification_date: string
           rent_back_days?: number
@@ -907,6 +909,7 @@ export type Database = {
           days_to_close?: number
           escrow_number?: string | null
           id?: string
+          is_test?: boolean
           listing_key?: string | null
           ratification_date?: string
           rent_back_days?: number
@@ -1935,6 +1938,7 @@ export type Database = {
         Row: {
           buyer_agreement_on_file_at: string | null
           agent_id: string | null
+          ai_tester: boolean
           alerts_email_opt_in: boolean
           alerts_opt_in_at: string | null
           alerts_unsubscribe_token: string
@@ -1952,6 +1956,7 @@ export type Database = {
         Insert: {
           buyer_agreement_on_file_at?: string | null
           agent_id?: string | null
+          ai_tester?: boolean
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
           alerts_unsubscribe_token?: string
@@ -1969,6 +1974,7 @@ export type Database = {
         Update: {
           buyer_agreement_on_file_at?: string | null
           agent_id?: string | null
+          ai_tester?: boolean
           alerts_email_opt_in?: boolean
           alerts_opt_in_at?: string | null
           alerts_unsubscribe_token?: string
@@ -2533,9 +2539,11 @@ export type Database = {
     Functions: {
       accept_vow_terms: { Args: { p_version: string }; Returns: string }
       ai_begin: { Args: { p_deal?: string; p_feature: string }; Returns: Json }
+      ai_features_available: { Args: { p_deal?: string; p_features: string[] }; Returns: Json }
       ai_finish: { Args: { p_cache_read_tokens?: number; p_cost_micros?: number; p_duration_ms?: number; p_input_tokens?: number; p_model?: string; p_output_tokens?: number; p_run: string; p_status: string }; Returns: undefined }
       ai_month_summary: { Args: never; Returns: Json }
       ai_period_start: { Args: { p_unit: string }; Returns: string }
+      ai_testers: { Args: never; Returns: { email: string; full_name: string; role: string }[] }
       ai_usage_today: { Args: never; Returns: Json }
       can_manage_settings: { Args: never; Returns: boolean }
       can_see_member: { Args: { p_profile: string }; Returns: boolean }
@@ -2802,6 +2810,7 @@ export type Database = {
       seller_weekly_report_data: { Args: { p_deal: string; p_week_start?: string }; Returns: Json }
       send_seller_weekly_report: { Args: { p_deal: string; p_week_start?: string }; Returns: number }
       set_ai_flag: { Args: { p_key: string; p_on: boolean }; Returns: undefined }
+      set_ai_tester: { Args: { p_email: string; p_on: boolean }; Returns: undefined }
       set_ai_limits: { Args: { p_monthly_budget_usd?: number; p_requests_member?: number; p_requests_staff?: number; p_tokens_member?: number; p_tokens_staff?: number }; Returns: undefined }
       set_alert_emails: { Args: { p_on: boolean }; Returns: undefined }
       set_buyer_agreement: { Args: { p_member: string; p_on_file: boolean }; Returns: undefined }
