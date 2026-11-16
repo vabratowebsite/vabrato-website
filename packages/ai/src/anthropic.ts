@@ -21,13 +21,21 @@ function block(part: ModelPart): Block {
   };
 }
 
+function apiReason(e: InstanceType<typeof Anthropic.APIError>): string {
+  const body = e.error as { error?: { message?: unknown } } | undefined;
+  const message = typeof body?.error?.message === "string" ? body.error.message : "";
+  return message.replace(/\s+/g, " ").trim().slice(0, 120);
+}
+
 function toModelError(e: unknown): ModelError {
   if (e instanceof Anthropic.RateLimitError) return new ModelError("rate_limited", "rate limited");
   if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return new ModelError("auth", "not authorized");
   // Too many PDF pages, a request over the size limit, or a prompt over the context window.
   if (e instanceof Anthropic.APIError && (e.status === 413 || (e instanceof Anthropic.BadRequestError && /\bpages?\b|too large|too long|exceeds|maximum/i.test(e.message ?? ""))))
     return new ModelError("too_large", `too large (${e.status})`);
-  if (e instanceof Anthropic.BadRequestError) return new ModelError("bad_request", `bad request (${e.status})`);
+  // The API's own reason (for example "Schema is too complex for compilation"), shortened. It
+  // describes the request's shape, not its content; reports sanitize it again.
+  if (e instanceof Anthropic.BadRequestError) return new ModelError("bad_request", `bad request (${e.status})${apiReason(e) ? `: ${apiReason(e)}` : ""}`);
   if (e instanceof Anthropic.APIConnectionError) return new ModelError("network", "connection failed");
   if (e instanceof Anthropic.APIError) return new ModelError(e.status !== undefined && e.status >= 500 ? "overloaded" : "other", `API error ${e.status ?? ""}`.trim());
   return new ModelError("other", "unexpected error");

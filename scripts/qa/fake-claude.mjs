@@ -21,14 +21,15 @@ writeFileSync(LOG, "");
 const PORT = Number(process.env.FAKE_CLAUDE_PORT ?? 4020);
 
 const src = (value, page = 1, quote = null) => ({ value, page, quote });
-const cont = (days, waived = false, page = 2) => ({ days, waived, page: days === null && !waived ? null : page, quote: waived ? "Offer is NOT contingent" : days === null ? null : `${days} (or __) Days After Acceptance` });
+// No page or quote is 0 or "", as the real API answers (only values may be null in these schemas).
+const cont = (days, waived = false, page = 2) => ({ days, waived, page: days === null && !waived ? 0 : page, quote: waived ? "Offer is NOT contingent" : days === null ? "" : `${days} (or __) Days After Acceptance` });
 const reading = (over = {}) => ({
   property_address: src("12 Fictional Lane, San Carlos, CA", 1, "Property: 12 Fictional Lane, San Carlos"),
   seller_names: src("Dana Example, Trustee of the Example Family Trust", 14, "Seller: Dana Example, Trustee of the Example Family Trust"),
   seller_type: src("trust", 14, "Trustee of the Example Family Trust"),
   acceptance_date: src("2026-03-02", 16, "Counter Offer No. 1 accepted: March 2, 2026"),
   days_to_close: src(30, 1, "Close Of Escrow shall occur 30 Days After Acceptance"),
-  close_of_escrow_date: src(null, null, null),
+  close_of_escrow_date: src(null, 0, ""),
   purchase_price: src(2150000, 16, "Purchase price shall be $2,150,000"),
   seller_rent_back_days: src(3, 3, "Seller to remain in possession for 3 Days After Close Of Escrow"),
   contingencies: { loan: cont(21), appraisal: cont(17), investigation: cont(10), insurance: cont(null) },
@@ -427,8 +428,8 @@ const FILE_ANSWERS = {
           },
   // S6b PR 7c: the terms a counter offer sets (fictional). "unsigned" isn't signed by both sides.
   counter_changes: (mode) => {
-    const none = { value: null, page: null, quote: null };
-    const nc = { days: null, waived: false, page: null, quote: null };
+    const none = { value: null, page: 0, quote: "" };
+    const nc = { days: null, waived: false, page: 0, quote: "" };
     return {
       document_kind: "counter_offer",
       signed_by_both: mode === "unsigned" ? "no" : "yes",

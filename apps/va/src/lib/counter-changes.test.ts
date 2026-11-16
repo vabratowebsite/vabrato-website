@@ -116,6 +116,20 @@ describe("the comparison is ours", () => {
     expect(row(toCounterResult(ANSWER({ close_of_escrow_date: { value: "2026-04-15", page: 1, quote: "COE April 15" } }), TERMS), "close_of_escrow")).toMatchObject({ status: "differs", theirs: "Apr 15, 2026" });
   });
 
+  it("reads page 0 and an empty quote as none (the schema keeps them non-null, under Anthropic's limit)", () => {
+    const parse = (v: unknown) => (COUNTER_CHANGES.output.kind === "json" ? COUNTER_CHANGES.output.parse(v) : null);
+    const blank = { value: null, page: 0, quote: "" };
+    const sentinels = {
+      ...ANSWER(),
+      days_to_close: blank,
+      close_of_escrow_date: blank,
+      contingencies: { ...ANSWER().contingencies, investigation: { days: null, waived: false, page: 0, quote: "" }, insurance: { days: null, waived: false, page: 0, quote: "" } },
+      other_changes: [{ page: 0, change: "Seller to leave the garage refrigerator." }],
+    };
+    expect(parse(sentinels)).toEqual(ANSWER({ other_changes: [{ page: null, change: "Seller to leave the garage refrigerator." }] }));
+    expect(COUNTER_CHANGES.system).toMatch(/give null for the value, 0 for the page and an empty quote/);
+  });
+
   it("values that can't be right are treated as not addressed", () => {
     const r = toCounterResult(ANSWER({ acceptance_date: { value: "2026-02-31", page: 1, quote: "x" }, purchase_price: { value: -5, page: 1, quote: "x" }, days_to_close: { value: 9000, page: 1, quote: "x" } }), TERMS);
     expect(row(r, "acceptance_date").status).toBe("not_addressed");

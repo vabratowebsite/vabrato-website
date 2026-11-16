@@ -12,7 +12,7 @@ const SYSTEM = `You are helping a transaction coordinator at Vabrato Real Estate
 
 Read the whole document before answering. Counter offers and addenda often change terms stated earlier, and the last version both sides agreed to is the one that counts.
 
-Report the terms listed below. For each, give the value, the page of the PDF where you found it (the first page of the file is page 1) and a short exact quote from that page, under 200 characters, so the coordinator can find and check it. These values set legal deadlines once the coordinator confirms them, so a blank they fill in by hand is better than a guess: when a term isn't stated, can't be read, or you can't tell which version is final, give null and say why in the notes.
+Report the terms listed below. For each, give the value, the page of the PDF where you found it (the first page of the file is page 1) and a short exact quote from that page, under 200 characters, so the coordinator can find and check it. These values set legal deadlines once the coordinator confirms them, so a blank they fill in by hand is better than a guess: when a term isn't stated, can't be read, or you can't tell which version is final, give null for the value, 0 for the page and an empty quote, and say why in the notes.
 
 - property_address: the street address and city of the property.
 - seller_names: the seller or sellers as written, including any capacity such as "Trustee of the Example Family Trust".
@@ -22,21 +22,25 @@ Report the terms listed below. For each, give the value, the page of the PDF whe
 - close_of_escrow_date: the closing date as YYYY-MM-DD, when the contract states a specific date instead.
 - purchase_price: the final agreed price in dollars, as a number.
 - seller_rent_back_days: the number of days the seller stays in possession after close of escrow; 0 if possession passes at close.
-- contingencies (loan, appraisal, investigation of the property's condition, insurance): for each, the number of days after acceptance by which the buyer removes it, or waived true when the contract removes or waives it, for example an all-cash offer with no loan contingency.
+- contingencies (loan, appraisal, investigation of the property's condition, insurance): for each, the number of days after acceptance by which the buyer removes it, or waived true when the contract removes or waives it, for example an all-cash offer with no loan contingency. When you can't find one, give days null, waived false, page 0 and an empty quote.
 - notes: up to 8 short, plain sentences on what the coordinator should check by hand: a counter offer that changed a term, missing signatures or initials, blanks, handwritten changes, anything unusual. Give the page.
 
 Leave everything else out of your answer, including phone numbers, email addresses, license numbers, and any bank, deposit or wiring details.`;
 
+// Anthropic's structured outputs allow at most 16 fields that may be null
+// (SCHEMA_LIMITS in @vabrato/ai), so only values are nullable: a page or
+// quote that isn't there comes back as 0 or "", and the parser turns both
+// into null.
 const sourced = (value: Record<string, unknown>) => ({
   type: "object",
-  properties: { value, page: { anyOf: [{ type: "integer" }, { type: "null" }] }, quote: { anyOf: [{ type: "string" }, { type: "null" }] } },
+  properties: { value, page: { type: "integer" }, quote: { type: "string" } },
   required: ["value", "page", "quote"],
   additionalProperties: false,
 });
 const nullable = (type: string) => ({ anyOf: [{ type }, { type: "null" }] });
 const contingency = {
   type: "object",
-  properties: { days: nullable("integer"), waived: { type: "boolean" }, page: nullable("integer"), quote: nullable("string") },
+  properties: { days: nullable("integer"), waived: { type: "boolean" }, page: { type: "integer" }, quote: { type: "string" } },
   required: ["days", "waived", "page", "quote"],
   additionalProperties: false,
 };
@@ -64,8 +68,10 @@ const JSON_SCHEMA = {
   additionalProperties: false,
 };
 
+// 0 (no page) and anything out of range become null.
 const page = z.number().int().min(1).max(2000).nullable().catch(null);
-const quote = z.string().max(600).nullable();
+// "" (no quote) becomes null.
+const quote = z.string().max(600).nullable().transform((q) => q || null);
 const field = <T extends z.ZodTypeAny>(value: T) => z.object({ value: value.nullable(), page, quote }).strict();
 const cont = z.object({ days: z.number().int().nullable(), waived: z.boolean(), page, quote }).strict();
 

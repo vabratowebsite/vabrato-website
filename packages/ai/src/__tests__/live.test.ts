@@ -1,5 +1,7 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import { describe, expect, it } from "vitest";
-import { budgetStore, sanitize, worstCase } from "../live";
+import { budgetStore, recordingModel, sanitize, worstCase } from "../live";
 import type { AiFeature } from "../run";
 
 // The live tests' shared helpers (@vabrato/ai/live): the spending cap must
@@ -35,6 +37,34 @@ describe("live test helpers", () => {
 
   it("sanitize removes keys and long numbers and keeps reasons short", () => {
     expect(sanitize("bad key sk-ant-fake-abc_DEF-123 for 1234567890")).toBe("bad key [key] for [number]");
-    expect(sanitize("x".repeat(200))).toHaveLength(80);
+    expect(sanitize("x".repeat(300))).toHaveLength(200);
+  });
+
+  it("a call the API refuses is recorded with the API's short reason, and still fails", async () => {
+    // A local stand-in for the API answering 400, the way it refuses an over-complex schema.
+    const server = createServer((req, res) => {
+      req.resume();
+      req.on("end", () => {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: "Schema is too complex for compilation." } }));
+      });
+    });
+    await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
+    const saved = { url: process.env.ANTHROPIC_BASE_URL, key: process.env.ANTHROPIC_API_KEY };
+    process.env.ANTHROPIC_BASE_URL = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    process.env.ANTHROPIC_API_KEY = "sk-ant-fictional-test-key";
+    try {
+      const { model, raw, errors, setCall } = recordingModel();
+      setCall("contract_reader");
+      await expect(model.generate({ system: "s", parts: [{ type: "text", text: "Fictional." }], effort: "low", maxTokens: 100 })).rejects.toMatchObject({ kind: "bad_request" });
+      expect(raw).toEqual([]);
+      expect(errors).toEqual([{ call: "contract_reader", reason: "bad_request: bad request (400): Schema is too complex for compilation." }]);
+    } finally {
+      process.env.ANTHROPIC_BASE_URL = saved.url;
+      process.env.ANTHROPIC_API_KEY = saved.key;
+      if (saved.url === undefined) delete process.env.ANTHROPIC_BASE_URL;
+      if (saved.key === undefined) delete process.env.ANTHROPIC_API_KEY;
+      server.close();
+    }
   });
 });

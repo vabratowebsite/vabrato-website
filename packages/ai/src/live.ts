@@ -1,6 +1,6 @@
 import { countPdfPages } from "@vabrato/lib";
 import { anthropicClient } from "./anthropic";
-import type { ModelClient, ModelResult } from "./client";
+import { ModelError, type ModelClient, type ModelResult } from "./client";
 import type { AiFeature, AiInput } from "./run";
 import type { AiStore, FinishInfo } from "./store";
 
@@ -77,20 +77,28 @@ export function budgetStore(capUsd: number) {
 export function recordingModel() {
   const inner = anthropicClient({ maxRetries: 0 });
   const raw: { call: string; text: string; result: Omit<ModelResult, "text"> }[] = [];
+  // Calls the API refused, with the error's kind and short reason, so a report can say why.
+  const errors: { call: string; reason: string }[] = [];
   let current = "";
   const model: ModelClient = {
     async generate(req) {
-      const r = await inner.generate(req);
+      let r: ModelResult;
+      try {
+        r = await inner.generate(req);
+      } catch (e) {
+        errors.push({ call: current, reason: e instanceof ModelError ? `${e.kind}: ${e.message}` : "unexpected error" });
+        throw e;
+      }
       const { text, ...rest } = r;
       raw.push({ call: current, text, result: rest });
       return r;
     },
   };
-  return { model, raw, setCall: (id: string) => void (current = id) };
+  return { model, raw, errors, setCall: (id: string) => void (current = id) };
 }
 
 /** An email address or a US phone number, in text a person would see. */
 export const CONTACT = /[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}|\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/i;
 
-/** Errors reach a report as a reason only: no messages, keys or long numbers (the repo is public). */
-export const sanitize = (s: string) => s.replace(/sk-ant-[\w-]+/g, "[key]").replace(/\d{8,}/g, "[number]").slice(0, 80);
+/** Errors reach a report as a short reason only: no content, keys or long numbers (the repo is public). */
+export const sanitize = (s: string) => s.replace(/sk-ant-[\w-]+/g, "[key]").replace(/\d{8,}/g, "[number]").slice(0, 200);
