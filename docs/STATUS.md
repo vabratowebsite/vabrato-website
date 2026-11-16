@@ -2426,6 +2426,46 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     receipts, every integration and AI switch off.
   - **Security advisor:** nothing new (0043 adds no functions).
 
+### AI test mode before Zero Data Retention (built 2026-11-16)
+- **Why:** the owner wants to try the assistant now, and Anthropic's written ZDR confirmation hasn't arrived. The master switch stays blocked until it's recorded (0027).
+- **Owner answers (2026-11-16):**
+  - named testers only;
+  - test deals, plus the tester's own typed text and uploads;
+  - a test deal is ticked when it's created and locked after;
+  - test mode stays on until an admin turns it off.
+- **Migration 0044 (`0044_ai_test_mode.sql`):**
+  - the `ai_test_mode` switch, off;
+  - `deals.is_test`, which can't be changed after insert, by any route;
+  - `profiles.ai_tester`, with `set_ai_tester(email, on)` and `ai_testers()` (admins only, audited);
+  - `ai_test_scope` holds the rule:
+    - with a deal: only the 12 features that work on one deal, and only on a test deal;
+    - with no deal: only `staff_contract_reader` and 10 member features that use the person's own text or uploads;
+  - `ai_begin` is redefined with the test branch; its role, deal-access, limit and budget checks are unchanged;
+  - `ai_features_available` gives the UIs the same answer as `ai_begin`.
+  - **Off in test mode:** the briefing, data questions, member summary, lead drafts and lead calls (other people's records), and every MLS-data feature. One switch covers everything, and the per-feature switches are ignored, so none is pre-armed for launch.
+- **Console:**
+  - the "Test deal" box on the new-deal form, and a badge on the deals list, the deal page and Today;
+  - test deals are kept out of the briefing snapshot and calendar sync;
+  - every AI panel goes through one helper (`aiAccess` / `aiFeaturesOn`, which ask the database);
+  - /assistant: a test-mode panel (the switch, testers added by email and removed) and a "Test mode" status for testers;
+  - a test-mode note on every console page for testers.
+- **Website:**
+  - `memberAiStatus` asks the database;
+  - a test-mode note on every /my page for testers;
+  - "Test sale" in the seller portal;
+  - a `test_only` message for members.
+- **Docs:** SPEC `<ai_rules>` gains the test-mode exception, and Mark's wording sheet lists the two new notes and the message.
+- **Checked:**
+  - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass (1,536 tests), including 21 new PGlite tests in `ai-test-mode.test.ts`;
+  - `hosted-ai-test-mode-check.sql` returns its expected values on the local Postgres stack. Its first run caught a briefing request with a test deal being allowed; with-deal requests are now limited to features that work on one deal;
+  - `scripts/qa/ai-test-mode.mjs`: 53 of 53 checks, including axe, sideways-scroll and console-error checks;
+  - reruns: `s6b-final` 1,231 checks pass, with one failure: the known React #418 on the presentation page, already queued as its own task; `s5b-final` 587 of 587; both live tests in fake mode pass (20 and 13).
+- **Needs you, after merge and apply:**
+  1. Add the production `ANTHROPIC_API_KEY` to both Vercel projects (Production only) and redeploy.
+  2. On /assistant, turn on **AI test mode** and add the testers (admin, agent, VA, buyer, seller accounts).
+  3. As the agent, create a deal with **Test deal** ticked, then give the test seller access.
+- **Before launch (S9):** delete test deals and test accounts, and turn test mode off.
+
 ### Not started
 
 - Inbound email parsing for the buyer tracker (deterministic per-source per
