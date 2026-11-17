@@ -51,6 +51,7 @@ The allowlists in `src/levels/fields.ts` are **provisional** until MLSListings c
 - **Purge** (MLS-9): `mls-sync purge --confirm` deletes all MLS data and photos; sync runs are kept as the audit log.
 - **Mock marker:** mock-mode runs write `source = 'mock'`. `mls-sync purge --mock --confirm` deletes only those rows, and a live sync refuses to run while any are stored (MLS-8).
 - **Preview seed:** `tsx src/jobs/seed-preview.ts [--publish-placeholders] > seed.sql` prints SQL that loads the fictional fixtures, with dates rebased to today, for a preview database.
+- **Demo content:** `tsx src/jobs/seed-demo.ts [--date yyyy-mm-dd] > demo.sql` prints SQL for a fictional small office (deals, leads, appointments, vendors, receipts, member activity, placeholder pages) attached to the test accounts; `--purge` prints the SQL that removes it and `--check` a summary. It needs the preview listings first, and it queues no email. See docs/STATUS.md, "Demo content".
 - Only one run at a time (unique index on running runs). Runs stuck in `running` for over an hour are marked failed.
 
 ## Photos (`MLS_PHOTO_MODE`)
