@@ -320,23 +320,24 @@ Modes come from `QA-MODE: ok|badhex|money|value|contacts|script|steering|wiring|
 
 Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the code by `apps/web/src/review/wording-sheet.ts`. Its CI test fails when member-facing wording changes until the sheet is regenerated: `UPDATE_WORDING=1 pnpm --filter @vabrato/web test wording`.
 
-## Connected accounts and Google Calendar (Integrations PR 1)
+## The team Google Calendar (0045; replaced Integrations PR 1's per-person calendars)
 
-`int-calendar.mjs` checks the console's Google Calendar connection end to end against `fake-google.mjs`, a stand-in for Google's consent page, token, revoke, userinfo and Calendar events endpoints (`packages/lib/src/integrations/fake-google.ts`). Nothing reaches Google, and no Google account or OAuth client is needed.
+`int-calendar.mjs` checks the team calendar end to end against `fake-google.mjs`, a stand-in for Google's consent page, token, revoke and userinfo endpoints and the Calendar API's calendars and events (`packages/lib/src/integrations/fake-google.ts`). Like Google, the fake ends an account's whole grant when any of its tokens is revoked, and it can leave a scope out of a consent (`/__fake/account?withhold=<scope>`) to act out an unticked permission. Nothing reaches Google, and no Google account or OAuth client is needed.
 
-- **Start the fake:** `node --experimental-strip-types scripts/qa/fake-google.mjs <log>` (port 4030). Its log keeps method, path and status only.
-- **Start the console** with `GOOGLE_ACCOUNTS_BASE_URL`, `GOOGLE_OAUTH_BASE_URL` and `GOOGLE_API_BASE_URL` set to `http://127.0.0.1:4030`, any `GOOGLE_INTEGRATION_CLIENT_ID` and `GOOGLE_INTEGRATION_CLIENT_SECRET`, and a fresh `INTEGRATIONS_TOKEN_KEY` (`openssl rand -base64 32`).
+- **Start the fake:** `node --experimental-strip-types --import ./scripts/qa/ts-resolve.mjs scripts/qa/fake-google.mjs <log>` (port 4030). Its log keeps method, path and status only.
+- **Start the console** with `GOOGLE_ACCOUNTS_BASE_URL`, `GOOGLE_OAUTH_BASE_URL` and `GOOGLE_API_BASE_URL` set to `http://127.0.0.1:4030`, any `GOOGLE_INTEGRATION_CLIENT_ID` and `GOOGLE_INTEGRATION_CLIENT_SECRET`, a fresh `INTEGRATIONS_TOKEN_KEY` (`openssl rand -base64 32`), and the picker settings from Integrations PR 2 (the script also checks the Drive connection on the same Google account).
 - **What it covers:**
   - the switch off and on (admin only, audited);
-  - connecting (PKCE, one-time state; the token stored encrypted);
-  - which key dates appear (the agent's own deals and a deal they're a member of, not another agent's);
-  - approving an appointment adds it at once;
-  - key dates off and on; a cancelled deal's dates removed by Sync now; a second sync changes nothing;
-  - Google revoking the access, then reconnecting without duplicates;
-  - a stale callback, an unverified Google email and a seller all refused;
-  - disconnect removes the events and revokes the token;
+  - an agent can't connect it; an unticked permission, an unverified Google email and a stale callback are refused, with nothing stored;
+  - the admin connects (PKCE, one-time state; the token stored encrypted): a "Vabrato" calendar in California time, every real deal's key dates and every approved appointment, titled with who they're for, and never a test deal or its appointment;
+  - every staff member sees the state; only admins see Sync now and Disconnect; the sharing how-to;
+  - approving an appointment adds it at once, and its page says so;
+  - a cancelled deal's dates removed by Sync now; a second sync changes nothing;
+  - a calendar deleted in Google is made again with every event;
+  - Google revoking the access, then reconnecting to the same calendar without duplicates;
+  - the same Google account for the admin's Drive imports: disconnecting the team calendar doesn't revoke (Drive keeps working); disconnecting Drive then revokes; the calendar stays in Google;
   - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors, and a keyboard pass on Settings.
-- It needs migrations up to 0042, `SERVICE_KEY` and `GOOGLE_LOG` (the fake's log). Everything is put back in `finally`; a report goes to `docs/screenshots/int-calendar/report.json`.
+- It needs migrations up to 0045, `SERVICE_KEY` and `GOOGLE_LOG` (the fake's log), and a database with no team calendar connected. Everything is put back in `finally`; a report goes to `docs/screenshots/int-calendar/report.json`.
 
 ## Drive and Dropbox import (Integrations PR 2)
 

@@ -7,7 +7,7 @@ import { ConsoleShell } from "@/components/console-shell";
 import { mutedCls } from "@/components/ui";
 import { lengthText, whenText, type AppointmentFields } from "@/lib/appointment-kinds";
 import type { AppointmentView } from "@/lib/call-actions";
-import { CALENDAR_FLAG } from "@/lib/calendar-sync";
+import { CALENDAR_FLAG } from "@/lib/team-calendar";
 import { requireSignIn } from "@/lib/staff";
 import { supabaseServer } from "@/lib/supabase-server";
 
@@ -41,18 +41,16 @@ export default async function AppointmentPage({ params }: { params: Promise<{ id
   }
   const fields = a.content as unknown as AppointmentFields;
   const view: AppointmentView = { id: a.id, status: a.status as AppointmentView["status"], fields, subject: a.subject, body: a.body, sent_via: a.sent_via };
-  // Google Calendar (Integrations PR 1): approved appointments go on their owner's calendar.
+  // The team Google Calendar (0045): every approved appointment goes on it.
   let calendarNote: { text: string; link?: string } | null = null;
-  if (a.status === "approved" && a.owner_id === profile.id) {
-    const [{ data: flag }, { data: conns }, { data: onCal }] = await Promise.all([
+  if (a.status === "approved") {
+    const [{ data: flag }, { data: team }, { data: onCal }] = await Promise.all([
       supabase.from("feature_flags").select("enabled").eq("key", CALENDAR_FLAG).maybeSingle(),
-      supabase.rpc("my_connections"),
-      supabase.from("calendar_events").select("id").eq("source_key", `appt:${a.id}`).maybeSingle(),
+      supabase.rpc("team_calendar_status"),
+      supabase.from("team_calendar_events").select("source_key").eq("source_key", `appt:${a.id}`).maybeSingle(),
     ]);
-    const google = (conns ?? []).find((c) => c.provider === "google");
-    if (onCal) calendarNote = { text: "On your Google Calendar." };
-    else if (google) calendarNote = { text: "Not on your Google Calendar yet.", link: "Sync now in Settings" };
-    else if (flag?.enabled) calendarNote = { text: "Approved appointments can go on your Google Calendar automatically.", link: "Connect it in Settings" };
+    if (onCal) calendarNote = { text: "On the team calendar." };
+    else if (flag?.enabled && team?.[0]?.connected) calendarNote = { text: "Not on the team calendar yet.", link: "See the team calendar in Settings" };
   }
   const summary = fields.date && fields.start ? `${whenText(fields.date, fields.start)}${fields.minutes ? `, ${lengthText(fields.minutes)}` : ""}` : "Date and time to be set";
 

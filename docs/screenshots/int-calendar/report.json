@@ -28,8 +28,8 @@
     "errors": []
   },
   {
-    "who": "admin",
-    "name": "settings-switch-on",
+    "who": "agent",
+    "name": "settings-not-connected",
     "url": "/settings",
     "violations": {
       "390": [],
@@ -42,8 +42,36 @@
     "errors": []
   },
   {
-    "who": "agent",
+    "who": "admin",
     "name": "settings-not-connected",
+    "url": "/settings",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "admin",
+    "name": "settings-refused",
+    "url": "/settings?google=unverified",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "widths": {
+      "320": 320,
+      "390": 390
+    },
+    "errors": []
+  },
+  {
+    "who": "admin",
+    "name": "settings-connected",
     "url": "/settings",
     "violations": {
       "390": [],
@@ -72,7 +100,7 @@
   {
     "who": "agent",
     "name": "appointment-on-calendar",
-    "url": "/appointments/bd0aee48-31e2-4f87-a9b5-36d254810015",
+    "url": "/appointments/1614f123-fa95-4995-ad7f-1c79fd87953d",
     "violations": {
       "390": [],
       "1440": []
@@ -84,7 +112,7 @@
     "errors": []
   },
   {
-    "who": "agent",
+    "who": "admin",
     "name": "settings-reconnect",
     "url": "/settings",
     "violations": {
@@ -98,23 +126,9 @@
     "errors": []
   },
   {
-    "who": "agent2",
-    "name": "settings-unverified",
-    "url": "/settings?google=unverified",
-    "violations": {
-      "390": [],
-      "1440": []
-    },
-    "widths": {
-      "320": 320,
-      "390": 390
-    },
-    "errors": []
-  },
-  {
-    "who": "agent",
+    "who": "admin",
     "name": "settings-disconnected",
-    "url": "/settings",
+    "url": "/settings?google=team_disconnected_shared",
     "violations": {
       "390": [],
       "1440": []

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { appointmentEvent, eventHash, keyDateEvents, MAX_CHANGES_PER_SYNC, planSync, runSync, type EventSpec } from "./calendar-events";
 import { decryptToken, encryptToken, tokenKey, TokenDecryptError, TokenKeyError } from "./crypto";
 import { createFakeGoogle, fakeFetch } from "./fake-google";
-import { accessTokenFor, accountEmail, calendarApi, consentUrl, exchangeCode, GoogleError, GoogleReconnectError, googleSetup, newPkce, newState, pkceChallenge, revokeToken, type GoogleSetup } from "./google";
+import { accessTokenFor, accountEmail, calendarApi, calendarExists, CalendarGoneError, consentUrl, createCalendar, DRIVE_SCOPE, exchangeCode, GoogleError, GoogleReconnectError, googleSetup, newPkce, newState, pkceChallenge, revokeToken, type GoogleSetup } from "./google";
 
 // Integrations PR 1: token encryption, the Google OAuth and Calendar client
 // against the fake, the events we build and the sync. Fictional data only.
@@ -73,14 +73,15 @@ describe("Google setup", () => {
     expect(setupOf().apiBase).toBe("http://fake-google.test");
   });
 
-  it("asks for offline Calendar events access with PKCE and our state", () => {
+  it("asks for offline access to calendars it makes (not the person's others), with PKCE and our state", () => {
     const { challenge } = newPkce();
     const url = new URL(consentUrl(setupOf(), { redirectUri: REDIRECT, state: "st", challenge }));
     expect(url.pathname).toBe("/o/oauth2/v2/auth");
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       client_id: ENV.GOOGLE_INTEGRATION_CLIENT_ID,
       redirect_uri: REDIRECT,
-      scope: "openid email https://www.googleapis.com/auth/calendar.events",
+      scope: "openid email https://www.googleapis.com/auth/calendar.app.created",
+      include_granted_scopes: "true",
       access_type: "offline",
       state: "st",
       code_challenge: challenge,
@@ -88,6 +89,8 @@ describe("Google setup", () => {
     });
     expect(url.toString()).not.toContain(ENV.GOOGLE_INTEGRATION_CLIENT_SECRET);
     expect(newState()).not.toBe(newState());
+    const own = new URL(consentUrl(setupOf(), { redirectUri: REDIRECT, state: "st", challenge, includeGranted: false }));
+    expect(own.searchParams.get("include_granted_scopes")).toBe("false");
   });
 });
 
@@ -100,6 +103,18 @@ async function consent(g: ReturnType<typeof createFakeGoogle>, challenge: string
 }
 
 describe("Google OAuth against the fake", () => {
+  it("revoking one token ends the account's whole grant, like Google", async () => {
+    const g = createFakeGoogle({ email: "admin@example.test" });
+    const f = fakeFetch(g);
+    const s = setupOf();
+    const one = newPkce();
+    const a = await exchangeCode(s, { code: await consent(g, one.challenge), verifier: one.verifier, redirectUri: REDIRECT }, f);
+    const two = newPkce();
+    const b = await exchangeCode(s, { code: await consent(g, two.challenge), verifier: two.verifier, redirectUri: REDIRECT }, f);
+    await revokeToken(s, a.refreshToken, f);
+    await expect(accessTokenFor(s, b.refreshToken, f)).rejects.toThrow(GoogleReconnectError);
+  });
+
   it("exchanges the code with the right verifier, then refreshes and revokes", async () => {
     const g = createFakeGoogle({ email: "Agent@Example.test" });
     const f = fakeFetch(g);
@@ -107,7 +122,7 @@ describe("Google OAuth against the fake", () => {
     const { verifier, challenge } = newPkce();
     const code = await consent(g, challenge);
     const t = await exchangeCode(s, { code, verifier, redirectUri: REDIRECT }, f);
-    expect(t.scopes).toContain("https://www.googleapis.com/auth/calendar.events");
+    expect(t.scopes).toContain("https://www.googleapis.com/auth/calendar.app.created");
     expect(await accountEmail(s, t.accessToken, f)).toEqual({ email: "agent@example.test", verified: true });
     const fresh = await accessTokenFor(s, t.refreshToken, f);
     expect(fresh).not.toBe(t.accessToken);
@@ -148,7 +163,7 @@ const APPT_ID = "a1000000-0000-4000-8000-0000000042a1";
 const DEAL = { id: "d1000000-0000-4000-8000-0000000042d1", address: "1 Fixture Way, Belmont", status: "active" as const, ratification_date: "2026-11-02", days_to_close: 30, rent_back_days: 3 };
 
 describe("the events we build", () => {
-  it("an appointment is a private timed event in California time, daylight saving included", () => {
+  it("an appointment is a timed event in California time, daylight saving included, titled with whose it is", () => {
     const summer = appointmentEvent({ id: APPT_ID, consoleUrl: CONSOLE, fields: { title: "Final walkthrough", date: "2026-07-14", start: "15:00", minutes: 45, location: "1 Fixture Way, Belmont", with: "Dana" } })!;
     expect(summer.sourceKey).toBe(`appt:${APPT_ID}`);
     expect(summer.body.start).toEqual({ dateTime: "2026-07-14T22:00:00.000Z", timeZone: "America/Los_Angeles" });
@@ -156,7 +171,10 @@ describe("the events we build", () => {
     const winter = appointmentEvent({ id: APPT_ID, consoleUrl: CONSOLE, fields: { title: "Walkthrough", date: "2026-11-17", start: "09:30", minutes: 60, location: "", with: "" } })!;
     expect(winter.body.start).toEqual({ dateTime: "2026-11-17T17:30:00.000Z", timeZone: "America/Los_Angeles" });
     expect(winter.body).not.toHaveProperty("location");
-    expect(summer.body).toMatchObject({ visibility: "private", extendedProperties: { private: { vabratoKey: `appt:${APPT_ID}` } } });
+    // "default": the team the calendar is shared with sees the details.
+    expect(summer.body).toMatchObject({ visibility: "default", summary: "Final walkthrough", extendedProperties: { private: { vabratoKey: `appt:${APPT_ID}` } } });
+    const owned = appointmentEvent({ id: APPT_ID, consoleUrl: CONSOLE, who: " Avery Example ", fields: { title: "Final walkthrough", date: "2026-07-14", start: "15:00", minutes: 45, location: "", with: "" } })!;
+    expect(owned.body.summary).toBe("Final walkthrough · Avery Example");
     expect(summer.body.description).toContain(`${CONSOLE}/appointments/${APPT_ID}`);
     expect(summer.body.description).toContain("Added by the Vabrato console.");
     expect(summer.body).not.toHaveProperty("attendees");
@@ -177,8 +195,10 @@ describe("the events we build", () => {
       [`deal:${DEAL.id}:rentback`, "Rent-back ends · 1 Fixture Way, Belmont", { date: "2026-12-05" }],
     ]);
     expect(ev[1]!.body.end).toEqual({ date: "2026-12-03" });
-    expect(ev.every((e) => e.body.transparency === "transparent" && e.body.visibility === "private")).toBe(true);
+    expect(ev.every((e) => e.body.transparency === "transparent" && e.body.visibility === "default")).toBe(true);
     expect(JSON.stringify(ev)).not.toMatch(/\$|price|wire|seller/i);
+    const agent = keyDateEvents({ ...DEAL, who: "Avery Example" }, [], CONSOLE);
+    expect(agent.map((e) => e.body.summary)).toEqual(["Close of escrow · 1 Fixture Way, Belmont · Avery Example", "Rent-back ends · 1 Fixture Way, Belmont · Avery Example"]);
   });
 
   it("close of escrow rolls off Thanksgiving; a cancelled deal has no dates; a closed deal keeps them", () => {
@@ -206,8 +226,39 @@ describe("the sync", () => {
     const f = fakeFetch(g);
     const { verifier, challenge } = newPkce();
     const t = await exchangeCode(setupOf(), { code: await consent(g, challenge), verifier, redirectUri: REDIRECT }, f);
-    return { g, f, api: calendarApi(setupOf(), t.accessToken, f) };
+    const calendarId = await createCalendar(setupOf(), t.accessToken, { name: "Vabrato", timeZone: "America/Los_Angeles", description: "Fictional" }, f);
+    return { g, f, token: t.accessToken, calendarId, api: calendarApi(setupOf(), t.accessToken, calendarId, f) };
   }
+
+  it("makes its own calendar and puts events only there", async () => {
+    const { g, api, calendarId, token, f } = await connected();
+    expect(g.calendars()).toEqual([{ id: calendarId, account: "agent@example.test", summary: "Vabrato", timeZone: "America/Los_Angeles" }]);
+    await runSync(planSync([appt("A")], []), api);
+    expect(g.events().map((e) => e.calendarId)).toEqual([calendarId]);
+    expect(await calendarExists(setupOf(), token, calendarId, f)).toBe(true);
+    // The person's main calendar is out of reach with this access.
+    await expect(calendarApi(setupOf(), token, "primary", f).create(appt("X").body)).rejects.toBeInstanceOf(CalendarGoneError);
+  });
+
+  it("a calendar the owner deleted in Google is noticed, and the run stops", async () => {
+    const { g, api, calendarId, token, f } = await connected();
+    const first = await runSync(planSync([appt("A")], []), api);
+    g.deleteCalendar(calendarId);
+    expect(await calendarExists(setupOf(), token, calendarId, f)).toBe(false);
+    const again = await runSync(planSync([appt("A"), ...keyDateEvents(DEAL, [], CONSOLE)], first.saved), api);
+    expect(again).toMatchObject({ calendarGone: true, saved: [], failed: 0 });
+  });
+
+  it("making a calendar needs the calendar permission", async () => {
+    const g = createFakeGoogle();
+    const f = fakeFetch(g);
+    const { verifier, challenge } = newPkce();
+    const res = await g.handle(new Request(consentUrl(setupOf(), { redirectUri: REDIRECT, state: "st", challenge, scopes: [DRIVE_SCOPE] })));
+    const code = new URL(res.headers.get("location")!).searchParams.get("code")!;
+    const t = await exchangeCode(setupOf(), { code, verifier, redirectUri: REDIRECT }, f);
+    await expect(createCalendar(setupOf(), t.accessToken, { name: "Vabrato", timeZone: "America/Los_Angeles", description: "x" }, f)).rejects.toEqual(new GoogleError(403));
+    expect(g.calendars()).toEqual([]);
+  });
 
   it("creates, then changes nothing on a second run, then updates and removes", async () => {
     const { g, api } = await connected();
@@ -264,7 +315,7 @@ describe("the sync", () => {
     const { verifier, challenge } = newPkce();
     a.g.setAccount("two@example.test");
     const t = await exchangeCode(setupOf(), { code: await consent(a.g, challenge), verifier, redirectUri: REDIRECT }, a.f);
-    const other = calendarApi(setupOf(), t.accessToken, a.f);
+    const other = calendarApi(setupOf(), t.accessToken, a.calendarId, a.f);
     expect(await other.update(first.saved[0]!.google_event_id, appt("Hijack").body)).toBe("gone");
     expect(a.g.events("one@example.test")[0]!.body.summary).toBe("A");
   });

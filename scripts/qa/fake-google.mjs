@@ -1,5 +1,5 @@
 // Local QA only: stands in for Google (sign-in consent, tokens, revoke,
-// userinfo and the primary calendar's events) so the console's Google
+// userinfo, the team calendar and its events) so the console's Google
 // Calendar connection can be checked end to end without a Google account,
 // an OAuth client or any event leaving the machine (Integrations PR 1).
 //

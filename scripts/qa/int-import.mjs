@@ -287,8 +287,8 @@ try {
   await a.getByRole("button", { name: "Disconnect Dropbox" }).click();
   await a.waitForURL(/\/settings\?google=dropbox_disconnected$/, { timeout: 20000 });
   check("dropbox disconnect: revoked at Dropbox", (await fetch(`${DROPBOX}/__fake/grants`).then((r) => r.json())).live === 0);
-  await a.getByRole("checkbox", { name: /Remove the console's access to my Google account/ }).check();
-  await a.getByRole("button", { name: "Disconnect Google account" }).click();
+  await a.getByRole("checkbox", { name: /Remove the console's access to my Google Drive/ }).check();
+  await a.getByRole("button", { name: "Disconnect Google Drive" }).click();
   await a.waitForURL(/\/settings\?google=disconnected$/, { timeout: 20000 });
   check("google disconnect: connection gone", sql(`select count(*) from staff_connections where profile_id = '${agent.id}'`) === "0");
   check("google disconnect: revoked at Google", readFileSync(GLOG, "utf8").includes('"path":"/revoke","status":200'));
