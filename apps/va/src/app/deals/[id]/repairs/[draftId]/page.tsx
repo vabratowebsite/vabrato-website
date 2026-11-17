@@ -8,7 +8,7 @@ import { DraftPanel } from "@/components/draft-panel";
 import { DecisionsForm, ItemsEditor, ResponseEditor, ReviseButton, TradeRequest } from "@/components/repairs";
 import { mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
-import { aiFeaturesOn } from "@/lib/ai-flags";
+import { NO_KEY_NOTE, aiAccess, aiUnavailableMessage } from "@/lib/ai-flags";
 import { NOT_THE_REPORT, groupByTrade, tradeLabel, tradeRequestText, vendorsFor, type ItemsContent, type RepairItem, type ResponseContent } from "@/lib/repair-kinds";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
@@ -48,12 +48,13 @@ export default async function RepairItemsPage({ params }: { params: Promise<{ id
   if (!set || set.status === "discarded") notFound();
   const c = set.content as unknown as ItemsContent;
 
-  const [{ data: doc }, { data: owner }, { data: responses }, ai] = await Promise.all([
+  const [{ data: doc }, { data: owner }, { data: responses }, access] = await Promise.all([
     supabase.from("deal_documents").select("id, path").eq("id", c.document_id).eq("deal_id", id).maybeSingle(),
     supabase.from("profiles").select("full_name").eq("id", set.owner_id).maybeSingle(),
     supabase.from("ai_drafts").select("id, status, subject, content, sent_via, owner_id, created_at").eq("deal_id", id).eq("kind", "repair_response").neq("status", "discarded").eq("content->>items_id", draftId).order("created_at", { ascending: false }),
-    aiFeaturesOn(supabase, ["ai_staff_repair_response", "ai_staff_vendor_request"], id),
+    aiAccess(supabase, ["ai_staff_repair_response", "ai_staff_vendor_request"], id),
   ]);
+  const ai = access.on;
   const approved = set.status === "approved";
   const mine = set.owner_id === profile.id;
   const approvedBy = owner?.full_name ?? "staff";
@@ -173,7 +174,7 @@ export default async function RepairItemsPage({ params }: { params: Promise<{ id
           {canWrite ? (
             <DecisionsForm dealId={id} itemsId={set.id} items={c.items} agentName={profile.full_name ?? ""} />
           ) : (
-            <p className={mutedCls}>Writing the response with the assistant is switched off. An admin can turn it on in Assistant settings.</p>
+            <p className={mutedCls}>{ai.ai_staff_repair_response ? NO_KEY_NOTE : aiUnavailableMessage(access.mode, "Writing the response with the assistant", "test_deals")}</p>
           )}
           {(responses ?? []).length > 0 && (
             <div className="mt-6 space-y-6">

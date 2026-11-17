@@ -101,7 +101,7 @@ export async function MemberShell({
         <div id="main" tabIndex={-1} className="space-y-6 outline-none">
           {ai.testMode && (
             <p role="note" className="border border-gold bg-gold-50 px-4 py-3 font-body text-body-sm text-gold-ink">
-              Ask Vabrato test mode: use only made-up details. It works on test homes and on your own typed text and uploads.
+              Ask Vabrato test mode: use only made-up details. It works on test homes, on your own typed text and uploads and, before launch, on the made-up practice listings.
             </p>
           )}
           <MemberQueryProvider>{children}</MemberQueryProvider>

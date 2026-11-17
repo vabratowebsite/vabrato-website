@@ -16,6 +16,10 @@
 // - Test mode off: the assistant is gone again.
 // - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console
 //   errors. Everything added is removed.
+// - 0046: while every MLS row is fictional, testers get the listing features
+//   (a presentation reaches the fake model; Compare homes for the buyer); a
+//   non-tester sees "held until launch"; one real listing row locks them
+//   again, and they come back when it's gone.
 //
 // Start: node scripts/qa/fake-claude.mjs <log>; apps/va and apps/web with
 // ANTHROPIC_BASE_URL=http://127.0.0.1:4020 and any ANTHROPIC_API_KEY.
@@ -232,7 +236,7 @@ try {
   await jp.getByRole("button", { name: "Explain" }).click();
   await jp.locator("ol[aria-label^='Your questions'] > li").first().waitFor({ timeout: 20000 });
   check("tester buyer: Explain a term reached the (fake) model", asked().slice(memberBefore).some((r) => r.feature === "member_explain"));
-  check("tester buyer: no listing features in test mode", (await jp.getByText("Compare homes", { exact: true }).count()) === 0);
+  check("tester buyer: the listing features while every listing is fictional (0046)", (await jp.getByText("Compare homes", { exact: true }).count()) > 0 && (await jp.getByText("Plan a tour day", { exact: true }).count()) > 0);
   await axeAll(jp, "/my/assistant (test mode)");
   await layout(jp, "/my/assistant");
   await shots(jp, "ask-vabrato");
@@ -248,6 +252,40 @@ try {
   await layout(rp, "/my/seller");
   await shots(rp, "seller-test-sale");
 
+  // --- 5b. Listing features while every listing is fictional (0046) ----------------------------
+  check("local MLS rows are all fictional", sql(`select count(*) from mls_listings where source <> 'mock'`) === "0" && sql(`select count(*) from mls_members where source <> 'mock'`) === "0");
+  await av.goto(`${VA}/assistant`);
+  check("tester: listing features marked Fictional listings on /assistant", (await av.getByText("Fictional listings", { exact: true }).count()) === 4);
+  await av.goto(`${VA}/presentations`);
+  await av.getByLabel("Listing presentation (for a seller)").check();
+  await av.getByLabel("Client's first name (optional)").fill("Dana");
+  const presBefore = asked().length;
+  await av.getByRole("button", { name: "Write presentation" }).click();
+  await av.waitForURL(/\/presentations\/[0-9a-f-]{36}$/, { timeout: 30000 });
+  check("tester: a presentation reached the (fake) model in test mode", asked().slice(presBefore).some((r) => r.feature === "listing_presentation"));
+  await bl.goto(`${VA}/presentations`);
+  check(
+    "non-tester: Presentations held until launch, no switch to look for",
+    (await bl.getByRole("heading", { name: "Presentations are held until launch" }).isVisible()) &&
+      (await bl.getByText(/only people an admin names as AI testers can try them/).isVisible()) &&
+      (await bl.getByText(/switched off|Assistant settings/).count()) === 0,
+  );
+  await axeAll(bl, "/presentations (held)");
+  await layout(bl, "/presentations held");
+  // One real MLSListings row locks them again, for staff and members.
+  sql(`insert into mls_listings (listing_key, standard_status, modification_ts, city) values ('QA-REAL-${stamp}', 'Closed', now(), 'QA Nowhere')`);
+  await av.goto(`${VA}/presentations`);
+  check("real listing: the tester's Presentations are held, with the reason", (await av.getByText(/works? only while every MLS listing is fictional/).isVisible()) && (await av.getByRole("button", { name: "Write presentation" }).count()) === 0);
+  await axeAll(av, "/presentations (real listings)");
+  await shots(av, "presentations-held");
+  await av.goto(`${VA}/assistant`);
+  check("real listing: no Fictional listings label", (await av.getByText("Fictional listings", { exact: true }).count()) === 0);
+  await jp.goto(`${BASE}/my/assistant`);
+  check("real listing: no Compare homes for the tester buyer", (await jp.getByText("Compare homes", { exact: true }).count()) === 0);
+  sql(`delete from mls_listings where listing_key = 'QA-REAL-${stamp}'`);
+  await av.goto(`${VA}/presentations`);
+  check("real listing gone: Presentations back", await av.getByRole("button", { name: "Write presentation" }).isVisible());
+
   // --- 6. Test mode off --------------------------------------------------------------------------
   await admin.goto(`${VA}/assistant`);
   await panel.getByRole("button", { name: "Turn off: AI test mode" }).click();
@@ -261,6 +299,8 @@ try {
   check("no console errors", errors.length === 0, errors.slice(0, 5).join(" | "));
 } finally {
   // --- Clean up ----------------------------------------------------------------------------------
+  sql(`delete from mls_listings where listing_key like 'QA-REAL-%'`);
+  sql(`delete from ai_drafts where owner_id = '${avery.id}'`);
   sql(`update feature_flags set enabled = false where key like 'ai\\_%'`);
   sql(`update profiles set ai_tester = false`);
   const deals = [realDeal, blakeDeal, testDeal].filter(Boolean).map((d) => `'${d}'`).join(",");

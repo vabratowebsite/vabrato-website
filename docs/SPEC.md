@@ -233,7 +233,8 @@ Guardrails (all AI features):
   - only accounts an admin names as testers can use AI;
   - a request about a deal runs only on a test deal, which is marked when it's created and can't be changed;
   - a request about no deal runs only for features that use the tester's own typed text or upload;
-  - features that read other people's records (daily briefing, data questions, member summary, lead drafts and lead calls) and features that send MLS data stay off;
+  - features that read other people's records (daily briefing, data questions, member summary, lead drafts and lead calls) stay off;
+  - features that send listing data (listing kit, presentations, market update, CMA write-up, and the member compare, ask-about-a-home and tour-day features) run only while every MLS listing, agent and office in the database is fictional (`source = 'mock'`; owner decision 2026-11-17, migration 0046). The first real MLSListings row locks them again until launch, with no switch to remember;
   - testers use only fictional data, and every page tells them so.
 
   Once the master switch is on, test mode changes nothing; an admin turns it off.

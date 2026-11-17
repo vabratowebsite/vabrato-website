@@ -37,7 +37,7 @@ Mark: ☐ keep as is  ☐ change (note below)
 | Open-house flyer and posts (card) | Written by AI from your words and can be wrong. Nothing is posted for you: once approved, you copy the posts and print the flyer yourself. |
 | Open-house flyer and posts (sent) | Sent to your agent. They approve it and add your listing, the open-house time and their details. |
 | My flyers (approved flyer, posts) | Approved by your agent. The brokerage line is added at the end. Post them yourself, with your own photos of the home. |
-| Test mode note (every /my page, testers only, 0044) | Ask Vabrato test mode: use only made-up details. It works on test homes and on your own typed text and uploads. |
+| Test mode note (every /my page, testers only, 0044, 0046) | Ask Vabrato test mode: use only made-up details. It works on test homes, on your own typed text and uploads and, before launch, on the made-up practice listings. |
 | Seller portal, test sale (testers only, 0044) | Made-up details, for trying the portal. Nothing here is a real sale. |
 | Delete my assistant data (confirmation) | Delete your assistant data? Your saved drafts, your flyers, and to-dos waiting for your agent or declined are removed. Approved to-dos stay. |
 

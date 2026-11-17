@@ -68,7 +68,7 @@ export default async function AssistantPage() {
           {master
             ? "The assistant is on for staff. Each feature below has its own switch."
             : mode === "test"
-              ? "AI test mode is on for you: use only fictional data. The assistant works on test deals and on your own uploads; real client records never reach it."
+              ? "AI test mode is on for you: use only fictional data. The assistant works on test deals, on your own uploads and, while every MLS listing is fictional, on listings; real client records never reach it."
               : "The assistant is off. An admin turns it on here once Anthropic's Zero Data Retention confirmation and the API key are in place."}
         </p>
         {usage && (
@@ -87,8 +87,9 @@ export default async function AssistantPage() {
         <ul className="divide-y divide-line">
           {ASSISTANT_FEATURES.map((f) => {
             const scope = mode === "test" ? TEST_MODE_SCOPE[f.flag] : undefined;
-            const live = mode === "live" ? access.on[f.flag] : Boolean(scope);
-            const label = mode === "live" ? (live ? "On" : "Off") : scope === "test_deals" ? "Test deals" : scope === "own_upload" ? "Test mode" : "Off";
+            // Listing features: on in test mode only while every listing is fictional (the database's answer).
+            const live = mode === "live" || scope === "fictional_listings" ? access.on[f.flag] : Boolean(scope);
+            const label = mode === "live" || !live ? (live ? "On" : "Off") : scope === "test_deals" ? "Test deals" : scope === "fictional_listings" ? "Fictional listings" : "Test mode";
             return (
               <li key={f.flag} className="py-4 first:pt-0 last:pb-0">
                 <h3 className="flex flex-wrap items-center gap-2 font-body text-body-md font-medium text-ink">
@@ -186,7 +187,8 @@ export default async function AssistantPage() {
               </p>
               <p className={mutedCls}>
                 Lets the testers below try the assistant before Anthropic&apos;s confirmation arrives, with fictional data only. It works on test deals (ticked when the deal is created) and on their own typed text and uploads. Features that
-                read other people&apos;s records (the daily briefing, questions about your work, member summaries, lead replies, lead calls) and features that send MLS listing data stay off. Each request still counts towards the limits
+                read other people&apos;s records (the daily briefing, questions about your work, member summaries, lead replies, lead calls) stay off. Features that send listing data (launch kits, presentations, market updates, CMA write-ups, and
+                compare, ask and tour on the website) work only while every MLS listing, agent and office here is fictional; the first real MLSListings data locks them until launch. Each request still counts towards the limits
                 and the monthly budget. Once the master switch is on, test mode changes nothing; turn it off then.
               </p>
             </div>
