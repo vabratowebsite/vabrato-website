@@ -409,33 +409,6 @@ export type Database = {
         }
         Relationships: []
       }
-      calendar_events: {
-        Row: {
-          content_hash: string
-          google_event_id: string
-          id: string
-          profile_id: string
-          source_key: string
-          updated_at: string
-        }
-        Insert: {
-          content_hash: string
-          google_event_id: string
-          id?: string
-          profile_id: string
-          source_key: string
-          updated_at?: string
-        }
-        Update: {
-          content_hash?: string
-          google_event_id?: string
-          id?: string
-          profile_id?: string
-          source_key?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       cities: {
         Row: {
           county: string
@@ -2144,24 +2117,6 @@ export type Database = {
         }
         Relationships: []
       }
-      staff_calendar_prefs: {
-        Row: {
-          key_dates: boolean
-          profile_id: string
-          updated_at: string
-        }
-        Insert: {
-          key_dates?: boolean
-          profile_id?: string
-          updated_at?: string
-        }
-        Update: {
-          key_dates?: boolean
-          profile_id?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       staff_connections: {
         Row: {
           account_email: string | null
@@ -2337,6 +2292,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_calendar: {
+        Row: {
+          account_email: string | null
+          calendar_id: string | null
+          calendar_name: string | null
+          connected_at: string
+          connected_by: string | null
+          last_error: string | null
+          last_synced_at: string | null
+          scopes: string[]
+          singleton: boolean
+          sync_lock_until: string | null
+          token_ciphertext: string
+        }
+        Insert: {
+          account_email?: string | null
+          calendar_id?: string | null
+          calendar_name?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          scopes?: string[]
+          singleton?: boolean
+          sync_lock_until?: string | null
+          token_ciphertext: string
+        }
+        Update: {
+          account_email?: string | null
+          calendar_id?: string | null
+          calendar_name?: string | null
+          connected_at?: string
+          connected_by?: string | null
+          last_error?: string | null
+          last_synced_at?: string | null
+          scopes?: string[]
+          singleton?: boolean
+          sync_lock_until?: string | null
+          token_ciphertext?: string
+        }
+        Relationships: []
+      }
+      team_calendar_events: {
+        Row: {
+          content_hash: string
+          google_event_id: string
+          source_key: string
+          updated_at: string
+        }
+        Insert: {
+          content_hash: string
+          google_event_id: string
+          source_key: string
+          updated_at?: string
+        }
+        Update: {
+          content_hash?: string
+          google_event_id?: string
+          source_key?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       saved_homes: {
         Row: {
@@ -2845,6 +2863,19 @@ export type Database = {
           p_token: string
         }
         Returns: undefined
+      }
+      team_calendar_status: {
+        Args: never
+        Returns: {
+          account_email: string
+          calendar_name: string
+          connected: boolean
+          connected_at: string
+          connected_by_name: string
+          events: number
+          last_error: string
+          last_synced_at: string
+        }[]
       }
       unpublish_content: { Args: { p_key: string; p_table: Database["public"]["Enums"]["content_table"] }; Returns: undefined }
       unsubscribe_alert_emails: { Args: { p_token: string }; Returns: boolean }

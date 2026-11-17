@@ -33,7 +33,7 @@ prototypes are being folded into web `/my` (S5). Product spec in
 | S5b | Member AI assistant (Ask Vabrato) | Built: plan v2 (owner answers 2026-11-13). PR 1 merged (the Ask Vabrato page, explain a term, search by sentence; 0036 on hosted 2026-11-13, both switches off). PR 2 merged (summarize a document, suggested to-dos, My to-dos; 0037 on hosted 2026-11-13, switch off). PR 3 merged (drafts and offer cover letters, My drafts; 0038 on hosted 2026-11-14, both switches off). PR 4 merged (compare homes, ask about a home; 0039 on hosted 2026-11-14; locked behind the MLSListings approval switch, off until MLSListings confirms in writing). PR 5 merged (moving plan, pre-listing checklist, tour day; 0040 on hosted 2026-11-14; tour day also behind the MLSListings approval switch). PR 6 merged (colors and moodboard, staging ideas, open-house flyer and posts approved by the agent; 0041 on hosted 2026-11-14; no AI images yet). PR 7 merged (final QA, the member live test ready, Mark's wording sheet). Built; live run on the owner's go-ahead. Every switch off |
 | S6 | Staff console & automations | Done 2026-11-12 (PRs #18–#25; 0022–0025 on hosted). Done-when met live: a website contact form reached the lead admin's inbox via Resend 1.0 s after the lead was created (Rachanee's account standing in as lead admin until Mark signs in; repeat the check once routing moves to Mark). Stats, CMAs and public stats built, flags off pending MLSListings |
 | S6b | Staff AI assistant (the VA assistant) | Built 2026-11-13: PR 1 foundations merged (`packages/ai`; 0026 on hosted 2026-11-12, `ai_enabled` off). PR 2 merged (assistant page, AI settings, contract reader; 0027 on hosted 2026-11-12, both AI flags off). PR 3 merged (drafts: lead replies, open-house follow-ups, escrow updates, vendor quote requests; 0028 on hosted 2026-11-12, all switches off). PR 4 merged (daily briefing, member activity summary, questions about your work; 0029 on hosted 2026-11-12, all switches off). PR 5 merged (listing launch kits, listing and buyer presentations; 0030 on hosted 2026-11-12, all switches off). PR 6 merged (market updates, CMA write-ups, CMA in listing presentations; 0031 on hosted 2026-11-12, all switches off). PR 7a merged (deal documents, seller-type checklist, document check, receipt reader; 0032 on hosted 2026-11-12, all switches off; the checklist draft is in use as written and Mark's review of its (confirm) rows is deferred, owner decision 2026-11-13). PR 7b merged (repair items, bid list, response to the buyer's request; 0033 on hosted 2026-11-13, all switches off). PR 7c merged (counter-offer changes, check unchecked documents; 0034 on hosted 2026-11-13, all switches off). PR 8 merged (call notes to to-dos and a follow-up, appointment drafts, staff to-dos; 0035 on hosted 2026-11-13, all switches off). PR 9 merged (final QA, the live test harness, the Fair Housing, Today and notification-bell fixes; no migration). The live test against the real model runs just before the first AI switch goes on, not now (owner decision 2026-11-13). No AI feature is on: every flag is off until Anthropic's written Zero Data Retention confirmation |
-| Integrations | Console: Google Calendar, Drive, Dropbox | Built 2026-11-14: PR 1 merged (connected accounts and Google Calendar; 0042 on hosted 2026-11-14; switch off until the Google OAuth client and token key are set). PR 2 merged (Drive and Dropbox import into deal documents and receipts; 0043 on hosted 2026-11-14; both switches off until the Google picker key and the Dropbox app are set). Built |
+| Integrations | Console: team Google Calendar, Drive, Dropbox | Built 2026-11-14; the team calendar (0045) replaced PR 1's per-person calendars 2026-11-17 (in review; switch off until Google Cloud and the console's env are set up, see "The team Google Calendar"). PR 1 merged (connected accounts and Google Calendar; 0042 on hosted 2026-11-14; switch off until the Google OAuth client and token key are set). PR 2 merged (Drive and Dropbox import into deal documents and receipts; 0043 on hosted 2026-11-14; both switches off until the Google picker key and the Dropbox app are set). Built |
 | S7 | Mobile app | Not started |
 | S8 | SEO migration | Not started |
 | S9 | Launch QA | Not started |
@@ -2291,7 +2291,8 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     - **Reruns:** `s6b-calls-appointments` 35 of 35. `s6b-final` 1,230 of
       1,232: the 2 misses are the intermittent React hydration error (#418)
       already seen on main, on other pages; it's queued as its own task.
-  - **Needs you** (nothing here blocks merging; the switch stays off):
+  - **Needs you:** replaced by "The team Google Calendar" below (0045), which
+    lists the current Google Cloud steps. Kept for the record:
     - In the Google Cloud project used for sign-in: enable the Google
       Calendar API; add an OAuth client (web application) with the
       console's `/integrations/google/callback` URL; set the consent screen
@@ -2477,6 +2478,58 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
   3. As the agent, create a deal with **Test deal** ticked, then give the test seller access.
 - **Before launch (S9):** delete test deals and test accounts, and turn test mode off.
 
+### The team Google Calendar (0045; built 2026-11-17)
+
+Replaces Integrations PR 1's per-person calendars, which nobody had connected (hosted had 0 connections, 0 events and 0 preferences, and the switch was off).
+- **Owner answers (2026-11-16/17):**
+  - one Google account (rachanee@vabrato.com, a Google account on a non-Gmail address; vabrato.com mail is Microsoft 365, so there's no Google organization) owns one calendar, which the console makes, named "Vabrato";
+  - only an admin connects it, once; there are no personal calendar connections;
+  - the owner shares it with the team in Google Calendar, and the team views it in their own Google accounts;
+  - Drive imports stay per person; Dropbox comes later.
+- **Migration 0045 (`0045_team_calendar.sql`):**
+  - drops `calendar_events` and `staff_calendar_prefs` (both empty on hosted);
+  - `team_calendar`: one row with who connected it, the Google account, the encrypted token, the calendar's id and name, the last sync, a known error and a sync lease (`sync_lock_until`) so two syncs never run at once. RLS is on with no policies: only the server reads it;
+  - `team_calendar_events`: what we put on the calendar. Staff can read it (for the appointment page); members and the public can't;
+  - `team_calendar_status()`: the state for staff, never the token;
+  - the `integration_google_calendar` switch is reworded for the team calendar, and stays off.
+- **Library (`packages/lib/src/integrations`):**
+  - the calendar scope is now `calendar.app.created`: the console can make its own calendars and manage only those. It can't see or change anyone's other calendars;
+  - `createCalendar`, `calendarExists`, and events on that calendar, not `primary`;
+  - titles name who it's for ("Close of escrow · 1 Example Lane · Avery Example");
+  - events are visible to everyone the calendar is shared with (not private), and still carry no attendees, money, wiring or seller details.
+- **Console:**
+  - `lib/team-calendar.ts`:
+    - every approved appointment from the last 60 days on, and every deal's key dates, except cancelled deals, test deals (and their appointments) and deals closed long ago;
+    - the "Vabrato" calendar is made if there isn't one, and made again if it's deleted in Google;
+    - one sync at a time; at most 200 changes per run.
+  - **Connecting:** `/integrations/google/start?for=team` is for admins only, and the callback checks again. It asks for the calendar permission alone (`include_granted_scopes=false`), and refuses a consent where it was unticked. Drive asks for `drive.file` alone, so the two connections stay separate.
+  - **Revoking:** Google ends an account's whole grant to the console when any of its tokens is revoked. So disconnecting the team calendar doesn't revoke while the same Google account is someone's Drive connection, and the other way round. Settings says which happened.
+  - **Settings:**
+    - every staff member sees the team calendar's state;
+    - admins see Connect, Sync now and Disconnect, and a how-to for sharing it in Google Calendar;
+    - the key-dates toggle is gone, and the Google disconnect button now says Drive;
+    - disconnecting leaves the calendar in Google.
+  - **When it syncs:** a new deal, an approved appointment (by anyone on staff), Sync now, and right after connecting.
+  - **Appointment page:** "On the team calendar." or "Not on the team calendar yet."
+- **Checked:**
+  - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass (1,552 tests), including 11 PGlite tests in `team-calendar.test.ts`, 3 new library tests (the calendar made in the account, a deleted calendar, a Drive-only token refused) plus the fake's grant-wide revoke, and 4 console tests (what goes on the calendar, the messages);
+  - `hosted-team-calendar-check.sql` returns its expected values on the local Postgres stack;
+  - `scripts/qa/int-calendar.mjs`, rewritten for the team calendar: 109 of 109, run twice. Its first runs caught two things, both fixed: PostgREST refused the sync lease's `or` filter (see Gotchas), and a long Google email made Settings scroll sideways at 320 px;
+  - reruns: `int-import` 81 of 81 (the Drive disconnect button's new name), `s6b-calls-appointments` 35 of 35, `ai-test-mode` 53 of 53, `s6b-final` 1,232 of 1,232.
+- **Needs you** (nothing here blocks merging; the switch stays off):
+  1. **Google Cloud** (console.cloud.google.com, project "Vabrato Console"):
+     - **APIs & Services → Library:** enable the Google Calendar API, the Google Drive API and the Google Picker API.
+     - **Google Auth Platform → Branding:** app name "Vabrato Console", your support email, home page `https://vabrato.com`, privacy policy `https://vabrato.com/privacy`, terms `https://vabrato.com/terms`, authorized domain `vabrato.com`, and a developer contact email. Leave the logo empty: a logo makes Google require verification first.
+     - **Audience:** User type External, then Publish app ("In production"). In Testing mode tokens expire after 7 days.
+     - **Data Access:** add the scopes `.../auth/calendar.app.created` and `.../auth/drive.file`.
+     - **Clients:** create an OAuth client (Web application) with JavaScript origin `https://console.vabrato.com` and redirect URI `https://console.vabrato.com/integrations/google/callback`. Keep the client ID and secret.
+     - **APIs & Services → Credentials:** create an API key restricted to websites `https://console.vabrato.com/*` and to the Picker API.
+     - **Project settings:** note the project number.
+     - The first time an admin connects, Google shows "Google hasn't verified this app": choose Advanced, then continue. Verification is optional and can wait until before launch; it needs the privacy page to describe the Google data the console uses.
+  2. **The console's Vercel environment** (Production, Sensitive): `GOOGLE_INTEGRATION_CLIENT_ID`, `GOOGLE_INTEGRATION_CLIENT_SECRET`, `GOOGLE_PICKER_API_KEY`, `GOOGLE_CLOUD_PROJECT_NUMBER`, and `INTEGRATIONS_TOKEN_KEY` (make it in Cloud Shell with `openssl rand -base64 32`; keep it, since changing it means reconnecting). Then redeploy.
+  3. **In the console:** Settings → Integration switches → turn on Team Google Calendar; then Connected accounts → Connect the team calendar, signed in to Google as the account that should own it.
+  4. **In Google Calendar:** Settings → "Vabrato" → Share with specific people or groups → add each team member's Google account with "See all event details".
+
 ### Not started
 
 - Inbound email parsing for the buyer tracker (deterministic per-source per
@@ -2534,3 +2587,9 @@ project is paused. Re-link the Supabase CLI from `packages/db`
   action, or keep the fields controlled.
 - A `<select>` wrapped inside its `<label>` gets the options' text in its
   name. Use `htmlFor` and an id.
+- PostgREST (v12 locally) fails an update that has an `or=(…)` filter on a
+  column the update doesn't set ("column … does not exist"). Use plain
+  filters (`.is()`, `.lt()`), one conditional update each, or a function.
+- After applying a migration to the local QA database, send
+  `notify pgrst, 'reload schema'` and check a new column through the API:
+  a stale schema cache gives the same "does not exist" error.

@@ -2,14 +2,15 @@ import { createHash } from "node:crypto";
 import { pacificToUtc } from "../ics";
 import { addDays } from "../holidays";
 import { computeCoe, contingencyTitle } from "../schedule";
-import { GoogleReconnectError, type CalendarApi, type GoogleEventBody } from "./google";
+import { CalendarGoneError, GoogleReconnectError, type CalendarApi, type GoogleEventBody } from "./google";
 
-// What the console puts on a staff member's Google Calendar (Integrations
-// PR 1, owner answer 2026-11-14): their approved appointments, and their
-// deals' key dates (contingency removals, close of escrow, rent-back end).
-// Pure builders plus the sync that compares them with what we put there
-// before. Events are private, have no attendees and carry a key so we only
-// ever touch our own. Nothing about money, wiring or the seller goes in.
+// What the console puts on the team Google Calendar (Integrations PR 1; one
+// team calendar since 0045, owner answers 2026-11-16/17): approved
+// appointments, and deals' key dates (contingency removals, close of escrow,
+// rent-back end), each titled with who it's for. Pure builders plus the sync
+// that compares them with what we put there before. Events have no attendees
+// and carry a key so we only ever touch our own. Nothing about money, wiring
+// or the seller goes in.
 
 const PACIFIC = "America/Los_Angeles";
 const FOOTER = "Added by the Vabrato console.";
@@ -23,7 +24,11 @@ export interface AppointmentInput {
   id: string;
   fields: { title: string; date: string; start: string; minutes: number; location: string; with: string };
   consoleUrl: string;
+  /** Whose appointment it is (the staff member), shown in the title on the team calendar. */
+  who?: string | null;
 }
+
+const withWho = (title: string, who: string | null | undefined) => (who?.trim() ? `${title} · ${clip(who.trim(), 60)}` : title);
 
 const clip = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -38,12 +43,12 @@ export function appointmentEvent(a: AppointmentInput): EventSpec | null {
   return {
     sourceKey: `appt:${a.id}`,
     body: {
-      summary: clip(f.title.trim() || "Appointment", 200),
+      summary: clip(withWho(f.title.trim() || "Appointment", a.who), 200),
       description: lines.join("\n"),
       ...(f.location.trim() ? { location: clip(f.location.trim(), 300) } : {}),
       start: { dateTime: start.toISOString(), timeZone: PACIFIC },
       end: { dateTime: end.toISOString(), timeZone: PACIFIC },
-      visibility: "private",
+      visibility: "default",
       transparency: "opaque",
       reminders: { useDefault: true },
       extendedProperties: { private: { vabratoKey: `appt:${a.id}` } },
@@ -58,6 +63,8 @@ export interface DealInput {
   ratification_date: string;
   days_to_close: number;
   rent_back_days: number;
+  /** The deal's agent, shown in the titles on the team calendar. */
+  who?: string | null;
 }
 
 function allDay(sourceKey: string, title: string, date: string, url: string): EventSpec {
@@ -68,7 +75,7 @@ function allDay(sourceKey: string, title: string, date: string, url: string): Ev
       description: `Open the deal in the console: ${url}\n${FOOTER}`,
       start: { date },
       end: { date: addDays(date, 1) },
-      visibility: "private",
+      visibility: "default",
       transparency: "transparent",
       reminders: { useDefault: true },
       extendedProperties: { private: { vabratoKey: sourceKey } },
@@ -88,11 +95,11 @@ export function keyDateEvents(d: DealInput, contingencies: { kind: string; due_d
   const out: EventSpec[] = [];
   for (const c of contingencies) {
     if (!c.due_date || !DATE.test(c.due_date) || !/^[a-z_]{1,40}$/.test(c.kind)) continue;
-    out.push(allDay(`deal:${d.id}:cr:${c.kind}`, `${contingencyTitle(c.kind)} · ${place}`, c.due_date, url));
+    out.push(allDay(`deal:${d.id}:cr:${c.kind}`, withWho(`${contingencyTitle(c.kind)} · ${place}`, d.who), c.due_date, url));
   }
   const coe = computeCoe(d.ratification_date, d.days_to_close);
-  out.push(allDay(`deal:${d.id}:coe`, `Close of escrow · ${place}`, coe, url));
-  if (d.rent_back_days > 0) out.push(allDay(`deal:${d.id}:rentback`, `Rent-back ends · ${place}`, addDays(coe, d.rent_back_days), url));
+  out.push(allDay(`deal:${d.id}:coe`, withWho(`Close of escrow · ${place}`, d.who), coe, url));
+  if (d.rent_back_days > 0) out.push(allDay(`deal:${d.id}:rentback`, withWho(`Rent-back ends · ${place}`, d.who), addDays(coe, d.rent_back_days), url));
   return out;
 }
 
@@ -132,7 +139,7 @@ export function planSync(desired: EventSpec[], stored: StoredEvent[]): SyncPlan 
 export const MAX_CHANGES_PER_SYNC = 200;
 
 export interface SyncOutcome {
-  /** Rows to upsert into calendar_events. */
+  /** Rows to upsert into team_calendar_events. */
   saved: StoredEvent[];
   /** Source keys whose rows to delete. */
   removed: string[];
@@ -141,15 +148,17 @@ export interface SyncOutcome {
   capped: boolean;
   /** Google refused the token: stop and ask the person to reconnect. */
   reconnect: boolean;
+  /** The calendar itself is gone (deleted in Google): stop; the caller makes a new one. */
+  calendarGone: boolean;
 }
 
 /**
  * Applies a plan through the Calendar API, removals first, at most
- * MAX_CHANGES_PER_SYNC changes. An event the person deleted in Google is made
- * again on update. A refused token stops the run.
+ * MAX_CHANGES_PER_SYNC changes. An event someone deleted in Google is made
+ * again on update. A refused token, or a calendar that's gone, stops the run.
  */
 export async function runSync(plan: SyncPlan, api: CalendarApi, max = MAX_CHANGES_PER_SYNC): Promise<SyncOutcome> {
-  const out: SyncOutcome = { saved: [], removed: [], failed: 0, capped: false, reconnect: false };
+  const out: SyncOutcome = { saved: [], removed: [], failed: 0, capped: false, reconnect: false, calendarGone: false };
   const steps: (() => Promise<void>)[] = [
     ...plan.remove.map((r) => async () => {
       await api.remove(r.eventId);
@@ -173,6 +182,10 @@ export async function runSync(plan: SyncPlan, api: CalendarApi, max = MAX_CHANGE
     } catch (e) {
       if (e instanceof GoogleReconnectError) {
         out.reconnect = true;
+        break;
+      }
+      if (e instanceof CalendarGoneError) {
+        out.calendarGone = true;
         break;
       }
       out.failed++;

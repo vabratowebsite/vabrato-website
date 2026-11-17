@@ -1,16 +1,20 @@
 import { createHash, randomBytes } from "node:crypto";
 import { tokenKey, TokenKeyError } from "./crypto";
 
-// Google for the console's connected accounts (Integrations PR 1): our own
-// OAuth flow (separate from Supabase sign-in) and the few Calendar calls we
-// make. Plain fetch, no SDK. The base URLs come from env so tests and QA can
+// Google for the console's connected accounts (Integrations PR 1, team
+// calendar 0045): our own OAuth flow (separate from Supabase sign-in) and the
+// few Calendar calls we make. Plain fetch, no SDK. The base URLs come from env so tests and QA can
 // point them at the fake (fake-google.ts), like ANTHROPIC_BASE_URL. Nothing
 // here logs or returns a token in an error.
 
-export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+/**
+ * The team calendar (0045): make secondary calendars, and manage events only
+ * on calendars this app made. The console can't see or change any other
+ * calendar in the account.
+ */
+export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
 /** Drive access to the files the person picks in Google's picker only (Integrations PR 2). */
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
-export const CALENDAR_SCOPES = ["openid", "email", CALENDAR_SCOPE] as const;
 
 export interface GoogleSetup {
   clientId: string;
@@ -61,8 +65,12 @@ export function newPkce(): { verifier: string; challenge: string } {
 export const pkceChallenge = (verifier: string) => createHash("sha256").update(verifier).digest("base64url");
 export const newState = () => randomBytes(24).toString("base64url");
 
-/** Google's consent page for the Calendar connection. */
-export function consentUrl(s: GoogleSetup, o: { redirectUri: string; state: string; challenge: string; loginHint?: string; scopes?: readonly string[] }): string {
+/**
+ * Google's consent page. `scopes` are the team calendar's and/or Drive's; with
+ * `includeGranted: false` the token carries only what's asked for now (the
+ * team calendar's own token isn't mixed with the admin's Drive access).
+ */
+export function consentUrl(s: GoogleSetup, o: { redirectUri: string; state: string; challenge: string; loginHint?: string; scopes?: readonly string[]; includeGranted?: boolean }): string {
   const scopes = ["openid", "email", ...(o.scopes ?? [CALENDAR_SCOPE]).filter((x) => x === CALENDAR_SCOPE || x === DRIVE_SCOPE)];
   const q = new URLSearchParams({
     client_id: s.clientId,
@@ -71,7 +79,7 @@ export function consentUrl(s: GoogleSetup, o: { redirectUri: string; state: stri
     scope: [...new Set(scopes)].join(" "),
     access_type: "offline",
     prompt: "consent",
-    include_granted_scopes: "true",
+    include_granted_scopes: o.includeGranted === false ? "false" : "true",
     state: o.state,
     code_challenge: o.challenge,
     code_challenge_method: "S256",
@@ -172,7 +180,8 @@ export interface GoogleEventBody {
   location?: string;
   start: { dateTime: string; timeZone: string } | { date: string };
   end: { dateTime: string; timeZone: string } | { date: string };
-  visibility: "private";
+  /** "default": the people the calendar is shared with see the details (a team calendar). */
+  visibility: "default";
   transparency: "opaque" | "transparent";
   reminders: { useDefault: true };
   extendedProperties: { private: { vabratoKey: string } };
@@ -184,19 +193,50 @@ export interface CalendarApi {
   remove(eventId: string): Promise<void>;
 }
 
-const EVENTS = "/calendar/v3/calendars/primary/events";
+/** The team calendar was deleted in Google (or isn't one this app made): make a new one. */
+export class CalendarGoneError extends Error {
+  constructor() {
+    super("The team calendar isn't there any more");
+    this.name = "CalendarGoneError";
+  }
+}
+
+const calendarPath = (calendarId: string) => `/calendar/v3/calendars/${encodeURIComponent(calendarId)}`;
 
 function check(res: Response): void {
   if (res.status === 401) throw new GoogleReconnectError();
   if (!res.ok) throw new GoogleError(res.status);
 }
 
-/** The person's primary calendar, with an access token. Only events we made are touched. */
-export function calendarApi(s: GoogleSetup, accessToken: string, f: Fetch = fetch): CalendarApi {
+/** Makes the team calendar in the connected account; returns its id. */
+export async function createCalendar(s: GoogleSetup, accessToken: string, o: { name: string; timeZone: string; description: string }, f: Fetch = fetch): Promise<string> {
+  const res = await call(f, `${s.apiBase}/calendar/v3/calendars`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${accessToken}`, "content-type": "application/json" },
+    body: JSON.stringify({ summary: o.name, timeZone: o.timeZone, description: o.description }),
+  });
+  check(res);
+  const out = await json<{ id?: string }>(res);
+  if (!out.id || out.id.length > 1024) throw new GoogleError(res.status);
+  return out.id;
+}
+
+/** Whether the team calendar is still there (the owner may have deleted it in Google). */
+export async function calendarExists(s: GoogleSetup, accessToken: string, calendarId: string, f: Fetch = fetch): Promise<boolean> {
+  const res = await call(f, `${s.apiBase}${calendarPath(calendarId)}`, { headers: { authorization: `Bearer ${accessToken}` } });
+  if (res.status === 404 || res.status === 410) return false;
+  check(res);
+  return true;
+}
+
+/** The team calendar's events, with an access token. Only events we made are touched. */
+export function calendarApi(s: GoogleSetup, accessToken: string, calendarId: string, f: Fetch = fetch): CalendarApi {
   const headers = { authorization: `Bearer ${accessToken}`, "content-type": "application/json" };
+  const EVENTS = `${calendarPath(calendarId)}/events`;
   return {
     async create(body) {
       const res = await call(f, `${s.apiBase}${EVENTS}?sendUpdates=none`, { method: "POST", headers, body: JSON.stringify(body) });
+      if (res.status === 404 || res.status === 410) throw new CalendarGoneError();
       check(res);
       const out = await json<{ id?: string }>(res);
       if (!out.id || out.id.length > 1024) throw new GoogleError(res.status);

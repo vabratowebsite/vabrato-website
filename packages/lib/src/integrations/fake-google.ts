@@ -4,13 +4,16 @@ import { fakeFileBytes, fakeMime, type FakeKind } from "./fake-files";
 // A fake Google for tests and browser QA (Integrations PR 1), like the MLS
 // mock: a pure Request → Response handler with its state in memory. It covers
 // only what the console uses: the consent page (approves at once), the token
-// endpoint (code with PKCE, refresh), revoke, userinfo and events on the
-// primary calendar. Point GOOGLE_ACCOUNTS_BASE_URL, GOOGLE_OAUTH_BASE_URL and
+// endpoint (code with PKCE, refresh), revoke, userinfo and calendar events.
+// Point GOOGLE_ACCOUNTS_BASE_URL, GOOGLE_OAUTH_BASE_URL and
 // GOOGLE_API_BASE_URL at it. The log records request shapes, never bodies or
 // tokens. /__fake/* lets a test look inside or simulate a revoked grant.
 // Integrations PR 2 adds Drive files (metadata and download), scopes on
 // tokens (a refresh can be narrowed), and a stand-in for Google's picker
-// script at /picker/api.js that lists the account's files.
+// script at /picker/api.js that lists the account's files. The team calendar
+// (0045) adds calendars: one made with the calendar.app.created scope can be
+// read and written only by that account, with that scope; /__fake/calendars
+// lists them and /__fake/delete-calendar simulates the owner deleting one.
 
 export interface FakeGoogleOptions {
   email?: string;
@@ -21,12 +24,23 @@ export interface FakeGoogleOptions {
 interface FakeEvent {
   id: string;
   account: string;
+  calendarId: string;
   body: Record<string, unknown>;
+}
+
+interface FakeCalendar {
+  id: string;
+  account: string;
+  summary: string;
+  timeZone: string;
 }
 
 export interface FakeGoogle {
   handle(req: Request): Promise<Response>;
   events(account?: string): FakeEvent[];
+  calendars(account?: string): FakeCalendar[];
+  /** Simulates the owner deleting a calendar (and its events) in Google Calendar. */
+  deleteCalendar(id: string): void;
   log: { method: string; path: string; status: number }[];
   setAccount(email: string, verified?: boolean): void;
   /** Simulates the person removing our access in their Google account. */
@@ -42,16 +56,23 @@ export interface FakeGoogle {
 const CORS = { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization", "access-control-allow-methods": "GET, OPTIONS" };
 const json = (status: number, body: unknown, headers: Record<string, string> = {}) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 const DRIVE = "https://www.googleapis.com/auth/drive.file";
+const CALENDAR = "https://www.googleapis.com/auth/calendar.app.created";
 const id = (prefix: string) => `${prefix}-${randomBytes(9).toString("base64url")}`;
 
 export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
-  let account = { email: opts.email ?? "agent@example.test", verified: opts.emailVerified ?? true };
+  // withhold: a scope the person unticks on the consent page (Google's granular consent).
+  let account: { email: string; verified: boolean; withhold?: string } = { email: opts.email ?? "agent@example.test", verified: opts.emailVerified ?? true };
   const codes = new Map<string, { challenge: string; redirectUri: string; email: string; verified: boolean; scopes: string[] }>();
   const refresh = new Map<string, { email: string; scopes: string[] }>(); // refresh token → account and granted scopes
   const access = new Map<string, { email: string; verified: boolean; scopes: string[] }>();
   const driveFiles = new Map<string, { account: string; name: string; kind: FakeKind }>();
   const issued: string[][] = [];
   const events = new Map<string, FakeEvent>();
+  const calendars = new Map<string, FakeCalendar>();
+  const dropCalendar = (cid: string) => {
+    calendars.delete(cid);
+    for (const [eid, e] of events) if (e.calendarId === cid) events.delete(eid);
+  };
   const log: FakeGoogle["log"] = [];
   let failures = { n: 0, status: 500 };
 
@@ -71,8 +92,8 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
       if (url.searchParams.get("code_challenge_method") !== "S256" || !url.searchParams.get("code_challenge")) return json(400, { error: "invalid_request" });
       const code = id("fake-code");
       // include_granted_scopes: a new consent keeps what this account granted before.
-      const before = [...refresh.values()].filter((r) => r.email === account.email).flatMap((r) => r.scopes);
-      const asked = (url.searchParams.get("scope") ?? "").split(" ").filter(Boolean);
+      const before = url.searchParams.get("include_granted_scopes") === "false" ? [] : [...refresh.values()].filter((r) => r.email === account.email).flatMap((r) => r.scopes);
+      const asked = (url.searchParams.get("scope") ?? "").split(" ").filter((x) => x && x !== account.withhold);
       codes.set(code, { challenge: url.searchParams.get("code_challenge")!, redirectUri, email: account.email, verified: account.verified, scopes: [...new Set([...asked, ...before])] });
       const to = new URL(redirectUri);
       to.searchParams.set("code", code);
@@ -102,8 +123,13 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
       return json(400, { error: "unsupported_grant_type" });
     }
     if (req.method === "POST" && p === "/revoke") {
+      // Like Google: revoking any token ends the account's whole grant to this
+      // client, so every refresh and access token of that account stops working.
       const token = new URLSearchParams(await req.text()).get("token") ?? "";
-      if (!refresh.delete(token) && !access.delete(token)) return json(400, { error: "invalid_token" });
+      const email = refresh.get(token)?.email ?? access.get(token)?.email;
+      if (!email) return json(400, { error: "invalid_token" });
+      for (const [k, r] of refresh) if (r.email === email) refresh.delete(k);
+      for (const [k, a] of access) if (a.email === email) access.delete(k);
       return new Response(null, { status: 200 });
     }
     if (req.method === "GET" && p === "/oauth2/v3/userinfo") {
@@ -111,22 +137,36 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
       if (!who) return json(401, { error: "invalid_token" });
       return json(200, { email: who.email, email_verified: who.verified });
     }
-    const ev = p.match(/^\/calendar\/v3\/calendars\/primary\/events(?:\/([^/]+))?$/);
-    if (ev) {
+    if (p === "/calendar/v3/calendars" && req.method === "POST") {
       const who = bearer(req);
       if (!who) return json(401, { error: { code: 401 } });
+      if (!who.scopes.includes(CALENDAR)) return json(403, { error: { code: 403, message: "insufficientPermissions" } });
+      const body = (await req.json()) as { summary?: string; timeZone?: string };
+      const c = { id: `${id("cal")}@group.calendar.google.com`, account: who.email, summary: body.summary ?? "", timeZone: body.timeZone ?? "UTC" };
+      calendars.set(c.id, c);
+      return json(200, { id: c.id, summary: c.summary, timeZone: c.timeZone });
+    }
+    const cal = p.match(/^\/calendar\/v3\/calendars\/([^/]+)(\/events(?:\/([^/]+))?)?$/);
+    if (cal) {
+      const who = bearer(req);
+      if (!who) return json(401, { error: { code: 401 } });
+      if (!who.scopes.includes(CALENDAR)) return json(403, { error: { code: 403, message: "insufficientPermissions" } });
+      // Only calendars this account made with this app; "primary" and anyone else's are out of reach.
+      const c = calendars.get(decodeURIComponent(cal[1]!));
+      if (!c || c.account !== who.email) return json(404, { error: { code: 404 } });
+      if (!cal[2]) return req.method === "GET" ? json(200, { id: c.id, summary: c.summary, timeZone: c.timeZone }) : json(405, {});
       if (failures.n > 0) {
         failures.n--;
         return json(failures.status, { error: { code: failures.status } });
       }
-      const eventId = ev[1] ? decodeURIComponent(ev[1]) : null;
+      const eventId = cal[3] ? decodeURIComponent(cal[3]) : null;
       if (req.method === "POST" && !eventId) {
-        const e = { id: id("evt"), account: who.email, body: (await req.json()) as Record<string, unknown> };
+        const e = { id: id("evt"), account: who.email, calendarId: c.id, body: (await req.json()) as Record<string, unknown> };
         events.set(e.id, e);
         return json(200, { id: e.id });
       }
       const e = eventId ? events.get(eventId) : undefined;
-      if (!e || e.account !== who.email) return json(404, { error: { code: 404 } });
+      if (!e || e.calendarId !== c.id) return json(404, { error: { code: 404 } });
       if (req.method === "PATCH") {
         e.body = { ...e.body, ...((await req.json()) as Record<string, unknown>) };
         return json(200, { id: e.id });
@@ -160,6 +200,11 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
     }
     if (p === "/__fake/scopes") return json(200, issued);
     if (p === "/__fake/events") return json(200, [...events.values()]);
+    if (p === "/__fake/calendars") return json(200, [...calendars.values()]);
+    if (p === "/__fake/delete-calendar" && req.method === "POST") {
+      dropCalendar(url.searchParams.get("id") ?? "");
+      return json(200, {});
+    }
     if (p === "/__fake/revoke-all" && req.method === "POST") {
       refresh.clear();
       access.clear();
@@ -170,7 +215,7 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
       return json(200, {});
     }
     if (p === "/__fake/account" && req.method === "POST") {
-      account = { email: url.searchParams.get("email") ?? account.email, verified: url.searchParams.get("verified") !== "false" };
+      account = { email: url.searchParams.get("email") ?? account.email, verified: url.searchParams.get("verified") !== "false", withhold: url.searchParams.get("withhold") ?? undefined };
       return json(200, {});
     }
     return json(404, { error: "not_found" });
@@ -188,10 +233,12 @@ export function createFakeGoogle(opts: FakeGoogleOptions = {}): FakeGoogle {
     async handle(req) {
       const url = new URL(req.url);
       const res = await route(req, url);
-      log.push({ method: req.method, path: url.pathname.replace(/\/events\/[^/]+$/, "/events/:id"), status: res.status });
+      log.push({ method: req.method, path: url.pathname.replace(/\/events\/[^/]+$/, "/events/:id").replace(/\/calendars\/[^/]+/, "/calendars/:id"), status: res.status });
       return res;
     },
     events: (who) => [...events.values()].filter((e) => !who || e.account === who),
+    calendars: (who) => [...calendars.values()].filter((c) => !who || c.account === who),
+    deleteCalendar: dropCalendar,
     log,
     setAccount(email, verified = true) {
       account = { email, verified };

@@ -15,7 +15,7 @@ import {
   signOut,
   todayISO,
 } from "@vabrato/lib";
-import { syncCalendarFor } from "@/lib/calendar-sync";
+import { syncTeamCalendar } from "@/lib/team-calendar";
 import { parseDealForm } from "@/lib/deal-schema";
 import { EXTERNAL_REF, isOwnReceiptUpload } from "@/lib/documents";
 import { parseReceiptForm } from "@/lib/receipt-schema";
@@ -110,9 +110,8 @@ export async function createDealAction(_prev: FormState, form: FormData): Promis
     };
   }
 
-  // The new deal's key dates go on the agent's Google Calendar, if they connected it (Integrations PR 1).
-  const agentId = auth.user.id;
-  after(() => syncCalendarFor(agentId));
+  // The new deal's key dates go on the team Google Calendar, if it's connected (0045).
+  after(() => syncTeamCalendar({ wait: true }));
   redirect(`/deals/${deal.id}`);
 }
 

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { runAi } from "@vabrato/ai";
 import { STAFF_ROLES, computeCoe, getProfile } from "@vabrato/lib";
@@ -10,7 +11,7 @@ import { APPOINTMENT, appointmentInput, appointmentProblems, checkFields, toAppo
 import { CALL_NOTES, callNotesInput, cleanTodoTitle, toCallResult, type CallTarget, type SuggestedTodo } from "@/lib/calls";
 import type { DraftView } from "@/lib/draft-actions";
 import { prepareNote } from "@/lib/drafts";
-import { syncCalendarFor } from "@/lib/calendar-sync";
+import { syncTeamCalendar } from "@/lib/team-calendar";
 import { supabaseServer } from "@/lib/supabase-server";
 
 // Call notes, appointment drafts and staff to-dos (S6b PR 8). Every read and
@@ -266,19 +267,23 @@ export async function approveAppointmentAction(id: string, fields: AppointmentFi
   const a = saved.appointment;
   const problems = appointmentProblems(a.fields, a.subject, a.body, pacificToday());
   if (problems.length) return { ok: false, error: `Not approved yet. ${problems.join(" ")}`, appointment: a };
-  const { supabase, profile } = await staffClient();
+  const { supabase } = await staffClient();
   const { data, error } = await supabase.from("ai_drafts").update({ status: "approved" }).eq("id", id).eq("status", "draft").select("id, status, content, subject, body, sent_via, lead_id, deal_id, owner_id").maybeSingle();
   if (error || !data) return { ok: false, error: "Couldn't approve the appointment. Please try again.", appointment: a };
   revalidatePath(data.lead_id ? `/leads/${data.lead_id}` : `/deals/${data.deal_id}`);
   revalidatePath("/assistant");
-  // On the owner's Google Calendar too, if they connected it (Integrations PR 1). A failed sync doesn't undo the approval.
-  const cal = data.owner_id === profile.id ? await syncCalendarFor(profile.id) : { status: "not_connected" as const };
-  const calendarText =
-    cal.status === "synced" && !cal.failed
-      ? "Approved and added to your Google Calendar. Send the confirmation yourself."
-      : cal.status === "not_connected" || cal.status === "off"
+  // On the team Google Calendar too, if it's connected (0045). A failed sync doesn't undo the approval;
+  // if another sync is running, this one follows it after the response.
+  const cal = await syncTeamCalendar();
+  if (cal.status === "busy") after(() => syncTeamCalendar({ wait: true }));
+  const onCalendar = cal.status === "synced" && Boolean((await supabase.from("team_calendar_events").select("source_key").eq("source_key", `appt:${data.id}`).maybeSingle()).data);
+  const calendarText = onCalendar
+    ? "Approved and added to the team calendar. Send the confirmation yourself."
+    : cal.status === "busy"
+      ? "Approved; it's being added to the team calendar. Send the confirmation yourself."
+      : cal.status === "synced" || cal.status === "not_connected" || cal.status === "off"
         ? "Approved. Add it to your calendar with the file below, and send the confirmation yourself."
-        : "Approved, but your Google Calendar wasn't updated: use Sync now in Settings, or the file below. Send the confirmation yourself.";
+        : "Approved, but the team calendar wasn't updated: an admin can use Sync now in Settings, or use the file below. Send the confirmation yourself.";
   return { ok: true, appointment: view(data), message: calendarText };
 }
 

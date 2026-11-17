@@ -4,14 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { STAFF_ROLES, createServiceSupabase, getProfile } from "@vabrato/lib";
 import { decryptToken, dropboxAccessToken, dropboxRevoke, dropboxSetup, googleSetup } from "@vabrato/lib/integrations";
-import { CALENDAR_FLAG, disconnectGoogle, syncCalendarFor } from "@/lib/calendar-sync";
 import { DRIVE_FLAG, DROPBOX_FLAG, pickerSettings } from "@/lib/imports";
 import { syncMessage } from "@/lib/calendar-messages";
 import type { ActionState } from "@/lib/lead-actions";
 import { supabaseServer } from "@/lib/supabase-server";
+import { CALENDAR_FLAG, disconnectGoogleDrive, disconnectTeamCalendar, syncTeamCalendar } from "@/lib/team-calendar";
 
-// Settings → Connected accounts (Integrations PR 1 and 2). Each person acts
-// on their own connections only; the switches are for admins (audited in 0042).
+// Settings → Connected accounts (Integrations PR 1 and 2; the team calendar
+// since 0045). Each person acts on their own Drive and Dropbox connections
+// only; the team calendar and the switches are for admins (audited in 0042).
 
 async function staff() {
   const supabase = await supabaseServer();
@@ -20,35 +21,33 @@ async function staff() {
   return { supabase, profile };
 }
 
+/** An admin brings the team calendar up to date now. */
 export async function syncNowAction(_prev: ActionState): Promise<ActionState> {
   const { profile } = await staff();
-  const r = await syncCalendarFor(profile.id);
+  if (profile.role !== "admin") return { error: "Only an admin can do this." };
+  const r = await syncTeamCalendar({ wait: true });
   revalidatePath("/settings");
   return syncMessage(r);
 }
 
-export async function setKeyDatesAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  const { supabase, profile } = await staff();
-  const on = form.get("key_dates") === "true";
-  // Update the row, or add it the first time (0042 lets a person change only key_dates on their row).
-  const { data: changed, error: updateError } = await supabase.from("staff_calendar_prefs").update({ key_dates: on, updated_at: new Date().toISOString() }).eq("profile_id", profile.id).select("profile_id");
-  const error = updateError ?? (changed?.length ? null : (await supabase.from("staff_calendar_prefs").insert({ profile_id: profile.id, key_dates: on })).error);
-  if (error) return { error: "Couldn't save that. Please try again." };
-  const r = await syncCalendarFor(profile.id);
+/** An admin disconnects the team calendar. The "Vabrato" calendar stays in Google. */
+export async function disconnectTeamCalendarAction(_prev: ActionState, form: FormData): Promise<ActionState> {
+  const { profile } = await staff();
+  if (profile.role !== "admin") return { error: "Only an admin can do this." };
+  if (form.get("confirm") !== "yes") return { error: "Tick the box to confirm." };
+  const r = await disconnectTeamCalendar();
   revalidatePath("/settings");
-  const saved = on ? "Key dates of your deals will be on your calendar." : "Key dates are off; the ones we added are removed.";
-  if (r.status === "synced" && !r.failed) return { error: null, ok: saved };
-  if (r.status === "not_connected" || r.status === "off") return { error: null, ok: "Saved." };
-  return { error: `Saved, but the calendar wasn't updated. ${syncMessage(r).error ?? ""}`.trim() };
+  redirect(`/settings?google=${!r.revoked ? "team_disconnected_partial" : r.shared ? "team_disconnected_shared" : "team_disconnected"}`);
 }
 
+/** Disconnects this person's Google Drive imports. */
 export async function disconnectGoogleAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   const { profile } = await staff();
   if (form.get("confirm") !== "yes") return { error: "Tick the box to confirm." };
-  const r = await disconnectGoogle(profile.id);
+  const r = await disconnectGoogleDrive(profile.id);
   revalidatePath("/settings");
   // The panel this form sits in goes away with the connection, so the result is shown on Settings itself.
-  redirect(`/settings?google=${r.revoked && r.eventsRemoved ? "disconnected" : "disconnected_partial"}`);
+  redirect(`/settings?google=${!r.revoked ? "disconnected_partial" : r.shared ? "disconnected_shared" : "disconnected"}`);
 }
 
 /** Disconnects Dropbox: revokes the console's access there and deletes our record of it. */
@@ -74,9 +73,9 @@ export async function disconnectDropboxAction(_prev: ActionState, form: FormData
 
 const SWITCHES: Record<string, { name: string; on: string; off: string; missing: () => string[] }> = {
   [CALENDAR_FLAG]: {
-    name: "Google Calendar",
-    on: "Google Calendar is on: each person can connect their own.",
-    off: "Google Calendar is off. Connections stay, but nothing syncs.",
+    name: "Team Google Calendar",
+    on: "The team Google Calendar is on: an admin can connect it in Connected accounts.",
+    off: "The team Google Calendar is off. Its connection stays, but nothing syncs.",
     missing: () => {
       const g = googleSetup();
       return g.ok ? [] : g.missing;
