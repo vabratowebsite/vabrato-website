@@ -253,12 +253,14 @@ export function demoSeedSql(opts: { today?: string; accounts?: DemoAccounts } = 
     // Done: everything due before today (all of it on a closed deal; nothing after the cancellation).
     const doneBy = deal.status === "closed" ? "9999-12-31" : today;
     const cancelledAt = deal.status === "cancelled" ? d(-6) : null;
-    for (const t of sched.tasks) {
+    // One insert per deal (keeps the SQL small enough to paste into a SQL editor).
+    const rows = sched.tasks.map((t) => {
       const done = t.dueDate < doneBy && (!cancelledAt || t.dueDate < cancelledAt);
-      out(
-        `  insert into public.tasks (deal_id, title, owner, phase, offset_days, due_date, done, done_at) values (${q(did)}, ${q(t.title)}, ${q(t.owner)}, ${q(t.phase)}, ${t.offsetDays}, ${q(t.dueDate)}, ${done}, ${done ? at(t.dueDate, "15:00") : "null"});`,
-      );
-    }
+      return `(${q(t.title)},${q(t.owner)},${q(t.phase)},${t.offsetDays},${q(t.dueDate)},${done})`;
+    });
+    out(
+      `  insert into public.tasks (deal_id, title, owner, phase, offset_days, due_date, done, done_at) select ${q(did)}, v.t, v.o, v.p::public.task_phase, v.n, v.d::date, v.x, case when v.x then (v.d || 'T15:00:00-08:00')::timestamptz end from (values ${rows.join(",")}) v(t, o, p, n, d, x);`,
+    );
     for (const c of sched.timeline.contingencyRemovals) {
       const removed = c.dueDate < today && deal.status !== "cancelled";
       out(
