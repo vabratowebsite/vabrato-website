@@ -6,7 +6,9 @@
 -- gate. It always ends with RAISE EXCEPTION: the "error" message carries the
 -- results as JSON, and the abort rolls back every change it made.
 --
--- Expected:
+-- Expected (as of 0044; from 0046 on, tester_listing_kit and buyer_compare
+-- are allowed while every MLS row is fictional: see
+-- hosted-ai-test-mock-mls-check.sql):
 --   test_mode_before false, ai_enabled_before false
 --   lock "denied: is_test_locked"
 --   agent_sets_tester "denied: admin_only"

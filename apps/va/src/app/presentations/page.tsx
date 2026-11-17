@@ -4,7 +4,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { ConsoleShell } from "@/components/console-shell";
 import { NewPresentationForm } from "@/components/kit-editor";
 import { mutedCls } from "@/components/ui";
-import { aiFeaturesOn } from "@/lib/ai-flags";
+import { aiAccess, aiUnavailableMessage } from "@/lib/ai-flags";
 import { DRAFT_STATUS_LABEL } from "@/lib/draft-kinds";
 import { KIND_TITLE, type KitKind } from "@/lib/kit-parts";
 import { requireSignIn } from "@/lib/staff";
@@ -20,18 +20,12 @@ export default async function PresentationsPage() {
   const { profile, isStaff } = await requireSignIn();
   if (!isStaff) return <AccessDenied profile={profile} />;
   const supabase = await supabaseServer();
-  const ai = await aiFeaturesOn(supabase, ["ai_staff_presentations"]);
+  const { on: ai, mode } = await aiAccess(supabase, ["ai_staff_presentations"]);
   if (!ai.ai_staff_presentations) {
     return (
       <ConsoleShell profile={profile} current="presentations" eyebrow="Reports" title="Presentations">
-        <Panel title="Presentations are off">
-          <p className={mutedCls}>
-            The assistant&apos;s presentations are switched off. An admin can turn them on from the{" "}
-            <Link href="/assistant" className="text-navy underline">
-              Assistant
-            </Link>{" "}
-            page once it&apos;s set up.
-          </p>
+        <Panel title={mode === "live" ? "Presentations are off" : "Presentations are held until launch"}>
+          <p className={mutedCls}>{aiUnavailableMessage(mode, "Presentations", "fictional_listings", true)}</p>
         </Panel>
       </ConsoleShell>
     );

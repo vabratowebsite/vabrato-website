@@ -74,7 +74,7 @@ export async function ConsoleShell({
           )}
           {aiTest && (
             <p role="note" className="border border-gold bg-gold-50 px-4 py-3 font-body text-body-sm text-gold-ink">
-              <strong>AI test mode:</strong> use only fictional data. The assistant works on test deals and on your own typed text; real client records never reach it.{" "}
+              <strong>AI test mode:</strong> use only fictional data. The assistant works on test deals, on your own typed text and, while every MLS listing is fictional, on listings; real client records never reach it.{" "}
               <a href="/assistant" className="underline">
                 Assistant
               </a>

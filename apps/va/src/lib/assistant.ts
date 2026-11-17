@@ -138,10 +138,12 @@ export const TEST_MODE_FLAG = "ai_test_mode";
 
 /**
  * Where each staff feature works in test mode, for the /assistant page. The
- * rule itself is in the database (0044 ai_test_scope); features not listed
- * stay off in test mode (other people's records, MLS data).
+ * rule itself is in the database (0044/0046 ai_test_scope); features not
+ * listed stay off in test mode (other people's records). The listing
+ * features work only while every MLS row is fictional, so the page shows
+ * them from the database's answer.
  */
-export const TEST_MODE_SCOPE: Partial<Record<string, "own_upload" | "test_deals">> = {
+export const TEST_MODE_SCOPE: Partial<Record<string, "own_upload" | "test_deals" | "fictional_listings">> = {
   ai_staff_contract_reader: "own_upload",
   ai_staff_document_check: "test_deals",
   ai_staff_counter_changes: "test_deals",
@@ -152,6 +154,10 @@ export const TEST_MODE_SCOPE: Partial<Record<string, "own_upload" | "test_deals"
   ai_staff_vendor_request: "test_deals",
   ai_staff_call_notes: "test_deals",
   ai_staff_appointments: "test_deals",
+  ai_staff_listing_kit: "fictional_listings",
+  ai_staff_presentations: "fictional_listings",
+  ai_staff_market_update: "fictional_listings",
+  ai_staff_cma_writeup: "fictional_listings",
 };
 
 /** True for deal-docs paths in the caller's own staging folder: intake/<own id>/<uuid>.pdf. */

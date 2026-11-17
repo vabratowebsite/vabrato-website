@@ -2443,7 +2443,7 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     - with no deal: only `staff_contract_reader` and 10 member features that use the person's own text or uploads;
   - `ai_begin` is redefined with the test branch; its role, deal-access, limit and budget checks are unchanged;
   - `ai_features_available` gives the UIs the same answer as `ai_begin`.
-  - **Off in test mode:** the briefing, data questions, member summary, lead drafts and lead calls (other people's records), and every MLS-data feature. One switch covers everything, and the per-feature switches are ignored, so none is pre-armed for launch.
+  - **Off in test mode:** the briefing, data questions, member summary, lead drafts and lead calls (other people's records), and every MLS-data feature (from 0046, the listing features run while every listing is fictional). One switch covers everything, and the per-feature switches are ignored, so none is pre-armed for launch.
 - **Console:**
   - the "Test deal" box on the new-deal form, and a badge on the deals list, the deal page and Today;
   - test deals are kept out of the briefing snapshot and calendar sync;
@@ -2477,6 +2477,44 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
   2. On /assistant, turn on **AI test mode** and add the testers (admin, agent, VA, buyer, seller accounts).
   3. As the agent, create a deal with **Test deal** ticked, then give the test seller access.
 - **Before launch (S9):** delete test deals and test accounts, and turn test mode off.
+
+### AI test mode: the listing features while every listing is fictional (0046; built 2026-11-17)
+- **Why:** the owner wanted to try Presentations in test mode. 0044 kept every feature that sends MLS data out of test mode, but before the real MLS sync every listing, agent and office in the database is fictional (`source = 'mock'`), so these features can't send MLS data to the model.
+- **Owner answers (2026-11-17):** allow all of them while every listing is fictional, and reword "switched off, an admin can turn it on" where that switch doesn't help before launch.
+- **Migration 0046 (`0046_ai_test_mock_mls.sql`):**
+  - `mls_all_fictional()`: true while no row in `mls_listings`, `mls_members` or `mls_offices` has `source <> 'mock'`. Media, open houses, price events and the VOW/FULL tables hang off a listing, so that covers them. Not callable from the apps;
+  - `ai_test_scope` redefined: with no deal, it also allows `staff_listing_kit`, `staff_presentations`, `staff_market_update`, `staff_cma_writeup`, `member_compare`, `member_listing` and `member_tour`, only while `mls_all_fictional()`;
+  - the sync writes `source = 'MLSListings'` (the column default), so **the first real row locks them again until launch**, with no switch to remember;
+  - `ai_refusal`, `ai_begin` and `ai_features_available` are unchanged and follow on their own, so the console, the website and `packages/ai` needed no code change to allow them.
+- **Unchanged:** named testers only; the briefing, data questions, member summary, lead drafts and lead calls stay off; once `ai_enabled` is on, each feature's own switch decides.
+- **Console:**
+  - `aiUnavailableMessage(mode, what, limit)` in `lib/ai-flags.ts`: one wording for "can't use this here".
+    - Live: its switch is off.
+    - A tester: only on test deals, or only while every listing is fictional.
+    - Everyone else before launch: held until launch, and only named testers can try it.
+  - Used on Presentations and both Repairs pages, which said "switched off, an admin can turn it on".
+  - /assistant: the four console listing features show **Fictional listings** for testers, from the database's answer, and the test-mode texts say what's allowed.
+- **Website:** Compare homes, Ask about a home and Plan a tour day appear for tester members, because `memberAiStatus` asks the database. The only change is the testers' note on every /my page: it now says the assistant also works "before launch, on the made-up practice listings". Mark's wording sheet is regenerated for it.
+- **Console note for testers** (every page): it now says the assistant also works on listings while every MLS listing is fictional.
+- **CMA write-ups:** the comps are fictional, but the subject home is what the tester types into the CMA. Testers must use made-up addresses there.
+- **Checked:**
+  - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass (1,570 tests), including 9 new PGlite cases in `ai-test-mode.test.ts`:
+    - all 7 features run for testers;
+    - one real listing, agent or office row locks them, and deleting it opens them again;
+    - non-testers get `off`;
+    - the record features stay `test_only`;
+    - the UIs get the same answer;
+    - `mls_all_fictional()` can't be called directly;
+    - with `ai_enabled` on, their own switches decide.
+  - `hosted-ai-test-mock-mls-check.sql` (new, rolled back) returns its expected values on the local Postgres stack. The 0044 check's header now notes the two values 0046 changes.
+  - `scripts/qa/ai-test-mode.mjs` adds the 0046 steps:
+    - a tester's presentation reaches the fake model;
+    - a non-tester sees "held until launch";
+    - one real listing row hides Presentations and Compare homes, and they return when it's gone;
+    - axe checks;
+    - 67 of 67 checks pass.
+- **Needs you, after it's applied:** sign in as the admin (a tester) and open **Presentations**. To let the agent, VA, buyer and seller try it, add them as testers on /assistant → AI test mode.
+- **Before the real MLS sync (S3 go-live):** nothing to do. These features lock on their own.
 
 ### The team Google Calendar (0045; built 2026-11-17)
 

@@ -7,7 +7,7 @@ import { DealShell } from "@/components/deal-shell";
 import { StartRepairItems } from "@/components/repairs";
 import { mutedCls } from "@/components/ui";
 import { aiKeyConfigured } from "@/lib/ai";
-import { aiFeaturesOn } from "@/lib/ai-flags";
+import { NO_KEY_NOTE, aiAccess, aiUnavailableMessage } from "@/lib/ai-flags";
 import { NOT_THE_REPORT, type ItemsContent, type ResponseContent } from "@/lib/repair-kinds";
 import { getDealWithProgress } from "@/lib/queries";
 import { requireSignIn } from "@/lib/staff";
@@ -31,11 +31,12 @@ export default async function DealRepairsPage({ params }: { params: Promise<{ id
   if (!result) notFound();
   const { deal, done, total } = result;
   const supabase = await supabaseServer();
-  const [{ data: drafts }, { data: docs }, ai] = await Promise.all([
+  const [{ data: drafts }, { data: docs }, access] = await Promise.all([
     supabase.from("ai_drafts").select("id, kind, status, owner_id, content, approved_at, created_at").eq("deal_id", id).in("kind", ["inspection_items", "repair_response"]).neq("status", "discarded").order("created_at", { ascending: false }),
     supabase.from("deal_documents").select("id, file_name, doc_types").eq("deal_id", id).overlaps("doc_types", INSPECTION_TYPES),
-    aiFeaturesOn(supabase, ["ai_staff_inspection_items"], id),
+    aiAccess(supabase, ["ai_staff_inspection_items"], id),
   ]);
+  const ai = access.on;
   const sets = (drafts ?? []).filter((d) => d.kind === "inspection_items");
   const responses = (drafts ?? []).filter((d) => d.kind === "repair_response");
   const canRead = ai.ai_staff_inspection_items && aiKeyConfigured();
@@ -92,7 +93,7 @@ export default async function DealRepairsPage({ params }: { params: Promise<{ id
             tab and set its type to a home or pest inspection report.
           </p>
         )}
-        {!canRead && (docs ?? []).length > 0 && <p className={`${mutedCls} mt-2`}>Reading reports into repair items is switched off. An admin can turn it on in Assistant settings.</p>}
+        {!canRead && (docs ?? []).length > 0 && <p className={`${mutedCls} mt-2`}>{ai.ai_staff_inspection_items ? NO_KEY_NOTE : aiUnavailableMessage(access.mode, "Reading reports into repair items", "test_deals")}</p>}
       </Panel>
     </DealShell>
   );

@@ -176,9 +176,80 @@ describe("AI test mode (0044)", () => {
       for (const f of ["member_summarize", "member_draft", "member_cover_letter"]) expect(await begin("seller", f, TEST_DEAL), f).toMatchObject({ allowed: true });
     });
 
-    it("MLS features stay off", async () => {
-      for (const f of ["staff_listing_kit", "staff_presentations", "staff_market_update", "staff_cma_writeup"]) expect(await begin("agent", f), f).toEqual({ allowed: false, reason: "test_only" });
-      for (const f of ["member_compare", "member_listing", "member_tour"]) expect(await begin("buyer", f), f).toEqual({ allowed: false, reason: "test_only" });
+    describe("listing features (0046): only while every MLS row is fictional", () => {
+      const STAFF_MLS = ["staff_listing_kit", "staff_presentations", "staff_market_update", "staff_cma_writeup"];
+      const MEMBER_MLS = ["member_compare", "member_listing", "member_tour"];
+      const all = async () => [
+        ...(await Promise.all(STAFF_MLS.map(async (f) => [f, await begin("agent", f)] as const))),
+        ...(await Promise.all(MEMBER_MLS.map(async (f) => [f, await begin("buyer", f)] as const))),
+      ];
+      const expectAll = async (allowed: boolean) => {
+        for (const [f, r] of await all())
+          if (allowed) expect(r, f).toMatchObject({ allowed: true });
+          else expect(r, f).toEqual({ allowed: false, reason: "test_only" });
+      };
+      beforeEach(async () => {
+        await t.exec(`delete from mls_listings; delete from mls_members; delete from mls_offices`);
+        await t.exec(`insert into mls_listings (listing_key, standard_status, modification_ts, source) values ('MOCK-1', 'Active', now(), 'mock')`);
+        await t.exec(`insert into mls_members (member_key, full_name, source) values ('MOCK-M1', 'Fictional Agent', 'mock')`);
+        await t.exec(`insert into mls_offices (office_key, name, source) values ('MOCK-O1', 'Fictional Office', 'mock')`);
+      });
+      afterAll(() => t.exec(`delete from mls_listings; delete from mls_members; delete from mls_offices`));
+
+      it("run for testers while all listings, agents and offices are fictional (and with none at all)", async () => {
+        await expectAll(true);
+        await t.exec(`delete from mls_listings; delete from mls_members; delete from mls_offices`);
+        await expectAll(true);
+      });
+
+      for (const [table, row] of [
+        ["mls_listings", `insert into mls_listings (listing_key, standard_status, modification_ts) values ('REAL-1', 'Active', now())`],
+        ["mls_members", `insert into mls_members (member_key, full_name) values ('REAL-M1', 'Someone')`],
+        ["mls_offices", `insert into mls_offices (office_key, name) values ('REAL-O1', 'Some Office')`],
+      ] as const)
+        it(`lock again on one real row in ${table}, and open when it's gone`, async () => {
+          await t.exec(row);
+          expect(await t.query(`select source from ${table} where source <> 'mock'`)).toEqual([{ source: "MLSListings" }]);
+          await expectAll(false);
+          expect((await available("agent", STAFF_MLS)).features).toEqual(Object.fromEntries(STAFF_MLS.map((f) => [f, false])));
+          await t.exec(`delete from ${table} where source <> 'mock'`);
+          await expectAll(true);
+        });
+
+      it("still need a tester and the right role; the record features stay off", async () => {
+        for (const f of STAFF_MLS) expect(await begin("agent2", f), f).toEqual({ allowed: false, reason: "off" });
+        for (const f of MEMBER_MLS) expect(await begin("buyer2", f), f).toEqual({ allowed: false, reason: "off" });
+        await expect(begin("buyer", "staff_presentations")).rejects.toThrow(/not_allowed/);
+        await expect(begin("agent", "member_compare")).rejects.toThrow(/not_allowed/);
+        for (const f of ["staff_daily_briefing", "staff_data_questions", "staff_member_summary", "staff_lead_reply"])
+          expect(await begin("agent", f), f).toEqual({ allowed: false, reason: "test_only" });
+        await flags({ ai_test_mode: false });
+        for (const [f, r] of await all()) expect(r, f).toEqual({ allowed: false, reason: "off" });
+      });
+
+      it("handing a deal doesn't let them run", async () => {
+        expect(await begin("agent", "staff_listing_kit", TEST_DEAL)).toEqual({ allowed: false, reason: "test_only" });
+        expect(await begin("seller", "member_compare", TEST_DEAL)).toEqual({ allowed: false, reason: "test_only" });
+      });
+
+      it("the UIs get the same answer", async () => {
+        expect(await available("agent", STAFF_MLS)).toEqual({ mode: "test", features: Object.fromEntries(STAFF_MLS.map((f) => [f, true])) });
+        expect(await available("buyer", MEMBER_MLS)).toEqual({ mode: "test", features: Object.fromEntries(MEMBER_MLS.map((f) => [f, true])) });
+        expect((await available("agent2", STAFF_MLS)).features.staff_presentations).toBe(false);
+      });
+
+      it("the check can't be called directly", async () => {
+        await expect(act("agent", `select mls_all_fictional()`)).rejects.toThrow(/permission denied/);
+        await expect(act("anon", `select mls_all_fictional()`)).rejects.toThrow(/permission denied/);
+      });
+
+      it("once the master switch is on, their own switches decide again", async () => {
+        await t.query(`update app_settings set ai_zdr_confirmed_at = now()`);
+        await flags({ ai_enabled: true });
+        expect(await begin("agent", "staff_presentations")).toEqual({ allowed: false, reason: "off" });
+        await flags({ ai_staff_presentations: true });
+        expect(await begin("agent2", "staff_presentations")).toMatchObject({ allowed: true });
+      });
     });
 
     it("non-testers get nothing; with test mode off, nobody does", async () => {
