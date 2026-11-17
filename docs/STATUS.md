@@ -2571,6 +2571,13 @@ So the team can click through every part of the product before launch. Owner ans
     - everything is fictional.
   - `scripts/qa/demo-walk.mjs` on the local stack: 154 of 154 checks, run twice.
   - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass (1,559 tests).
+- **Applied to hosted 2026-11-17 (#73):**
+  - **Before applying:** main's generator matched what was tested, and hosted had exactly one agent, buyer and seller account, no earlier demo, and nothing queued to send.
+  - **Open houses:** the three open-house dates were moved up a week so they're upcoming, as `seed-preview.ts` would set them today. A "last updated" run was recorded. The listings themselves were unchanged.
+  - **How it was sent:** the demo SQL was applied in one transaction, with the 7 task inserts merged into one. A local run checked that the merged version makes the same 270 rows.
+  - **Check:** 7 deals (3 test), 270 tasks (134 done), 28 contingencies, 10 leads, 7 appointments, 4 fictional people, 6 vendors, 8 receipts, 6 messages, 3 tracked homes, 2 guides, 2 posts, 3 pins and 1 sign-in link. The seller account is on the San Carlos sale and the VA is on three deals.
+  - **No email:** none queued or created, no bell entries, no errors.
+  - **Next:** an admin presses Sync now (console Settings) to put the ordinary deals' dates and appointments on the team calendar.
 - **Before launch (S9):** run `seed-demo.ts --purge` on hosted, along with removing the preview listings and test accounts.
 
 ### Not started
