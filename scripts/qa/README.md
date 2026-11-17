@@ -382,3 +382,10 @@ Mark's wording sheet, `docs/review/member-ai-wording.md`, is generated from the 
   - test mode off hides it all again;
   - axe at 1440 and 390 px, no sideways scroll at 390 and 320 px, no console errors.
 - It needs migrations up to 0044, `SERVICE_KEY` and `CLAUDE_LOG`. Everything it adds is removed in `finally`; screenshots go to `docs/screenshots/ai-test-mode/`.
+
+## Demo content (packages/mls/src/jobs/seed-demo.ts)
+
+`demo-walk.mjs` signs in as each test role on the local stack and checks the demo shows where it should: the agent's deals, leads, appointments, members, messages and vendors; only the VA's own deals; the buyer's tracked homes, messages, to-dos, searches and drafts; the seller's sale; and the placeholder public pages. Every page is checked for console errors, axe at 1440 and 390 px, and sideways scroll at 390 px.
+
+- **Accounts:** the local database has many QA accounts, so make five stand-ins (`demo-owner-admin`, `-agent`, `-va`, `-buyer`, `-seller` `@example.test`) and name them when seeding: `tsx packages/mls/src/jobs/seed-demo.ts --agent … --buyer … --seller … --va …`. Accounts made with SQL need Supabase Auth's token and timestamp columns filled (the seed does this for its own fictional people).
+- **Then:** `node scripts/qa/demo-walk.mjs` (with `MAIL_DIR` and `PGURL`), and purge afterwards (`--purge` with the same names) so other scripts start clean.

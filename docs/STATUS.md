@@ -2535,6 +2535,44 @@ Replaces Integrations PR 1's per-person calendars, which nobody had connected (h
   3. **In the console:** Settings → Integration switches → turn on Team Google Calendar; then Connected accounts → Connect the team calendar, signed in to Google as the account that should own it.
   4. **In Google Calendar:** Settings → "Vabrato" → Share with specific people or groups → add each team member's Google account with "See all event details".
 
+### Demo content (built 2026-11-17)
+
+So the team can click through every part of the product before launch. Owner answers (2026-11-17):
+- a mix of test deals (for the AI) and ordinary ones (whose dates show on the team calendar);
+- the placeholder public pages are published;
+- the demo is attached to the test accounts, plus fictional people;
+- size: a realistic small office.
+
+- **What's in it** (`packages/mls/src/jobs/seed-demo.ts`, everything fictional):
+  - **7 deals**, built with the schedule engine like the console does, all worked by the agent test account:
+    - ordinary: one mid-escrow (the seller test account's sale, with listing views and open-house sign-ins), one closing this week, one closed, one cancelled;
+    - test deals: one just ratified (trust), one mid-escrow, one with a rent-back.
+  - **Deal extras:** tasks done to match each stage, contingencies, the VA on three deals, 6 vendors, 8 receipts, and staff to-dos.
+  - **Leads:** 10, of every kind, including two new ones (already marked escalated) and the buyer test account's tour request, with notes.
+  - **Appointments:** 6 approved and 1 draft.
+  - **Members:** 4 fictional members who can't sign in (`@example.test`).
+  - **The buyer test account:** 3 tracked homes, saved homes and searches (alerts off), a message thread, to-dos and a draft.
+  - **Public pages:** Belmont and Redwood City placeholder guides, 2 placeholder posts, and 3 featured listings.
+  - **No documents:** a document needs a stored file. Upload sample PDFs to try them.
+- **Marked so it's easy to spot and remove:**
+  - every row id starts `de300000-0000-4000-8000-`;
+  - addresses end in "(Demo)";
+  - messages to the test accounts start "[Demo]";
+  - placeholder content stays `is_placeholder`, so `content_launch_blockers()` keeps flagging it.
+- **No email:** the seed deletes, in the same transaction, every notification its inserts queue. Saved searches have alerts off, and no seller invite or weekly report is sent.
+- **Test accounts:** found by role (exactly one agent, buyer and seller, or it stops). Their emails and ids aren't in the repo.
+- **Reapplying:** the seed is safe to rerun, since it removes the old demo first. Rerunning the preview listings seed (`seed-preview.ts`) removes the demo's open-house sign-in link, so run the demo seed again after it.
+- **Checked:**
+  - 7 PGlite tests (`seed-demo.test.ts`):
+    - the whole office is made with no email queued;
+    - it's attached to the test accounts;
+    - it reruns cleanly, and the purge leaves nothing;
+    - it refuses an ambiguous account;
+    - everything is fictional.
+  - `scripts/qa/demo-walk.mjs` on the local stack: 154 of 154 checks, run twice.
+  - `pnpm typecheck`, `pnpm lint` and `pnpm test` pass (1,559 tests).
+- **Before launch (S9):** run `seed-demo.ts --purge` on hosted, along with removing the preview listings and test accounts.
+
 ### Not started
 
 - Inbound email parsing for the buyer tracker (deterministic per-source per

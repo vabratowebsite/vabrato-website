@@ -1,0 +1,218 @@
+[
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/deals",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/deals/de300000-0000-4000-8000-000000000101",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/deals/de300000-0000-4000-8000-000000000105",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/deals/de300000-0000-4000-8000-000000000106/receipts",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/leads",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/leads?view=all",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/leads/de300000-0000-4000-8000-000000000402",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/appointments/de300000-0000-4000-8000-000000000701",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/members",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/messages",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "agent",
+    "url": "http://localhost:3000/vendors",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "va",
+    "url": "http://localhost:3000/deals",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/buyer",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/messages",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/todos",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/searches",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/drafts",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "buyer",
+    "url": "http://localhost:3003/my/tours",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "seller",
+    "url": "http://localhost:3003/my/seller",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "seller",
+    "url": "http://localhost:3003/my/seller/performance",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "public",
+    "url": "http://localhost:3003/neighborhoods/belmont",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "public",
+    "url": "http://localhost:3003/insights/demo-market-update",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  },
+  {
+    "who": "public",
+    "url": "http://localhost:3003/insights",
+    "violations": {
+      "390": [],
+      "1440": []
+    },
+    "errors": []
+  }
+]
