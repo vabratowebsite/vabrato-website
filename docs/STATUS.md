@@ -2513,7 +2513,16 @@ A separate track after S6b (owner decision 2026-11-12). Owner answers
     - one real listing row hides Presentations and Compare homes, and they return when it's gone;
     - axe checks;
     - 67 of 67 checks pass.
-- **Needs you, after it's applied:** sign in as the admin (a tester) and open **Presentations**. To let the agent, VA, buyer and seller try it, add them as testers on /assistant → AI test mode.
+- **Applied to hosted 2026-11-17 (#75):**
+  - **Before applying:** main's 0046 was byte-identical to the tested file; hosted was at 0045; all 14 listings were fictional, with no real agents or offices.
+  - **`hosted-ai-test-mock-mls-check.sql`** was run and rolled back, and every value matched:
+    - the tester could start all four console listing features, and the tester buyer all three member ones;
+    - a non-tester got `off`, and the briefing stayed `test_only`;
+    - one real listing, agent or office row each returned `test_only`, and the UIs agreed;
+    - `mls_all_fictional()` can't be called directly.
+  - **Nothing left behind:** 0 check users, 0 check MLS rows, and AI runs, audit rows, testers (5) and switches are unchanged.
+  - **Security advisor:** nothing new. `mls_all_fictional` and `ai_test_scope` aren't callable by signed-in or signed-out users.
+- **Needs you:** sign in as a tester and open **Presentations** to write one. Compare homes, Ask about a home and Plan a tour day are on the tester buyer's Ask Vabrato page.
 - **Before the real MLS sync (S3 go-live):** nothing to do. These features lock on their own.
 
 ### The team Google Calendar (0045; built 2026-11-17)
